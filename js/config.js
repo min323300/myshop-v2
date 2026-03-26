@@ -28,6 +28,7 @@ const CONFIG = {
       배너:       base + encodeURIComponent('배너'),
       배송정책:   base + encodeURIComponent('배송정책'),
       사업자정보: base + encodeURIComponent('사업자정보'),
+      라이브방송: base + encodeURIComponent('라이브방송'),
     };
   },
 
