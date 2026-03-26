@@ -7,6 +7,9 @@ const CONFIG = {
 
   // ✅ Apps Script URL (기존과 동일 — 새 배포 후 변경 예정)
   APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbzQ-Ce8Zbj5mO-iMF6IJQhNtbsHl7DGo9ER4bsBoJRoz1JnvIdkp3M3qb1efEcSlwoB/exec',
+  
+  // ✅ YouTube 동시접속자 API 키
+  YOUTUBE_API_KEY: 'AIzaSyCbIR9GlemCUaHvcbGOy8AdrXEsd5EZlhE',
 
   // ✅ 이미지 기본 URL (myshop-v2 저장소)
   IMAGE_BASE: 'https://min323300.github.io/myshop-v2/images/',
