@@ -1037,7 +1037,7 @@ function loadMyProducts() {
 function renderMyProducts() {
   var el = document.getElementById('my-products-tw');
   if(!myProducts.length){ el.innerHTML=EMPTY('📦','등록된 상품 없음','➕ 상품 등록 버튼으로 추가하세요'); return; }
-  el.innerHTML = '<table>'+TH(['#','이미지','상품명','카테고리','정가','할인가','뱃지','상태','관리'])+'<tbody>'
+  el.innerHTML = '<table>'+TH(['#','이미지','상품명','카테고리','정가','할인가','뱃지','상태','위탁판매','관리'])+'<tbody>'
     +myProducts.map(function(p){
       return '<tr>'
         +'<td style="color:var(--gray);font-size:12px;">'+p['번호']+'</td>'
@@ -1048,6 +1048,9 @@ function renderMyProducts() {
         +'<td style="color:var(--accent);font-weight:700;">'+(parseInt(p['할인가'])>0?fmt(p['할인가']):'-')+'</td>'
         +'<td>'+(p['뱃지']?'<span class="bdg bdg-'+p['뱃지'].toLowerCase()+'">'+p['뱃지']+'</span>':'-')+'</td>'
         +'<td><span class="bdg '+(p['사용여부']!=='FALSE'?'bdg-new':'bdg-sale')+'">'+(p['사용여부']!=='FALSE'?'판매중':'숨김')+'</span></td>'
+        +'<td>'
+          +'<button onclick="toggleConsignment(\''+p['번호']+'\',\''+(p['위탁여부']==='TRUE'?'FALSE':'TRUE')+'\')" style="padding:4px 10px;font-size:11px;border:1px solid var(--border);border-radius:6px;background:'+(p['위탁여부']==='TRUE'?'#fce4ec':'#e3f2fd')+';color:'+(p['위탁여부']==='TRUE'?'#c62828':'#1565c0')+';cursor:pointer;font-weight:600;">'+(p['위탁여부']==='TRUE'?(p['본사승인']==='TRUE'?'✅승인':'⏳대기'):'🤝위탁신청')+'</button>'
+        +'</td>'
         +'<td><div style="display:flex;gap:6px;">'
           +'<button class="btn btn-outline btn-sm" onclick="editMyProduct(this)" data-id="'+p['번호']+'">✏️</button>'
           +'<button class="btn btn-sm" style="background:#fee;color:#c0392b;border:1px solid #fcc;" onclick="deleteMyProduct(this)" data-id="'+p['번호']+'" data-name="'+p['상품명'].replace(/"/g,'')+'">🗑️</button>'
