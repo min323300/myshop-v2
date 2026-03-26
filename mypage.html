@@ -734,6 +734,42 @@ Cart.init();
   }, 300);
   setTimeout(function() { clearInterval(syncInterval); }, 3000);
 })();
+// ===== 카카오 로그인 =====
+Kakao.init('eddf7d422e082d9f177130c4fb2a222d');
+
+function doKakaoLogin() {
+  Kakao.Auth.login({
+    scope: 'profile_nickname',
+    success: function(authObj) {
+      Kakao.API.request({
+        url: '/v2/user/me',
+        success: function(res) {
+          var kakaoAccount = res.kakao_account || {};
+          var profile = kakaoAccount.profile || {};
+          var name  = profile.nickname || '카카오회원';
+          var email = kakaoAccount.email || 'kakao_' + res.id + '@kakao.com';
+          var user  = {
+            name:  name,
+            email: email,
+            phone: '',
+            date:  new Date().toLocaleDateString('ko-KR'),
+            loginType: 'kakao'
+          };
+          var storedCode = localStorage.getItem('refCode_' + email);
+          user.refCode = storedCode || generateRefCode(name);
+          if (!storedCode) localStorage.setItem('refCode_' + email, user.refCode);
+          if (!sessionStorage.getItem('myPoints')) {
+            sessionStorage.setItem('myPoints', '3000');
+          }
+          sessionStorage.setItem('user', JSON.stringify(user));
+          showMypage(user);
+        },
+        fail: function(err) { alert('카카오 정보 조회 실패: ' + JSON.stringify(err)); }
+      });
+    },
+    fail: function(err) { alert('카카오 로그인 실패: ' + JSON.stringify(err)); }
+  });
+} 
 </script>
 </body>
 </html>
