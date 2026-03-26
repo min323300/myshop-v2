@@ -913,6 +913,7 @@ function editLive(b) {
   document.getElementById('live-coupon-hour').value  = b['쿠폰유효시간'] || '';
   document.getElementById('live-status').value       = b['상태'] || '예정';
   document.getElementById('live-active').value       = b['사용여부'] || 'TRUE';
+  document.getElementById('live-shorts').value = b['예고편URL'] || '';
   document.getElementById('live-modal-title').textContent = '📺 방송 수정';
   document.getElementById('live-modal-overlay').style.display = 'flex';
 }
