@@ -1538,6 +1538,54 @@ function downloadExcel(){
 }
 
 // ============================================================
+// 위탁판매
+// ============================================================
+function loadConsignment() {
+  if(!DEALER) return;
+  document.getElementById('consignment-tw').innerHTML = '<div class="loading"><div class="lspin">⏳</div></div>';
+  fetch(sheetUrl('대리점상품')).then(function(r){return r.text();}).then(function(csv){
+    var all = parseCSV(csv);
+    var myProds = all.filter(function(p){
+      return (p['대리점ID']||'').toString().trim() === (DEALER.id||'').toString().trim();
+    });
+    var pending  = myProds.filter(function(p){ return p['위탁여부']==='TRUE' && p['본사승인']!=='TRUE' && p['본사승인']!=='FALSE'; }).length;
+    var approved = myProds.filter(function(p){ return p['위탁여부']==='TRUE' && p['본사승인']==='TRUE'; }).length;
+    var other    = myProds.filter(function(p){ return !p['위탁여부'] || p['위탁여부']==='FALSE' || p['본사승인']==='FALSE'; }).length;
+    document.getElementById('cs-total').textContent    = myProds.length;
+    document.getElementById('cs-pending').textContent  = pending;
+    document.getElementById('cs-approved').textContent = approved;
+    document.getElementById('cs-rejected').textContent = other;
+    var el = document.getElementById('consignment-tw');
+    if(!myProds.length){ el.innerHTML='<div style="padding:30px;text-align:center;color:#aaa;">등록된 상품이 없습니다</div>'; return; }
+    el.innerHTML = '<table>'+TH(['#','이미지','상품명','카테고리','정가','위탁신청','본사승인'])+'<tbody>'
+      +myProds.map(function(p){
+        var isC=p['위탁여부']==='TRUE', apr=p['본사승인']==='TRUE', rej=p['본사승인']==='FALSE';
+        var status = isC?(apr?'<span style="background:#e8f5e9;color:#2e7d32;padding:3px 9px;border-radius:12px;font-size:11px;font-weight:700;">✅ 승인완료</span>':rej?'<span style="background:#fce4ec;color:#c62828;padding:3px 9px;border-radius:12px;font-size:11px;font-weight:700;">❌ 거절</span>':'<span style="background:#fff8e1;color:#f57f17;padding:3px 9px;border-radius:12px;font-size:11px;font-weight:700;">⏳ 승인대기</span>'):'<span style="background:#f5f5f5;color:#aaa;padding:3px 9px;border-radius:12px;font-size:11px;">미신청</span>';
+        return '<tr>'
+          +'<td style="color:var(--gray);font-size:12px;">'+p['번호']+'</td>'
+          +'<td><img class="thumb" src="'+(p['이미지']||'https://picsum.photos/80?random='+p['번호'])+'" onerror="this.src=\'https://picsum.photos/80\'"></td>'
+          +'<td style="font-weight:600;">'+p['상품명']+'</td>'
+          +'<td>'+(p['카테고리']||'-')+'</td>'
+          +'<td>'+fmt(p['가격'])+'</td>'
+          +'<td>'+status+'<br><button onclick="toggleConsignment(\''+p['번호']+'\',\''+(isC?'FALSE':'TRUE')+'\')" style="margin-top:4px;padding:3px 10px;font-size:11px;border:1px solid var(--border);border-radius:6px;background:'+(isC?'#fce4ec':'#e3f2fd')+';color:'+(isC?'#c62828':'#1565c0')+';cursor:pointer;font-weight:600;">'+(isC?'❌ 신청취소':'🤝 위탁신청')+'</button></td>'
+          +'<td style="font-size:12px;color:var(--gray);">'+(isC?(apr?'본사 노출중':rej?'본사 거절':'검토중'):'-')+'</td>'
+          +'</tr>';
+      }).join('')+'</tbody></table>';
+  }).catch(function(){ document.getElementById('consignment-tw').innerHTML='<div style="padding:30px;text-align:center;color:#aaa;">데이터 로드 실패</div>'; });
+}
+
+function toggleConsignment(productNo, newValue) {
+  if(!DEALER) return;
+  if(!confirm(newValue==='TRUE'?'위탁판매를 신청하시겠습니까?\n본사 승인 후 본사 쇼핑몰에 노출됩니다.':'위탁판매 신청을 취소하시겠습니까?')) return;
+  fetch(SCRIPT_URL, {
+    method:'POST', mode:'no-cors',
+    body: JSON.stringify({ action:'saveConsignmentProduct', data:{ 번호:productNo, 대리점ID:DEALER.id, 위탁여부:newValue, 본사승인:'' } })
+  }).then(function(){
+    showToast(newValue==='TRUE'?'✅ 위탁판매 신청 완료! 본사 승인을 기다려주세요.':'신청이 취소됐습니다.','ok');
+    setTimeout(function(){ loadConsignment(); loadMyProducts(); }, 1500);
+  }).catch(function(){ showToast('오류가 발생했습니다',''); });
+}  
+// ============================================================
 // 정산
 // ============================================================
 function loadSettlement() {
