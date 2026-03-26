@@ -202,8 +202,11 @@
     .btn-alarm { flex-shrink: 0; padding: 6px 12px; background: #fff; border: 1.5px solid #e85a2b; color: #e85a2b; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
     .btn-alarm:hover { background: #e85a2b; color: #fff; }
     .btn-alarm.alarmed { background: #f5f5f5; border-color: #ddd; color: #aaa; cursor: default; }
+    /* 일정 아이템 - 예고편 버튼 */
     .schedule-item { background: #fff; border-radius: 10px; border: 1px solid #eee; padding: 14px 16px; display: flex; align-items: center; gap: 14px; margin-bottom: 10px; }
     .schedule-item.is-live { border-color: #e8342b; background: #fff8f8; }
+    .schedule-item.has-shorts { border-left: 3px solid #ff0050; cursor: pointer; transition: box-shadow 0.15s; }
+    .schedule-item.has-shorts:hover { box-shadow: 0 2px 12px rgba(255,0,80,0.15); }
     .schedule-time-block { min-width: 70px; text-align: center; }
     .schedule-date { font-size: 11px; color: #aaa; }
     .schedule-time { font-size: 15px; font-weight: 700; color: #333; }
@@ -214,6 +217,60 @@
     .badge-status { flex-shrink: 0; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px; }
     .badge-live-now { background: #e8342b; color: #fff; }
     .schedule-empty { text-align: center; padding: 60px 20px; color: #aaa; }
+    .btn-shorts-preview {
+      flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 3px;
+      padding: 8px 10px; background: #fff0f3; border: 1.5px solid #ff0050;
+      border-radius: 10px; cursor: pointer; transition: all 0.15s; color: #ff0050;
+      font-size: 11px; font-weight: 700; line-height: 1;
+    }
+    .btn-shorts-preview:hover { background: #ff0050; color: #fff; }
+    .btn-shorts-preview .sp-icon { font-size: 18px; }
+
+    /* ★ 쇼츠 예고편 모달 */
+    .shorts-modal {
+      background: #000; border-radius: 16px;
+      width: 340px; max-width: 92vw;
+      position: relative; overflow: hidden;
+    }
+    .shorts-modal-header {
+      position: absolute; top: 0; left: 0; right: 0; z-index: 10;
+      padding: 14px 16px;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.7), transparent);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .shorts-modal-title { color: #fff; font-size: 14px; font-weight: 700; flex: 1; padding-right: 10px; }
+    .shorts-badge {
+      font-size: 11px; font-weight: 800; color: #fff;
+      background: #ff0050; padding: 3px 8px; border-radius: 4px; flex-shrink: 0;
+    }
+    .btn-shorts-close {
+      position: absolute; top: 10px; right: 12px; z-index: 11;
+      background: rgba(0,0,0,0.5); border: none; color: #fff;
+      width: 30px; height: 30px; border-radius: 50%; font-size: 16px;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+    }
+    .shorts-video-wrap {
+      position: relative;
+      width: 100%;
+      padding-top: 177.78%; /* 9:16 세로 비율 */
+    }
+    .shorts-video-wrap iframe {
+      position: absolute; inset: 0; width: 100%; height: 100%; border: none;
+    }
+    .shorts-modal-footer {
+      padding: 14px 16px;
+      background: #111;
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    }
+    .shorts-schedule-info { color: #fff; }
+    .shorts-schedule-date { font-size: 12px; color: #aaa; margin-bottom: 3px; }
+    .shorts-schedule-time { font-size: 15px; font-weight: 700; color: #fff; }
+    .btn-shorts-alarm {
+      flex-shrink: 0; padding: 9px 16px;
+      background: #e85a2b; color: #fff; border: none; border-radius: 20px;
+      font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap;
+    }
+    .btn-shorts-alarm.done { background: #555; cursor: default; }
 
     /* 공통 로딩 */
     .live-loading { text-align: center; padding: 40px; color: #aaa; font-size: 14px; }
@@ -446,6 +503,31 @@
   </div>
 
   <div class="toast" id="toast"></div>
+
+  <!-- ★ 쇼츠 예고편 모달 -->
+  <div class="modal-overlay" id="shorts-modal-overlay" onclick="if(event.target===this)closeShortsModal()">
+    <div class="shorts-modal">
+      <div class="shorts-modal-header">
+        <div class="shorts-modal-title" id="shorts-modal-title">방송 예고편</div>
+        <span class="shorts-badge">📱 SHORTS</span>
+      </div>
+      <button class="btn-shorts-close" onclick="closeShortsModal()">✕</button>
+      <div class="shorts-video-wrap">
+        <iframe id="shorts-iframe" allowfullscreen
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture">
+        </iframe>
+      </div>
+      <div class="shorts-modal-footer">
+        <div class="shorts-schedule-info">
+          <div class="shorts-schedule-date" id="shorts-schedule-date"></div>
+          <div class="shorts-schedule-time" id="shorts-schedule-time"></div>
+        </div>
+        <button class="btn-shorts-alarm" id="btn-shorts-alarm" onclick="shortsAlarmClick()">
+          🔔 알림 신청
+        </button>
+      </div>
+    </div>
+  </div>
 
   <script src="js/config.js"></script>
   <script src="js/sheets.js"></script>
@@ -827,7 +909,8 @@
       const isLive  = s['상태'] === '진행중';
       const dt      = new Date(s['시작일시']);
       const alarmed = localStorage.getItem('alarm_' + s['번호']);
-      return `<div class="schedule-item ${isLive ? 'is-live' : ''}">
+      const hasShorts = !!s['예고편URL'];
+      return `<div class="schedule-item ${isLive ? 'is-live' : ''} ${hasShorts && !isLive ? 'has-shorts' : ''}">
         <div class="schedule-time-block">
           <div class="schedule-date">${formatDateShort(dt)}</div>
           <div class="schedule-time">${formatTime(dt)}</div>
@@ -840,11 +923,18 @@
         </div>
         ${isLive
           ? `<span class="badge-status badge-live-now">● LIVE</span>`
-          : `<button class="btn-alarm ${alarmed ? 'alarmed' : ''}"
-              onclick="openAlarmModal('${s['번호']}','${s['방송제목'].replace(/'/g,"&#39;")}')"
-              ${alarmed ? 'disabled' : ''}>
-              ${alarmed ? '✅ 신청완료' : '🔔 알림신청'}
-            </button>`}
+          : `<div style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
+              ${hasShorts
+                ? `<button class="btn-shorts-preview"
+                    onclick="openShortsModal(${JSON.stringify(s).replace(/"/g,'&quot;')})">
+                    <span class="sp-icon">📱</span>예고편
+                  </button>` : ''}
+              <button class="btn-alarm ${alarmed ? 'alarmed' : ''}"
+                onclick="openAlarmModal('${s['번호']}','${s['방송제목'].replace(/'/g,"&#39;")}')"
+                ${alarmed ? 'disabled' : ''}>
+                ${alarmed ? '✅ 신청완료' : '🔔 알림신청'}
+              </button>
+            </div>`}
       </div>`;
     }).join('');
   }
@@ -883,7 +973,52 @@
     } catch(e) { showToast('네트워크 오류가 발생했습니다'); }
   }
 
-  // ── 알림 신청 모달 ────────────────────────────────────────
+  // ── ★ 쇼츠 예고편 모달 ───────────────────────────────────
+  let currentShortsNo = null;
+
+  function openShortsModal(broadcast) {
+    const vid = extractYoutubeId(broadcast['예고편URL']);
+    if (!vid) { showToast('예고편 영상을 찾을 수 없습니다'); return; }
+
+    currentShortsNo = broadcast['번호'];
+    document.getElementById('shorts-modal-title').textContent = broadcast['방송제목'] || '방송 예고편';
+
+    // 쇼츠 임베드 (세로 영상)
+    document.getElementById('shorts-iframe').src =
+      `https://www.youtube.com/embed/${vid}?autoplay=1&rel=0`;
+
+    // 방송 일정 정보
+    const dt = new Date(broadcast['시작일시']);
+    document.getElementById('shorts-schedule-date').textContent =
+      isNaN(dt) ? '' : `📅 방송 예정일`;
+    document.getElementById('shorts-schedule-time').textContent =
+      isNaN(dt) ? (broadcast['시작일시'] || '') : `${formatDateShort(dt)} ${formatTime(dt)}`;
+
+    // 알림 신청 버튼 상태
+    const alarmed = localStorage.getItem('alarm_' + broadcast['번호']);
+    const btn = document.getElementById('btn-shorts-alarm');
+    if (alarmed) {
+      btn.textContent = '✅ 신청완료'; btn.classList.add('done');
+    } else {
+      btn.textContent = '🔔 알림 신청'; btn.classList.remove('done');
+    }
+
+    document.getElementById('shorts-modal-overlay').classList.add('show');
+  }
+
+  function closeShortsModal() {
+    document.getElementById('shorts-iframe').src = '';
+    document.getElementById('shorts-modal-overlay').classList.remove('show');
+  }
+
+  function shortsAlarmClick() {
+    if (localStorage.getItem('alarm_' + currentShortsNo)) return;
+    // 현재 방송 정보 찾기
+    const broadcast = allBroadcasts.find(b => b['번호'] == currentShortsNo);
+    if (!broadcast) return;
+    closeShortsModal();
+    openAlarmModal(broadcast['번호'], broadcast['방송제목']);
+  }
   function openAlarmModal(broadcastNo, title) {
     currentAlarmNo = broadcastNo;
     document.getElementById('alarm-modal-sub').textContent =
