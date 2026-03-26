@@ -738,38 +738,49 @@ Cart.init();
 Kakao.init('eddf7d422e082d9f177130c4fb2a222d');
 
 function doKakaoLogin() {
-  Kakao.Auth.login({
-    scope: 'profile_nickname',
-    success: function(authObj) {
-      Kakao.API.request({
-        url: '/v2/user/me',
-        success: function(res) {
-          var kakaoAccount = res.kakao_account || {};
-          var profile = kakaoAccount.profile || {};
-          var name  = profile.nickname || '카카오회원';
-          var email = kakaoAccount.email || 'kakao_' + res.id + '@kakao.com';
-          var user  = {
-            name:  name,
-            email: email,
-            phone: '',
-            date:  new Date().toLocaleDateString('ko-KR'),
-            loginType: 'kakao'
-          };
-          var storedCode = localStorage.getItem('refCode_' + email);
-          user.refCode = storedCode || generateRefCode(name);
-          if (!storedCode) localStorage.setItem('refCode_' + email, user.refCode);
-          if (!sessionStorage.getItem('myPoints')) {
-            sessionStorage.setItem('myPoints', '3000');
-          }
-          sessionStorage.setItem('user', JSON.stringify(user));
-          showMypage(user);
-        },
-        fail: function(err) { alert('카카오 정보 조회 실패: ' + JSON.stringify(err)); }
-      });
-    },
-    fail: function(err) { alert('카카오 로그인 실패: ' + JSON.stringify(err)); }
+  Kakao.Auth.authorize({
+    redirectUri: location.origin + location.pathname,
+    scope: 'profile_nickname'
   });
-} 
+}
+
+// 카카오 로그인 콜백 처리
+(function handleKakaoCallback() {
+  var params = new URLSearchParams(location.search);
+  var code = params.get('code');
+  if (!code) return;
+
+  history.replaceState({}, '', location.pathname);
+
+  fetch('https://kauth.kakao.com/oauth/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'grant_type=authorization_code'
+      + '&client_id=eddf7d422e082d9f177130c4fb2a222d'
+      + '&redirect_uri=' + encodeURIComponent(location.origin + location.pathname)
+      + '&code=' + code
+  }).then(function(r){ return r.json(); }).then(function(token) {
+    if (!token.access_token) { alert('카카오 토큰 오류'); return; }
+    return fetch('https://kapi.kakao.com/v2/user/me', {
+      headers: { 'Authorization': 'Bearer ' + token.access_token }
+    });
+  }).then(function(r){ return r.json(); }).then(function(res) {
+    var profile = (res.kakao_account && res.kakao_account.profile) || {};
+    var name  = profile.nickname || '카카오회원';
+    var email = (res.kakao_account && res.kakao_account.email) || 'kakao_' + res.id + '@kakao.com';
+    var user  = {
+      name: name, email: email, phone: '',
+      date: new Date().toLocaleDateString('ko-KR'),
+      loginType: 'kakao'
+    };
+    var storedCode = localStorage.getItem('refCode_' + email);
+    user.refCode = storedCode || generateRefCode(name);
+    if (!storedCode) localStorage.setItem('refCode_' + email, user.refCode);
+    if (!sessionStorage.getItem('myPoints')) sessionStorage.setItem('myPoints', '3000');
+    sessionStorage.setItem('user', JSON.stringify(user));
+    showMypage(user);
+  }).catch(function(e){ alert('카카오 로그인 오류: ' + e.message); });
+})();
 </script>
 </body>
 </html>
