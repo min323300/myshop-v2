@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests; script-src 'self' 'unsafe-eval' 'unsafe-inline' https:">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>담누리마켓 관리자 패널</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/admin.css">
+  <script src="js/config.js"></script>
+  <script src="js/sheets.js"></script>
+</head>
+<body>
+
+<!-- 로그인 -->
+<div id="login-screen">
+  <div class="lbox">
+    <div class="lbox-logo">🏪</div>
+    <div class="lbox-brand">담누리마켓</div>
+    <div class="lbox-sub">관리자 패널</div>
+    <input type="text" id="lid" placeholder="관리자 아이디" autocomplete="off">
+    <input type="password" id="lpw" placeholder="비밀번호">
+    <button class="lbox-btn" onclick="doLogin()">로그인</button>
+    <div class="lbox-err" id="lerr">아이디 또는 비밀번호가 올바르지 않습니다.</div>
+  </div>
+</div>
+
+<!-- 앱 -->
+<div id="app">
+  <!-- 헤더 -->
+  <header class="hd">
+    <div class="hd-brand">
+      <div class="hd-logo">🏪</div>
+      <div>
+        <div class="hd-title">담누리마켓</div>
+        <div class="hd-panel">관리자 패널</div>
+      </div>
+    </div>
+    <div class="hd-nav">
+      <a href="index.html" target="_blank">🌐 쇼핑몰</a>
+      <a href="products.html" target="_blank">📦 상품목록</a>
+      <a href="https://gasway.shop" target="_blank">🌐 쇼핑몰 바로가기</a>
+    </div>
+    <div class="hd-right">
+      <div class="hd-date" id="hd-date"></div>
+      <button class="hd-refresh" onclick="refresh()">🔄 새로고침</button>
+      <button class="hd-logout" onclick="doLogout()">로그아웃</button>
+    </div>
+  </header>
+
+  <!-- 사이드바 -->
+  <aside class="sb">
+    <div class="sb-inner">
+      <div class="sb-sec">
+        <div class="sb-label">메인</div>
+        <div class="sb-item active" onclick="go('dashboard',this)"><span class="si">📊</span> 대시보드 홈</div>
+      </div>
+      <div class="sb-hr"></div>
+      <div class="sb-sec">
+        <div class="sb-label">상품 관리</div>
+        <div class="sb-item" onclick="go('prod-list',this)"><span class="si">📋</span> 상품 조회/수정</div>
+        <div class="sb-item" onclick="openProdModal()"><span class="si">➕</span> 상품 등록</div>
+        <div class="sb-item" onclick="go('photo-box',this)"><span class="si">🖼️</span> 사진 보관함</div>
+        <div class="sb-item" onclick="go('cat-mgmt',this)"><span class="si">📁</span> 카테고리 관리</div>
+      </div>
+      <div class="sb-hr"></div>
+      <div class="sb-sec">
+        <div class="sb-label">판매 관리</div>
+        <div class="sb-item" onclick="go('orders',this)">
+          <span class="si">🛒</span> 주문 관리
+          <span class="sbadge" id="new-badge" style="display:none">N</span>
+        </div>
+        <div class="sb-item" onclick="go('groupbuy',this)"><span class="si">👥</span> 공동구매 관리</div>
+        <div class="sb-item" onclick="go('settlement',this)"><span class="si">💰</span> 정산 관리</div>
+      </div>
+      <div class="sb-hr"></div>
+      <div class="sb-sec">
+        <div class="sb-label">콘텐츠</div>
+        <div class="sb-item" onclick="go('reviews',this)"><span class="si">⭐</span> 리뷰 관리</div>
+        <div class="sb-item" onclick="go('banners',this)"><span class="si">🎨</span> 배너/팝업</div>
+      </div>
+      <div class="sb-hr"></div>
+      <div class="sb-sec">
+        <div class="sb-label">대리점</div>
+        <div class="sb-item" onclick="go('dealer',this)"><span class="si">🏬</span> 대리점 관리</div>
+        <div class="sb-item" onclick="go('notice',this)"><span class="si">📢</span> 공지/매뉴얼</div>
+      </div>
+      <div class="sb-hr"></div>
+      <div class="sb-sec">
+        <div class="sb-label">스토어</div>
+        <div class="sb-item" onclick="go('settings',this)"><span class="si">⚙️</span> 스토어 설정</div>
+      </div>
+    </div>
+    <div class="sb-logout" onclick="doLogout()"><span>🚪</span> 로그아웃</div>
+  </aside>
+
+  <!-- 메인 -->
+  <main class="main">
+
+    <!-- ① 대시보드 -->
+    <div id="page-dashboard" class="page active">
+      <div class="ph">
+        <div><div class="ph-title">대시보드 홈</div><div class="ph-sub" id="dash-date"></div></div>
+      </div>
+      <div class="stat-grid" id="stat-grid">
+        <div class="sc c-blue"><div class="lspin">⏳</div></div>
+        <div class="sc c-green"></div><div class="sc c-orange"></div><div class="sc c-red"></div>
+      </div>
+      <div class="two-col">
+        <div class="card">
+          <div class="card-hd"><div class="card-title">📦 인기 상품 TOP 5</div></div>
+          <div id="dash-top5"><div class="loading"><div class="lspin">⏳</div></div></div>
+        </div>
+        <div class="card">
+          <div class="card-hd"><div class="card-title">🏬 가맹점 현황</div></div>
+          <div id="dash-franchise"><div class="loading"><div class="lspin">⏳</div></div></div>
+        </div>
+      </div>
+      <div class="two-col">
+        <div class="card">
+          <div class="card-hd"><div class="card-title">🛒 최근 주문</div></div>
+          <div id="dash-orders"><div class="loading"><div class="lspin">⏳</div></div></div>
+        </div>
+        <div class="card">
+          <div class="card-hd"><div class="card-title">💰 이번달 정산 요약</div></div>
+          <div id="dash-settle" style="padding:20px;">
+            <div class="settle-row"><span>총 매출</span><span class="settle-val">0원</span></div>
+            <div class="settle-row"><span>PG 수수료 (2.5%)</span><span class="settle-val">0원</span></div>
+            <div class="settle-row"><span>본사 마진 (2%)</span><span class="settle-val">0원</span></div>
+            <div class="settle-row"><span>가맹점 수령액 (95.5%)</span><span class="settle-val green">0원</span></div>
+            <div class="empty" style="padding:28px 0;"><div class="empty-ico">📋</div><div class="empty-sub">정산 데이터 없음</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ② 상품 목록 -->
+    <div id="page-prod-list" class="page">
+      <div class="ph">
+        <div><div class="ph-title">상품 조회/수정</div><div class="ph-sub" id="prod-sub">전체 상품</div></div>
+        <div class="ph-acts">
+          <button class="btn btn-outline" onclick="loadProds()">🔄 새로고침</button>
+          <button class="btn btn-primary" onclick="openProdModal()">➕ 상품 등록</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-hd">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <input type="text" class="srch" placeholder="상품명, 공급사 검색..." oninput="fProds(this.value)" id="prod-srch">
+            <select class="sel" onchange="fCat(this.value)" id="cat-sel"><option value="">전체 카테고리</option></select>
+            <select class="sel" onchange="fStatus(this.value)">
+              <option value="">전체 상태</option>
+              <option value="active">판매중</option>
+              <option value="inactive">숨김</option>
+              <option value="featured">추천상품</option>
+            </select>
+          </div>
+          <div class="card-acts"><span class="card-count" id="prod-cnt"></span></div>
+        </div>
+        <div class="tw" id="prod-tw">
+          <div class="loading"><div class="lspin">⏳</div><div style="margin-top:10px">상품 불러오는 중...</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ③ 사진 보관함 -->
+    <div id="page-photo-box" class="page">
+      <div class="ph">
+        <div><div class="ph-title">사진 보관함</div><div class="ph-sub">상품에 등록된 이미지 목록</div></div>
+        <div class="ph-acts">
+          <a href="https://github.com/min323300/myshop/tree/main/images" target="_blank" class="btn btn-primary">📤 GitHub 업로드</a>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-hd"><div class="card-title">🖼️ 이미지 목록</div></div>
+        <div id="photo-grid" style="padding:20px;"><div class="loading"><div class="lspin">⏳</div></div></div>
+      </div>
+    </div>
+
+    <!-- ④ 카테고리 -->
+    <div id="page-cat-mgmt" class="page">
+      <div class="ph">
+        <div><div class="ph-title">카테고리 관리</div><div class="ph-sub">구글시트 카테고리 시트 연동</div></div>
+      </div>
+      <div class="card">
+        <div class="card-hd"><div class="card-title">📁 카테고리 목록</div></div>
+        <div class="tw" id="cat-tw"><div class="loading"><div class="lspin">⏳</div></div></div>
+      </div>
+    </div>
+
+    <!-- ⑤ 주문 관리 -->
+    <div id="page-orders" class="page">
+      <div class="ph">
+        <div><div class="ph-title">주문 관리</div><div class="ph-sub">전체 주문 내역 · <span id="order-total-count">0</span>건</div></div>
+        <div class="ph-acts">
+          <button class="btn btn-outline" onclick="loadOrders()">🔄 새로고침</button>
+          <button class="btn btn-primary" onclick="downloadOrderExcel()" style="background:#1a7f4b;">📥 엑셀 다운로드</button>
+        </div>
+      </div>
+      <div class="card" style="padding:16px 20px;margin-bottom:12px;">
+        <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
+          <select id="order-status-sel" onchange="applyOrderFilter()" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:var(--font);outline:none;background:#fff;cursor:pointer;min-width:110px;">
+            <option value="all">전체 주문</option>
+            <option value="결제대기">결제대기</option>
+            <option value="결제완료">결제완료</option>
+            <option value="상품준비">상품준비</option>
+            <option value="배송중">배송중</option>
+            <option value="배송완료">배송완료</option>
+            <option value="취소">취소/반품</option>
+          </select>
+          <div style="display:flex;align-items:center;gap:6px;font-size:13px;">
+            <span style="color:var(--gray);font-weight:600;">기간</span>
+            <input type="date" id="order-date-from" onchange="applyOrderFilter()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;font-family:var(--font);outline:none;">
+            <span style="color:var(--gray);">~</span>
+            <input type="date" id="order-date-to" onchange="applyOrderFilter()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;font-family:var(--font);outline:none;">
+          </div>
+          <div style="display:flex;gap:6px;margin-left:auto;">
+            <input type="text" id="order-search" placeholder="주문번호/이름/연락처 검색" oninput="applyOrderFilter()" style="padding:8px 13px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:var(--font);outline:none;width:220px;">
+            <button onclick="clearOrderFilter()" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:12px;background:#fff;cursor:pointer;color:var(--gray);">초기화</button>
+          </div>
+        </div>
+        <div class="stabs" style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px;">
+          <div class="stab active" onclick="setOrderTab('all',this)">전체 <span class="tc" id="oc-all">0</span></div>
+          <div class="stab" onclick="setOrderTab('결제대기',this)">결제대기 <span class="tc" id="oc-wait">0</span></div>
+          <div class="stab" onclick="setOrderTab('결제완료',this)">결제완료 <span class="tc" id="oc-paid">0</span></div>
+          <div class="stab" onclick="setOrderTab('배송중',this)">배송중 <span class="tc" id="oc-ship">0</span></div>
+          <div class="stab" onclick="setOrderTab('배송완료',this)">배송완료 <span class="tc" id="oc-done">0</span></div>
+          <div class="stab" onclick="setOrderTab('취소',this)">취소/반품 <span class="tc" id="oc-cancel">0</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="tw" id="order-tw"><div class="loading"><div class="lspin">⏳</div></div></div>
+      </div>
+    </div>
+
+    <!-- ⑤-2 공동구매 관리 -->
+    <div id="page-groupbuy" class="page">
+      <div class="ph">
+        <div><div class="ph-title">공동구매 관리</div><div class="ph-sub">구글시트 "공동구매" 시트와 연동됩니다</div></div>
+        <div class="ph-acts">
+          <button class="btn btn-outline" onclick="loadGroupBuy()">🔄 새로고침</button>
+          <button class="btn btn-primary" onclick="openGroupBuyModal()">➕ 공동구매 추가</button>
+        </div>
+      </div>
+      <div class="stat-grid">
+        <div class="sc c-green"><div class="sc-top"><div class="sc-icon">▶️</div></div><div class="sc-val" id="gb-active-cnt">-</div><div class="sc-label">진행중</div></div>
+        <div class="sc c-blue"><div class="sc-top"><div class="sc-icon">⏳</div></div><div class="sc-val" id="gb-upcoming-cnt">-</div><div class="sc-label">예정</div></div>
+        <div class="sc c-orange"><div class="sc-top"><div class="sc-icon">✅</div></div><div class="sc-val" id="gb-ended-cnt">-</div><div class="sc-label">마감</div></div>
+        <div class="sc c-red"><div class="sc-top"><div class="sc-icon">👥</div></div><div class="sc-val" id="gb-total-qty">-</div><div class="sc-label">총 참여수</div></div>
+      </div>
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-hd"><div class="card-title">💡 공동구매 입력 안내</div></div>
+        <div style="padding:16px;overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:12px;">
+            <tr style="background:#f7f8fb;">
+              <th style="padding:8px 12px;border:1px solid #e4e8ef;">번호</th><th style="padding:8px 12px;border:1px solid #e4e8ef;">상품번호</th><th style="padding:8px 12px;border:1px solid #e4e8ef;">제목</th><th style="padding:8px 12px;border:1px solid #e4e8ef;">공동구매가</th><th style="padding:8px 12px;border:1px solid #e4e8ef;">목표수량</th><th style="padding:8px 12px;border:1px solid #e4e8ef;">현재참여</th><th style="padding:8px 12px;border:1px solid #e4e8ef;">시작일시</th><th style="padding:8px 12px;border:1px solid #e4e8ef;">종료일시</th><th style="padding:8px 12px;border:1px solid #e4e8ef;">배송예정일</th><th style="padding:8px 12px;border:1px solid #e4e8ef;">사용여부</th>
+            </tr>
+            <tr>
+              <td style="padding:8px 12px;border:1px solid #e4e8ef;">1</td><td style="padding:8px 12px;border:1px solid #e4e8ef;">1</td><td style="padding:8px 12px;border:1px solid #e4e8ef;">떡갈비 공동구매</td><td style="padding:8px 12px;border:1px solid #e4e8ef;color:#FF5733;font-weight:700;">17900</td><td style="padding:8px 12px;border:1px solid #e4e8ef;">100</td><td style="padding:8px 12px;border:1px solid #e4e8ef;">57</td><td style="padding:8px 12px;border:1px solid #e4e8ef;">2026-03-10 00:00</td><td style="padding:8px 12px;border:1px solid #e4e8ef;color:#e53935;font-weight:700;">2026-03-20 23:59</td><td style="padding:8px 12px;border:1px solid #e4e8ef;">2026-03-25</td><td style="padding:8px 12px;border:1px solid #e4e8ef;">TRUE</td>
+            </tr>
+          </table>
+          <div style="margin-top:10px;padding:10px 14px;background:#fff8f7;border-radius:8px;font-size:12px;color:#c0392b;border:1px solid #fdd;">💡 위 <strong>➕ 공동구매 추가</strong> 버튼으로 등록하세요.</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="stabs">
+          <div class="stab active" onclick="fGroupBuy('all',this)">전체 <span class="tc" id="gb-cnt-all">0</span></div>
+          <div class="stab" onclick="fGroupBuy('active',this)">▶ 진행중 <span class="tc" id="gb-cnt-active">0</span></div>
+          <div class="stab" onclick="fGroupBuy('upcoming',this)">⏳ 예정 <span class="tc" id="gb-cnt-upcoming">0</span></div>
+          <div class="stab" onclick="fGroupBuy('ended',this)">✅ 마감 <span class="tc" id="gb-cnt-ended">0</span></div>
+        </div>
+        <div class="tw" id="gb-tw"><div class="loading"><div class="lspin">⏳</div></div></div>
+      </div>
+    </div>
+
+    <!-- ⑥ 정산 -->
+    <div id="page-settlement" class="page">
+      <div class="ph"><div><div class="ph-title">정산 관리</div></div></div>
+      <div class="stat-grid">
+        <div class="sc c-blue"><div class="sc-top"><div class="sc-icon">💰</div></div><div class="sc-val">0원</div><div class="sc-label">총 매출</div></div>
+        <div class="sc c-orange"><div class="sc-top"><div class="sc-icon">🏦</div></div><div class="sc-val">0원</div><div class="sc-label">PG 수수료 (2.5%)</div></div>
+        <div class="sc c-red"><div class="sc-top"><div class="sc-icon">🏪</div></div><div class="sc-val">0원</div><div class="sc-label">본사 마진 (2%)</div></div>
+        <div class="sc c-green"><div class="sc-top"><div class="sc-icon">💵</div></div><div class="sc-val">0원</div><div class="sc-label">가맹점 수령 (95.5%)</div></div>
+      </div>
+      <div class="card">
+        <div class="card-hd"><div class="card-title">💰 정산 내역</div></div>
+        <div class="tw" id="settle-tw"><div class="loading"><div class="lspin">⏳</div></div></div>
+      </div>
+    </div>
+
+    <!-- ⑦ 리뷰 -->
+    <div id="page-reviews" class="page">
+      <div class="ph">
+        <div><div class="ph-title">리뷰 관리</div></div>
+        <div class="ph-acts"><button class="btn btn-outline" onclick="loadReviews()">🔄 새로고침</button></div>
+      </div>
+      <div class="card">
+        <div class="card-hd"><div class="card-title">⭐ 리뷰 목록</div></div>
+        <div class="tw" id="review-tw"><div class="loading"><div class="lspin">⏳</div></div></div>
+      </div>
+    </div>
+
+    <!-- ⑧ 배너/팝업 -->
+    <div id="page-banners" class="page">
+      <div class="ph">
+        <div><div class="ph-title">배너/팝업 관리</div><div class="ph-sub">메인 배너와 공지 팝업을 직접 등록·수정·삭제하세요</div></div>
+        <div class="ph-acts"><button class="btn btn-outline" onclick="loadBanners()">🔄 새로고침</button></div>
+      </div>
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-hd">
+          <div class="card-title">🎨 배너 목록</div>
+          <button class="btn btn-primary" style="font-size:12px;padding:6px 14px;" onclick="openBannerModal()">➕ 배너 추가</button>
+        </div>
+        <div id="banner-list-wrap" style="padding:16px;"><div class="loading"><div class="lspin">⏳</div></div></div>
+      </div>
+      <div class="card">
+        <div class="card-hd">
+          <div class="card-title">📢 팝업 목록</div>
+          <button class="btn btn-primary" style="font-size:12px;padding:6px 14px;" onclick="openPopupModal()">➕ 팝업 추가</button>
+        </div>
+        <div id="popup-list-wrap" style="padding:16px;"><div class="loading"><div class="lspin">⏳</div></div></div>
+      </div>
+    </div>
+
+    <!-- ⑨ 대리점 -->
+    <div id="page-dealer" class="page">
+      <div class="ph">
+        <div><div class="ph-title">대리점 관리</div><div class="ph-sub">대리점 계약 현황 및 정보 관리</div></div>
+        <div class="ph-acts">
+          <button class="btn btn-outline" onclick="loadDealer()">🔄 새로고침</button>
+          <button class="btn btn-primary" onclick="openDealerModal()">➕ 대리점 추가</button>
+        </div>
+      </div>
+      <div class="stat-grid">
+        <div class="sc c-green"><div class="sc-top"><div class="sc-icon">🟢</div></div><div class="sc-val" id="dealer-active">-</div><div class="sc-label">운영중</div></div>
+        <div class="sc c-blue"><div class="sc-top"><div class="sc-icon">📋</div></div><div class="sc-val" id="dealer-recruit">-</div><div class="sc-label">모집중</div></div>
+        <div class="sc c-orange"><div class="sc-top"><div class="sc-icon">⏸️</div></div><div class="sc-val" id="dealer-pause">-</div><div class="sc-label">일시중지</div></div>
+        <div class="sc c-red"><div class="sc-top"><div class="sc-icon">📊</div></div><div class="sc-val" id="dealer-total">-</div><div class="sc-label">전체</div></div>
+      </div>
+      <div class="card">
+        <div class="card-hd"><div class="card-title">🏬 대리점 목록</div></div>
+        <div class="tw" id="dealer-tw"><div class="loading"><div class="lspin">⏳</div></div></div>
+      </div>
+    </div>
+
+    <!-- 공지/매뉴얼 -->
+    <div id="page-notice" class="page">
+      <div class="ph">
+        <div><div class="ph-title">공지사항 · 운영매뉴얼</div><div class="ph-sub">대리점에 공유할 공지 및 운영 가이드</div></div>
+        <div class="ph-acts">
+          <button class="btn btn-outline" onclick="loadNotice()">🔄 새로고침</button>
+          <button class="btn btn-primary" onclick="openNoticeModal()">➕ 공지 등록</button>
+        </div>
+      </div>
+      <div class="two-col">
+        <div class="card">
+          <div class="card-hd"><div class="card-title">📢 공지사항</div></div>
+          <div id="notice-list" style="padding:16px;"><div class="loading"><div class="lspin">⏳</div></div></div>
+        </div>
+        <div class="card">
+          <div class="card-hd">
+            <div class="card-title">📖 운영 매뉴얼</div>
+            <button class="btn btn-outline" style="font-size:12px;padding:5px 12px;" onclick="openManualModal()">✏️ 수정</button>
+          </div>
+          <div id="manual-wrap" style="padding:16px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ⑩ 설정 -->
+    <div id="page-settings" class="page">
+      <div class="ph"><div><div class="ph-title">⚙️ 시스템 설정</div><div class="ph-sub">PG사, Apps Script URL 등 핵심 설정을 관리합니다</div></div></div>
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-hd">
+          <div class="card-title">💳 PG사 결제 설정</div>
+          <button class="btn btn-primary btn-sm" onclick="savePGSettings()">💾 저장</button>
+        </div>
+        <div style="padding:20px;display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <div class="fg"><label class="fl">PG사 <span style="color:var(--red);">*</span></label><select class="fi" id="pg-provider"><option value="">선택하세요</option><option value="winglobal">윈글로벌</option><option value="inicis">KG이니시스</option><option value="toss">토스페이먼츠</option><option value="kakaopay">카카오페이</option><option value="naverpay">네이버페이</option></select></div>
+          <div class="fg"><label class="fl">Merchant ID (MID) <span style="color:var(--red);">*</span></label><input class="fi" id="pg-mid" placeholder="윈글로벌에서 발급받은 MID"></div>
+          <div class="fg"><label class="fl">API 키</label><input class="fi" id="pg-apikey" placeholder="PG사 API 키" type="password"></div>
+          <div class="fg"><label class="fl">시크릿 키</label><input class="fi" id="pg-secret" placeholder="PG사 시크릿 키" type="password"></div>
+          <div class="fg" style="grid-column:1/-1;"><label class="fl">Apps Script URL</label><input class="fi" id="pg-script-url" placeholder="https://script.google.com/macros/s/..."><div style="font-size:11px;color:var(--gray);margin-top:4px;">⚠️ 새 배포 시마다 업데이트 필요</div></div>
+        </div>
+        <div id="pg-status" style="padding:0 20px 16px;font-size:12px;"></div>
+      </div>
+      <div class="two-col">
+        <div class="card">
+          <div class="card-hd"><div class="card-title">📋 현재 설정값</div></div>
+          <div id="settings-wrap" style="padding:20px;"></div>
+        </div>
+        <div class="card">
+          <div class="card-hd"><div class="card-title">🔗 주요 링크</div></div>
+          <div id="links-wrap" style="padding:20px;"></div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ===== 모달들 ===== -->
+
+<!-- 배너 모달 -->
+<div class="modal-ov" id="banner-modal">
+  <div class="modal" style="max-width:540px;">
+    <div class="modal-hd"><span id="bm-title">🎨 배너 등록</span><button onclick="closeBannerModal()">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="bm-id">
+      <div class="fg"><label class="fl">제목 *</label><input class="fi" id="bm-title-input" placeholder="배너 제목"></div>
+      <div class="fg"><label class="fl">부제목</label><input class="fi" id="bm-sub" placeholder="부제목 (선택)"></div>
+      <div class="fg">
+        <label class="fl">이미지</label>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <input class="fi" id="bm-img" placeholder="URL 자동입력 또는 직접 입력" oninput="pvBannerImg()" style="flex:1;">
+          <label class="upload-btn" title="Cloudinary 업로드"><span>📁</span><input type="file" accept="image/*" style="display:none" onchange="uploadImg(this,'bm-img','bm-img-pv')"></label>
+        </div>
+        <div id="bm-img-pv" class="img-pv-thumb"></div>
+        <div id="bm-upload-status" style="display:none;margin-top:6px;padding:8px 12px;border-radius:6px;font-size:12px;"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="fg"><label class="fl">배경색</label><input class="fi" id="bm-bg" type="color" value="#FF5733" style="height:40px;padding:4px;"></div>
+        <div class="fg"><label class="fl">글자색</label><input class="fi" id="bm-color" type="color" value="#ffffff" style="height:40px;padding:4px;"></div>
+      </div>
+      <div class="fg"><label class="fl">링크 URL</label><input class="fi" id="bm-link" placeholder="products.html"></div>
+      <div class="fg"><label class="fl">버튼 텍스트</label><input class="fi" id="bm-btn" placeholder="지금 쇼핑하기"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="fg"><label class="fl">시작일</label><input class="fi" id="bm-start" type="date"></div>
+        <div class="fg"><label class="fl">종료일</label><input class="fi" id="bm-end" type="date"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="fg"><label class="fl">순서</label><input class="fi" id="bm-order" type="number" value="1" min="1"></div>
+        <div class="fg"><label class="fl">사용여부</label><select class="fi" id="bm-active"><option value="TRUE">✅ 사용</option><option value="FALSE">❌ 미사용</option></select></div>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-outline" onclick="closeBannerModal()">취소</button>
+      <button class="btn btn-primary" onclick="saveBanner()">💾 저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 팝업 모달 -->
+<div class="modal-ov" id="popup-modal">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-hd"><span id="pm-title">📢 팝업 등록</span><button onclick="closePopupModal()">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="pm-id">
+      <div class="fg"><label class="fl">제목 *</label><input class="fi" id="pm-title-input" placeholder="팝업 제목"></div>
+      <div class="fg"><label class="fl">내용</label><textarea class="fi" id="pm-content" rows="3" style="resize:vertical;"></textarea></div>
+      <div class="fg">
+        <label class="fl">이미지</label>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <input class="fi" id="pm-img" placeholder="URL 자동입력 또는 직접 입력" style="flex:1;">
+          <label class="upload-btn" title="Cloudinary 업로드"><span>📁</span><input type="file" accept="image/*" style="display:none" onchange="uploadImg(this,'pm-img','pm-img-pv')"></label>
+        </div>
+        <div id="pm-img-pv" class="img-pv-thumb"></div>
+      </div>
+      <div class="fg"><label class="fl">링크 URL</label><input class="fi" id="pm-link" placeholder="클릭 시 이동할 주소"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="fg"><label class="fl">팝업 너비</label><input class="fi" id="pm-width" placeholder="500px" value="500px"></div>
+        <div class="fg"><label class="fl">사용여부</label><select class="fi" id="pm-active"><option value="TRUE">✅ 사용</option><option value="FALSE">❌ 미사용</option></select></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="fg"><label class="fl">시작일</label><input class="fi" id="pm-start" type="date"></div>
+        <div class="fg"><label class="fl">종료일</label><input class="fi" id="pm-end" type="date"></div>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-outline" onclick="closePopupModal()">취소</button>
+      <button class="btn btn-primary" onclick="savePopup()">💾 저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 공동구매 모달 -->
+<div class="modal-ov" id="groupbuy-modal">
+  <div class="modal" style="max-width:620px;">
+    <div class="modal-hd"><span id="gbm-title">👥 공동구매 등록</span><button onclick="closeGroupBuyModal()">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="gbm-id">
+      <div class="fg"><label class="fl">상품번호 *</label><input class="fi" id="gbm-pid" type="number" placeholder="상품목록 시트의 번호"></div>
+      <div class="fg"><label class="fl">제목 *</label><input class="fi" id="gbm-title-input" placeholder="공동구매 제목"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="fg"><label class="fl">공동구매가 * (원)</label><input class="fi" id="gbm-price" type="number" placeholder="17900"></div>
+        <div class="fg"><label class="fl">목표 수량 (명)</label><input class="fi" id="gbm-target" type="number" value="100"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="fg"><label class="fl">현재 참여수</label><input class="fi" id="gbm-current" type="number" value="0"></div>
+        <div class="fg"><label class="fl">배송예정일</label><input class="fi" id="gbm-delivery" type="date"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="fg"><label class="fl">시작일시</label><input class="fi" id="gbm-start" type="datetime-local"></div>
+        <div class="fg"><label class="fl">종료일시 *</label><input class="fi" id="gbm-end" type="datetime-local"></div>
+      </div>
+      <div class="fg"><label class="fl">설명</label><textarea class="fi" id="gbm-desc" rows="2" style="resize:vertical;"></textarea></div>
+      <div class="fg"><label class="fl">사용여부</label><select class="fi" id="gbm-active"><option value="TRUE">✅ 사용</option><option value="FALSE">❌ 미사용</option></select></div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-outline" onclick="closeGroupBuyModal()">취소</button>
+      <button class="btn btn-primary" onclick="saveGroupBuy()">💾 저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 대리점 모달 -->
+<div class="modal-ov" id="dealer-modal">
+  <div class="modal" style="max-width:540px;">
+    <div class="modal-hd"><span id="dm-title">🏬 대리점 등록</span><button onclick="closeDealerModal()">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="dm-id">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="fg"><label class="fl">대리점 ID *</label><input class="fi" id="dm-fid" placeholder="dealer_001"></div>
+        <div class="fg"><label class="fl">대리점명 *</label><input class="fi" id="dm-name" placeholder="담누리마켓 서울점"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="fg"><label class="fl">대표자명</label><input class="fi" id="dm-owner" placeholder="홍길동"></div>
+        <div class="fg"><label class="fl">연락처</label><input class="fi" id="dm-phone" placeholder="010-0000-0000"></div>
+      </div>
+      <div class="fg"><label class="fl">이메일</label><input class="fi" id="dm-email" placeholder="dealer@example.com"></div>
+      <div class="fg"><label class="fl">주소</label><input class="fi" id="dm-address" placeholder="서울시 강남구 ..."></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="fg"><label class="fl">도메인</label><input class="fi" id="dm-domain" placeholder="seoul.damnuri.co.kr"></div>
+        <div class="fg"><label class="fl">테마색상</label><input class="fi" id="dm-color" type="color" value="#FF5733" style="height:40px;padding:4px;"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="fg"><label class="fl">계약일</label><input class="fi" id="dm-start" type="date"></div>
+        <div class="fg"><label class="fl">계약종료일</label><input class="fi" id="dm-end" type="date"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="fg"><label class="fl">수수료율 (%)</label><input class="fi" id="dm-commission" type="number" value="2" step="0.1"></div>
+        <div class="fg"><label class="fl">상태</label><select class="fi" id="dm-status"><option value="운영중">🟢 운영중</option><option value="모집중">📋 모집중</option><option value="일시중지">⏸️ 일시중지</option><option value="해지">🔴 해지</option></select></div>
+      </div>
+      <div class="fg"><label class="fl">정산계좌</label><input class="fi" id="dm-bank" placeholder="은행명 계좌번호 예금주"></div>
+      <!-- ✅ 관리자 로그인 계정 -->
+      <div style="margin-top:16px;padding:16px;background:#f0f7ff;border:1px solid #bfdbfe;border-radius:10px;">
+        <div style="font-size:13px;font-weight:700;color:#1e40af;margin-bottom:12px;">🔐 관리자 로그인 계정</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div class="fg">
+            <label class="fl">관리자 아이디</label>
+            <input class="fi" id="dm-admin-id" placeholder="예: seoul_01">
+            <div style="font-size:11px;color:var(--gray);margin-top:4px;">대리점 관리자 페이지 로그인 아이디</div>
+          </div>
+          <div class="fg">
+            <label class="fl">관리자 비밀번호</label>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <input class="fi" id="dm-admin-pw" placeholder="예: pass1234" type="text" style="flex:1;">
+              <button onclick="genDealerPw()" style="padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:#fff;font-size:12px;cursor:pointer;white-space:nowrap;" title="비밀번호 자동생성">🎲 생성</button>
+            </div>
+            <div style="font-size:11px;color:var(--gray);margin-top:4px;">대리점에 전달할 비밀번호</div>
+          </div>
+        </div>
+        <div style="margin-top:10px;padding:8px 12px;background:#eff6ff;border-radius:6px;font-size:12px;color:#1e40af;">
+          💡 저장 후 대리점에 아이디/비밀번호를 카카오톡 또는 문자로 전달하세요
+        </div>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-outline" onclick="closeDealerModal()">취소</button>
+      <button class="btn btn-primary" onclick="saveDealer()">💾 저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 공지사항 모달 -->
+<div class="modal-ov" id="notice-modal">
+  <div class="modal" style="max-width:620px;">
+    <div class="modal-hd"><span id="nm-title">📢 공지 등록</span><button onclick="closeNoticeModal()">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="nm-id">
+      <div><label class="flabel">제목 <span class="req">*</span></label><input class="fi" id="nm-title-input" placeholder="공지 제목" style="width:100%;box-sizing:border-box;"></div>
+      <div><label class="flabel">내용 <span class="req">*</span></label><textarea class="fi" id="nm-content" rows="6" placeholder="공지 내용" style="width:100%;box-sizing:border-box;resize:vertical;"></textarea></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div><label class="flabel">구분</label><select class="fi" id="nm-type" style="width:100%;"><option value="공지">📢 공지사항</option><option value="매뉴얼">📖 운영매뉴얼</option><option value="FAQ">❓ FAQ</option></select></div>
+        <div><label class="flabel">중요도</label><select class="fi" id="nm-priority" style="width:100%;"><option value="보통">보통</option><option value="중요">🔴 중요</option><option value="긴급">🚨 긴급</option></select></div>
+      </div>
+      <div><label class="flabel">사용여부</label><select class="fi" id="nm-active" style="width:100%;"><option value="TRUE">✅ 사용</option><option value="FALSE">❌ 미사용</option></select></div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-outline" onclick="closeNoticeModal()">취소</button>
+      <button class="btn btn-primary" onclick="saveNotice()">💾 저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 상품 등록/수정 모달 -->
+<div class="modal-ov" id="prod-modal">
+  <div class="modal">
+    <div class="m-hd">
+      <div class="m-title" id="m-title">📦 상품 등록</div>
+      <button class="m-close" onclick="closeProdModal()">×</button>
+    </div>
+    <div class="m-body">
+      <div class="prod-section">
+        <div class="prod-sec-hd"><div class="prod-sec-hd-title">카테고리 <span class="req">●</span></div><span class="prod-sec-toggle">∧</span></div>
+        <div class="prod-sec-body">
+          <div class="fg">
+            <div><label class="flabel">카테고리 <span class="req">*</span></label><select class="fselect" id="f-cat"><option value="">카테고리를 선택하세요</option><option>식품</option><option>의류</option><option>뷰티</option><option>스포츠</option><option>전자</option><option>신발</option><option>가방</option><option>생활</option><option>액세서리</option><option>반려동물</option></select></div>
+            <div><label class="flabel">세부카테고리</label><input type="text" class="finput" id="f-subcat" placeholder="예: 기타"></div>
+          </div>
+        </div>
+      </div>
+      <div class="prod-section">
+        <div class="prod-sec-hd"><div class="prod-sec-hd-title">상품명 <span class="req">●</span></div><span class="prod-sec-toggle">∧</span></div>
+        <div class="prod-sec-body">
+          <div class="fg">
+            <div><label class="flabel">번호 <span class="req">*</span></label><input type="number" class="finput" id="f-id" placeholder="예: 1"></div>
+            <div><label class="flabel">상품명 <span class="req">*</span></label><input type="text" class="finput" id="f-name" placeholder="상품명 입력"><div class="fhint">검색 노출에 중요합니다.</div></div>
+            <div><label class="flabel">공급사</label><input type="text" class="finput" id="f-supp" placeholder="공급사명"></div>
+            <div><label class="flabel">뱃지</label><select class="fselect" id="f-badge"><option value="">없음</option><option value="NEW">NEW</option><option value="BEST">BEST</option><option value="SALE">SALE</option></select></div>
+          </div>
+        </div>
+      </div>
+      <div class="prod-section">
+        <div class="prod-sec-hd"><div class="prod-sec-hd-title">판매가 <span class="req">●</span></div><span class="prod-sec-toggle">∧</span></div>
+        <div class="prod-sec-body">
+          <div class="fg4">
+            <div><label class="flabel">판매가 <span class="req">*</span></label><input type="number" class="finput" id="f-price" placeholder="예: 29000" oninput="calcDisc()"></div>
+            <div><label class="flabel">할인가</label><input type="number" class="finput" id="f-sale" placeholder="없으면 0" oninput="calcDisc()"></div>
+            <div><label class="flabel">재고수량</label><input type="number" class="finput" id="f-stock" placeholder="예: 100"></div>
+            <div><label class="flabel">할인율</label><div class="disc-box">할인율: <strong id="disc-val" style="color:var(--accent);margin-left:6px;">-</strong></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="prod-section">
+        <div class="prod-sec-hd"><div class="prod-sec-hd-title">상품 이미지</div><span class="prod-sec-toggle">∧</span></div>
+        <div class="prod-sec-body">
+          <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:13px;color:#166534;">☁️ <strong>Cloudinary 자동 업로드</strong> — 📁 버튼으로 파일 선택 시 자동 저장</div>
+          <div class="fg3">
+            <div><label class="flabel">대표이미지 <span class="req">*</span></label><div style="display:flex;gap:6px;align-items:center;"><input type="text" class="finput" id="f-img" placeholder="URL 자동입력" oninput="pvImg()" style="flex:1;"><label class="upload-btn"><span>📁</span><input type="file" accept="image/*" style="display:none" onchange="uploadImg(this,'f-img','img-pv-0')"></label></div><div id="img-pv-0" class="img-pv-thumb"></div></div>
+            <div><label class="flabel">상세이미지1</label><div style="display:flex;gap:6px;align-items:center;"><input type="text" class="finput" id="f-det1" placeholder="URL 자동입력" oninput="pvImg()" style="flex:1;"><label class="upload-btn"><span>📁</span><input type="file" accept="image/*" style="display:none" onchange="uploadImg(this,'f-det1','img-pv-1')"></label></div><div id="img-pv-1" class="img-pv-thumb"></div></div>
+            <div><label class="flabel">상세이미지2</label><div style="display:flex;gap:6px;align-items:center;"><input type="text" class="finput" id="f-det2" placeholder="URL 자동입력" oninput="pvImg()" style="flex:1;"><label class="upload-btn"><span>📁</span><input type="file" accept="image/*" style="display:none" onchange="uploadImg(this,'f-det2','img-pv-2')"></label></div><div id="img-pv-2" class="img-pv-thumb"></div></div>
+          </div>
+          <div style="margin-top:12px;"><label class="flabel">인증이미지</label><div style="display:flex;gap:6px;align-items:center;"><input type="text" class="finput" id="f-cert" placeholder="URL 자동입력" oninput="pvImg()" style="flex:1;"><label class="upload-btn"><span>📁</span><input type="file" accept="image/*" style="display:none" onchange="uploadImg(this,'f-cert','img-pv-3')"></label></div><div id="img-pv-3" class="img-pv-thumb"></div></div>
+          <div id="upload-status" style="display:none;margin-top:10px;padding:10px 14px;border-radius:8px;font-size:13px;"></div>
+          <div class="img-pv" id="img-pv"></div>
+        </div>
+      </div>
+
+      <!-- ✅ 배송 정보 섹션 - 배송비 필드 추가 -->
+      <div class="prod-section">
+        <div class="prod-sec-hd"><div class="prod-sec-hd-title">배송 정보</div><span class="prod-sec-toggle">∧</span></div>
+        <div class="prod-sec-body">
+          <div class="fg">
+            <div><label class="flabel">색상 옵션</label><input type="text" class="finput" id="f-colors" placeholder="화이트|블랙|네이비"><div class="fhint">재고포함: 화이트:10|블랙:0</div></div>
+            <div><label class="flabel">사이즈 옵션</label><input type="text" class="finput" id="f-sizes" placeholder="S|M|L|XL"></div>
+          </div>
+          <!-- ✅ 배송비 설정 (신규 추가) -->
+          <div style="margin-top:16px;padding:16px;background:#f8fafc;border:1px solid var(--border);border-radius:10px;">
+            <div style="font-size:13px;font-weight:700;color:#444;margin-bottom:12px;">📦 배송비 설정</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+              <div>
+                <label class="flabel">배송방법</label>
+                <select class="fselect" id="f-delivery-type" onchange="updateDeliveryPreview()">
+                  <option value="택배배송">🚚 택배배송</option>
+                  <option value="무료배송">🎉 무료배송</option>
+                  <option value="직접배송">🏃 직접배송</option>
+                </select>
+              </div>
+              <div>
+                <label class="flabel">배송비 (원)</label>
+                <input type="number" class="finput" id="f-delivery-fee" placeholder="예: 3000" value="3000" oninput="updateDeliveryPreview()">
+                <div class="fhint">0 입력 시 무료배송</div>
+              </div>
+              <div>
+                <label class="flabel">무료배송 기준 (원)</label>
+                <input type="number" class="finput" id="f-delivery-free" placeholder="예: 50000" value="50000" oninput="updateDeliveryPreview()">
+                <div class="fhint">0 입력 시 조건 없음</div>
+              </div>
+            </div>
+            <div id="delivery-preview" style="margin-top:10px;padding:8px 12px;background:#f0fdf4;border:1px solid #86efac;border-radius:6px;font-size:13px;font-weight:600;color:#1a7f4b;">
+              3,000원 (50,000원 이상 무료)
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="prod-section">
+        <div class="prod-sec-hd"><div class="prod-sec-hd-title">상품 정보 제공</div><span class="prod-sec-toggle">∧</span></div>
+        <div class="prod-sec-body">
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <div><label class="flabel">상품 설명</label><textarea class="ftarea" id="f-desc" rows="4" placeholder="상품 설명 (HTML 태그 사용 가능)"></textarea></div>
+            <div><label class="flabel">상세 스펙</label><input type="text" class="finput" id="f-specs" placeholder="원산지:국내산|용량:500g"><div class="fhint">항목:값 형식, | 로 구분</div></div>
+            <div><label class="flabel">⚠️ 주의사항</label><input type="text" class="finput" id="f-caution" placeholder="예: 냉장보관 필수"></div>
+            <div><label class="flabel">🎬 유튜브 URL</label><input type="text" class="finput" id="f-yt" placeholder="https://youtube.com/shorts/..."></div>
+          </div>
+        </div>
+      </div>
+      <div class="prod-section">
+        <div class="prod-sec-hd"><div class="prod-sec-hd-title">판매 설정</div><span class="prod-sec-toggle">∧</span></div>
+        <div class="prod-sec-body">
+          <div class="tgl-row">
+            <div class="tgl-item"><label class="tgl"><input type="checkbox" id="f-feat"><span class="tgl-sl"></span></label><span>⭐ 추천 상품 (메인 노출)</span></div>
+            <div class="tgl-item"><label class="tgl"><input type="checkbox" id="f-active" checked><span class="tgl-sl"></span></label><span id="f-active-lbl">✅ 판매중</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="m-ft">
+      <button class="btn btn-outline" onclick="closeProdModal()">취소</button>
+      <button class="btn btn-primary" onclick="saveProd()">💾 저장하기</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ✅ admin.js 맨 마지막 로드 -->
+<script src="js/admin.js"></script>
+
+</body>
+</html>

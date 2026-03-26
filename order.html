@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests; script-src 'self' 'unsafe-eval' 'unsafe-inline' https:">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>주문서 - 담누리마켓</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+  <style>
+    .order-wrap { max-width: 1000px; margin: 32px auto; padding: 0 24px; }
+    .order-title { font-size: 24px; font-weight: 900; margin-bottom: 32px; }
+    .order-grid { display: grid; grid-template-columns: 1fr 380px; gap: 24px; }
+    .order-section { background: #fff; border: 1.5px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 16px; }
+    .order-section h3 { font-size: 16px; font-weight: 800; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group label { font-size: 13px; font-weight: 600; color: var(--gray-dark); }
+    .form-group input, .form-group select, .form-group textarea {
+      padding: 10px 14px; border: 1.5px solid var(--border); border-radius: 8px;
+      font-size: 14px; font-family: var(--font-main); outline: none; transition: var(--transition);
+    }
+    .form-group input:focus, .form-group select:focus { border-color: var(--accent); }
+    .form-full { grid-column: 1 / -1; }
+    .btn-address { padding: 10px 16px; background: var(--gray-dark); color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+    .hint-text { font-size: 11px; color: var(--gray); margin-top: 3px; }
+
+    .guest-notice { background: #fff8f0; border: 1.5px solid #ffd0a0; border-radius: 10px; padding: 14px 18px; margin-bottom: 16px; font-size: 13px; color: #b85000; display: flex; align-items: center; gap: 10px; }
+    .guest-notice strong { font-weight: 800; }
+
+    .dealer-badge { display: none; align-items: center; gap: 6px; background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; border-radius: 20px; padding: 5px 14px; font-size: 13px; font-weight: 700; margin-bottom: 14px; }
+
+    .pay-methods { display: grid; grid-template-columns: 1fr; gap: 10px; }
+    .pay-method { padding: 14px 18px; border: 2px solid var(--border); border-radius: 10px; cursor: pointer; transition: var(--transition); font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 10px; }
+    .pay-method.active { border-color: var(--accent); background: #fff5f2; color: var(--accent); }
+    .pay-method .pay-icon { font-size: 22px; }
+    .pay-method .pay-sub { font-size: 11px; color: var(--gray); font-weight: 400; margin-left: auto; }
+    .pay-method.active .pay-sub { color: var(--accent); }
+
+    .point-section {
+      background: linear-gradient(135deg, #f0f4ff, #e8d5f5);
+      border: 1.5px solid #c7d2fe; border-radius: 12px;
+      padding: 20px; margin-bottom: 16px;
+    }
+    .point-section h3 { font-size: 15px; font-weight: 800; color: #4338ca; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid #c7d2fe; }
+    .point-balance-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+    .point-balance-label { font-size: 13px; color: #4338ca; font-weight: 600; }
+    .point-balance-num { font-size: 20px; font-weight: 900; color: #4338ca; }
+    .point-use-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+    .btn-point-use { padding: 10px; border: 2px solid #c7d2fe; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; background: #fff; color: #4338ca; transition: var(--transition); text-align: center; }
+    .btn-point-use:hover, .btn-point-use.active { border-color: #4338ca; background: #4338ca; color: #fff; }
+    .point-input-row { display: flex; gap: 8px; align-items: center; }
+    .point-input-row input { flex: 1; padding: 10px 14px; border: 1.5px solid #c7d2fe; border-radius: 8px; font-size: 14px; font-family: var(--font-main); outline: none; }
+    .point-input-row input:focus { border-color: #4338ca; }
+    .btn-apply-point { padding: 10px 16px; background: #4338ca; color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+    .point-result { margin-top: 10px; padding: 10px 14px; background: #fff; border-radius: 8px; font-size: 13px; color: #4338ca; font-weight: 600; border: 1px solid #c7d2fe; display: none; }
+    .point-notice { font-size: 11px; color: #6366f1; margin-top: 8px; }
+    .point-not-login { font-size: 13px; color: var(--gray); text-align: center; padding: 10px; }
+    .point-not-login a { color: var(--accent); font-weight: 700; }
+
+    .order-item { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .order-item:last-child { border-bottom: none; }
+    .order-item img { width: 72px; height: 72px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); }
+    .order-item-info { flex: 1; }
+    .order-item-name { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+    .order-item-meta { font-size: 12px; color: var(--gray); }
+    .order-item-price { font-size: 15px; font-weight: 800; color: var(--accent); white-space: nowrap; }
+
+    .price-summary { display: flex; flex-direction: column; gap: 10px; }
+    .price-row { display: flex; justify-content: space-between; font-size: 14px; }
+    .price-row.total { font-size: 18px; font-weight: 900; padding-top: 12px; border-top: 2px solid var(--black); margin-top: 4px; }
+    .price-row .label { color: var(--gray); }
+    .price-row.total .label { color: var(--black); }
+    .price-row.point-deduct .value { color: #4338ca; font-weight: 700; }
+
+    .agree-list { display: flex; flex-direction: column; gap: 10px; }
+    .agree-item { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+    .agree-item input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; }
+    .agree-item a { color: var(--accent); text-decoration: underline; }
+    .agree-all { font-weight: 800; font-size: 15px; padding-bottom: 10px; border-bottom: 1px solid var(--border); margin-bottom: 4px; }
+
+    .btn-order { width: 100%; padding: 18px; background: var(--accent); color: #fff; border: none; border-radius: 12px; font-size: 18px; font-weight: 900; cursor: pointer; margin-top: 16px; transition: var(--transition); }
+    .btn-order:hover { background: var(--accent-dark); transform: translateY(-2px); }
+    .btn-order:disabled { background: #ccc; cursor: not-allowed; transform: none; }
+    .pg-status { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; padding: 4px 10px; border-radius: 20px; margin-bottom: 12px; }
+    .pg-status.ready { background: #fff3cd; color: #856404; }
+    .pg-status.live  { background: #d1fae5; color: #065f46; }
+
+    @media (max-width: 768px) {
+      .order-grid { grid-template-columns: 1fr; }
+      .form-row { grid-template-columns: 1fr; }
+      .point-use-btns { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<header class="header">
+  <div class="header-main">
+    <a href="index.html" class="header-logo"><span>🏪</span><span id="store-name">담누리마켓</span></a>
+    <div style="font-size:14px;color:var(--gray);font-weight:600;">안전한 결제를 도와드립니다 🔒</div>
+    <div class="header-icons">
+      <a href="cart.html" class="header-icon"><span class="icon-emoji">🛒</span><span>장바구니</span></a>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="order-wrap">
+    <h1 class="order-title">🛒 주문서</h1>
+    <div class="order-grid">
+
+      <!-- 왼쪽 -->
+      <div>
+        <div class="dealer-badge" id="dealer-badge">🏬 <span id="dealer-badge-name"></span> 주문</div>
+        <div class="guest-notice">
+          👤 <div>
+            <div><strong>비회원 주문</strong>이 가능합니다!</div>
+            <div style="font-size:11px;margin-top:2px;color:#c06000;">주문 조회를 위해 주문자 정보와 조회 비밀번호를 입력해주세요.</div>
+          </div>
+        </div>
+
+        <!-- 주문자 정보 -->
+        <div class="order-section">
+          <h3>👤 주문자 정보</h3>
+          <div class="form-row">
+            <div class="form-group"><label>주문자 이름 *</label><input type="text" id="orderer-name" placeholder="홍길동"></div>
+            <div class="form-group"><label>연락처 *</label><input type="tel" id="orderer-phone" placeholder="010-0000-0000"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>이메일</label>
+              <input type="email" id="orderer-email" placeholder="example@email.com">
+              <span class="hint-text">📧 주문 확인 메일 발송</span>
+            </div>
+            <div class="form-group">
+              <label>주문 조회 비밀번호 *</label>
+              <input type="password" id="orderer-pw" placeholder="숫자 4자리" maxlength="4">
+              <span class="hint-text">🔑 비회원 주문 조회 시 사용</span>
+            </div>
+          </div>
+          <div style="margin-top:8px;">
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
+              <input type="checkbox" id="same-as-orderer" onchange="copySameAddress(this)" style="accent-color:var(--accent);width:16px;height:16px;">
+              <span>배송지 동일하게 입력</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- 배송지 -->
+        <div class="order-section">
+          <h3>📦 배송지 정보</h3>
+          <div class="form-row">
+            <div class="form-group"><label>받는 분 *</label><input type="text" id="receiver-name" placeholder="이름 입력"></div>
+            <div class="form-group"><label>연락처 *</label><input type="tel" id="receiver-phone" placeholder="010-0000-0000"></div>
+          </div>
+          <div class="form-group" style="margin-bottom:12px;">
+            <label>주소 *</label>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <input type="text" id="post-code" placeholder="우편번호" style="width:120px;" readonly>
+              <button class="btn-address" onclick="searchAddress()">🔍 주소 검색</button>
+            </div>
+            <input type="text" id="address1" placeholder="기본주소" style="margin-top:8px;" readonly>
+            <input type="text" id="address2" placeholder="상세주소 입력" style="margin-top:8px;">
+          </div>
+          <div class="form-group">
+            <label>배송 메모</label>
+            <select id="delivery-memo">
+              <option value="">배송 메모 선택</option>
+              <option>문 앞에 놓아주세요</option>
+              <option>경비실에 맡겨주세요</option>
+              <option>부재 시 연락 부탁드립니다</option>
+              <option>직접 입력</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 포인트 사용 -->
+        <div class="point-section">
+          <h3>🎁 포인트 사용</h3>
+          <div id="point-login-check"></div>
+        </div>
+
+        <!-- 결제 방법 -->
+        <div class="order-section">
+          <h3>💳 결제 방법</h3>
+          <div class="pg-status ready" id="pg-status-badge">⚠️ PG 연동 준비중 · API 키 입력 후 실결제 가능</div>
+          <div class="pay-methods" id="pay-methods-wrap">
+            <div class="pay-method active" onclick="selectPay(this,'신용카드')">
+              <span class="pay-icon">💳</span><span>신용 / 체크카드</span>
+              <span class="pay-sub">국내외 모든 카드</span>
+            </div>
+          </div>
+          <div id="point-only-notice" style="display:none;margin-top:10px;padding:10px 14px;background:#f0f4ff;border-radius:8px;font-size:13px;color:#4338ca;font-weight:700;">
+            ✅ 포인트 전액 결제 · 추가 결제 수단 불필요
+          </div>
+        </div>
+
+        <!-- 약관 동의 -->
+        <div class="order-section">
+          <h3>✅ 약관 동의</h3>
+          <div class="agree-list">
+            <div class="agree-item agree-all">
+              <input type="checkbox" id="agree-all" onchange="toggleAll(this)">
+              <label for="agree-all">전체 동의</label>
+            </div>
+            <div class="agree-item"><input type="checkbox" id="agree1" class="agree-check"><label for="agree1">[필수] <a href="terms.html" target="_blank">이용약관</a> 동의</label></div>
+            <div class="agree-item"><input type="checkbox" id="agree2" class="agree-check"><label for="agree2">[필수] <a href="privacy.html" target="_blank">개인정보처리방침</a> 동의</label></div>
+            <div class="agree-item"><input type="checkbox" id="agree3" class="agree-check"><label for="agree3">[필수] 구매조건 확인 및 결제 진행 동의</label></div>
+            <div class="agree-item"><input type="checkbox" id="agree4" class="agree-check"><label for="agree4">[선택] 마케팅 정보 수신 동의</label></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 오른쪽: 주문 요약 -->
+      <div>
+        <div class="order-section" style="position:sticky;top:80px;">
+          <h3>🧾 주문 상품</h3>
+          <div id="order-items"></div>
+          <div class="price-summary" style="margin-top:20px;">
+            <div class="price-row"><span class="label">상품금액</span><span id="sum-products">0원</span></div>
+            <div class="price-row"><span class="label">배송비</span><span id="sum-delivery">3,000원</span></div>
+            <div class="price-row point-deduct" id="row-point-deduct" style="display:none;">
+              <span class="label">포인트 할인</span>
+              <span class="value" id="sum-point-deduct">-0P</span>
+            </div>
+            <div class="price-row"><span class="label">기타 할인</span><span id="sum-discount" style="color:var(--accent)">-0원</span></div>
+            <div class="price-row total">
+              <span class="label">최종 결제금액</span>
+              <span id="sum-total" style="color:var(--accent)">0원</span>
+            </div>
+          </div>
+          <button class="btn-order" id="btn-order" onclick="submitOrder()">결제하기</button>
+          <p style="text-align:center;font-size:11px;color:var(--gray-light);margin-top:8px;">🔒 SSL 보안 결제 | 개인정보 암호화 전송</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</main>
+
+<!-- ===== 풀 푸터 (index.html 동일 구조 / main.js 자동 반영) ===== -->
+<footer class="footer">
+  <div class="footer-inner">
+    <div>
+      <h4 id="footer-store-name">🏪 담누리마켓</h4>
+      <p style="font-size:12px;line-height:1.8;margin-top:8px;color:#aaa;">
+        다양한 상품을 합리적인 가격에<br>고객님께 전달합니다.
+      </p>
+    </div>
+    <div>
+      <h4>고객센터</h4>
+      <ul>
+        <li><a href="#" id="footer-phone">📞 1588-3507</a></li>
+        <li><a href="#">평일 9:00 ~ 18:00</a></li>
+        <li><a href="#" id="footer-email">📧 hypo3300@naver.com</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>바로가기</h4>
+      <ul>
+        <li><a href="products.html">상품 목록</a></li>
+        <li><a href="cart.html">장바구니</a></li>
+        <li><a href="mypage.html">마이페이지</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>SNS</h4>
+      <ul>
+        <li><a href="#">📸 인스타그램</a></li>
+        <li><a href="#">💛 카카오채널</a></li>
+        <li><a href="#">▶ 유튜브</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p id="footer-biz">상호: (주)비에스컴퍼니 | 사업자번호: 761-87-02647 | 대표: 배상민 | 통신판매업: 제2023-의정부흥선-0457호</p>
+    <p id="footer-addr" style="margin-top:4px;">주소: 경기도 의정부시 호국로 1195-1 4층 | TEL: 1588-3507 | EMAIL: hypo3300@naver.com</p>
+    <p id="footer-copy" style="margin-top:4px;">© 2026 담누리마켓. All rights reserved.</p>
+  </div>
+</footer>
+
+<script src="js/config.js"></script>
+<script src="js/sheets.js"></script>
+<script src="js/app.js"></script>
+<script src="js/winpay.js"></script>
+<script src="js/main.js"></script>
+<script>
+var selectedPay    = '신용카드';
+var orderRawAmount = 0;
+var usedPoints     = 0;
+var myPoints       = 0;
+var MIN_POINT      = 3000;
+
+function getCurrentDealerId() {
+  var p = new URLSearchParams(window.location.search);
+  var u = p.get('dealer');
+  if (u) { try { sessionStorage.setItem('currentDealerId', u); } catch(e) {} return u; }
+  try { var s = sessionStorage.getItem('currentDealerId'); if (s) return s; } catch(e) {}
+  if (typeof CONFIG !== 'undefined' && CONFIG.IS_DEALER && CONFIG.DEALER_ID) return CONFIG.DEALER_ID;
+  return '본사';
+}
+
+function initDealerBadge() {
+  var id    = getCurrentDealerId();
+  var badge = document.getElementById('dealer-badge');
+  var nm    = document.getElementById('dealer-badge-name');
+  if (badge && nm && id && id !== '본사') {
+    nm.textContent       = id;
+    badge.style.display  = 'inline-flex';
+  }
+}
+
+function selectPay(el, type) {
+  selectedPay = type;
+  document.querySelectorAll('.pay-method').forEach(function(m) { m.classList.remove('active'); });
+  el.classList.add('active');
+}
+
+function toggleAll(el) {
+  document.querySelectorAll('.agree-check').forEach(function(c) { c.checked = el.checked; });
+}
+
+function copySameAddress(el) {
+  if (el.checked) {
+    document.getElementById('receiver-name').value  = document.getElementById('orderer-name').value;
+    document.getElementById('receiver-phone').value = document.getElementById('orderer-phone').value;
+  }
+}
+
+function searchAddress() {
+  new daum.Postcode({
+    oncomplete: function(data) {
+      document.getElementById('post-code').value = data.zonecode;
+      document.getElementById('address1').value  = data.roadAddress || data.jibunAddress;
+      document.getElementById('address2').focus();
+    }
+  }).open();
+}
+
+function initPointSection() {
+  var user = null;
+  try { user = JSON.parse(sessionStorage.getItem('user') || 'null'); } catch(e) {}
+  myPoints = parseInt(sessionStorage.getItem('myPoints') || '0');
+
+  var wrap = document.getElementById('point-login-check');
+  if (!user) {
+    wrap.innerHTML = '<div class="point-not-login"><a href="mypage.html">로그인</a>하시면 보유 포인트를 사용할 수 있습니다</div>';
+    return;
+  }
+  if (myPoints < MIN_POINT) {
+    wrap.innerHTML = '<div class="point-balance-row"><span class="point-balance-label">보유 포인트</span><span class="point-balance-num">' + myPoints.toLocaleString() + 'P</span></div>'
+      + '<div style="font-size:13px;color:var(--gray);padding:8px 0;">최소 ' + MIN_POINT.toLocaleString() + 'P 이상부터 사용 가능합니다.</div>';
+    return;
+  }
+  wrap.innerHTML = '<div class="point-balance-row"><span class="point-balance-label">보유 포인트</span><span class="point-balance-num" id="display-my-points">' + myPoints.toLocaleString() + 'P</span></div>'
+    + '<div class="point-use-btns"><button class="btn-point-use" onclick="usePointAll()">💯 전액 사용</button><button class="btn-point-use" onclick="cancelPoint()">❌ 사용 안 함</button></div>'
+    + '<div class="point-input-row"><input type="number" id="point-input" placeholder="사용할 포인트 입력 (최소 ' + MIN_POINT.toLocaleString() + 'P)" min="' + MIN_POINT + '" max="' + myPoints + '" step="1000"><button class="btn-apply-point" onclick="applyPointInput()">적용</button></div>'
+    + '<div class="point-result" id="point-result"></div>'
+    + '<div class="point-notice">※ 최소 ' + MIN_POINT.toLocaleString() + 'P 이상 / 1,000P 단위 사용 가능 · 잔여 포인트는 마이페이지에서 확인</div>';
+}
+
+function usePointAll() {
+  var maxUsable = Math.min(myPoints, orderRawAmount);
+  maxUsable = Math.floor(maxUsable / 1000) * 1000;
+  if (maxUsable < MIN_POINT) { alert('포인트가 부족합니다'); return; }
+  applyPoint(maxUsable);
+  document.querySelectorAll('.btn-point-use')[0].classList.add('active');
+  document.querySelectorAll('.btn-point-use')[1].classList.remove('active');
+}
+
+function cancelPoint() {
+  applyPoint(0);
+  document.querySelectorAll('.btn-point-use')[0].classList.remove('active');
+  document.querySelectorAll('.btn-point-use')[1].classList.add('active');
+  var inp = document.getElementById('point-input');
+  if (inp) inp.value = '';
+  var res = document.getElementById('point-result');
+  if (res) res.style.display = 'none';
+}
+
+function applyPointInput() {
+  var inp = document.getElementById('point-input');
+  if (!inp) return;
+  var val = parseInt(inp.value) || 0;
+  if (val < MIN_POINT)          { alert(MIN_POINT.toLocaleString() + 'P 이상 입력해주세요'); inp.focus(); return; }
+  if (val > myPoints)           { alert('보유 포인트(' + myPoints.toLocaleString() + 'P)를 초과할 수 없습니다'); return; }
+  if (val > orderRawAmount)     { alert('결제금액을 초과할 수 없습니다'); return; }
+  val = Math.floor(val / 1000) * 1000;
+  inp.value = val;
+  applyPoint(val);
+}
+
+function applyPoint(pts) {
+  usedPoints = pts;
+  var finalAmt   = Math.max(0, orderRawAmount - pts);
+  var rowDeduct  = document.getElementById('row-point-deduct');
+  var sumDeduct  = document.getElementById('sum-point-deduct');
+  if (rowDeduct && sumDeduct) {
+    rowDeduct.style.display = pts > 0 ? 'flex' : 'none';
+    if (pts > 0) sumDeduct.textContent = '-' + pts.toLocaleString() + 'P';
+  }
+  document.getElementById('sum-total').textContent = finalAmt.toLocaleString() + '원';
+  document.getElementById('btn-order').textContent = finalAmt.toLocaleString() + '원 결제하기';
+
+  var res = document.getElementById('point-result');
+  if (res) {
+    if (pts > 0) {
+      res.style.display = 'block';
+      res.innerHTML     = pts === orderRawAmount
+        ? '✅ 포인트 전액 결제 · 추가 카드 결제 없음'
+        : '✅ ' + pts.toLocaleString() + 'P 사용 · 추가 결제금액 ' + finalAmt.toLocaleString() + '원';
+    } else {
+      res.style.display = 'none';
+    }
+  }
+
+  var payWrap   = document.getElementById('pay-methods-wrap');
+  var pointOnly = document.getElementById('point-only-notice');
+  if (pts > 0 && finalAmt === 0) {
+    if (payWrap)   payWrap.style.display   = 'none';
+    if (pointOnly) pointOnly.style.display = 'block';
+    selectedPay = '포인트전액';
+  } else {
+    if (payWrap)   payWrap.style.display   = 'grid';
+    if (pointOnly) pointOnly.style.display = 'none';
+    if (selectedPay === '포인트전액') selectedPay = '신용카드';
+  }
+}
+
+function loadOrderItems() {
+  var items     = Cart.getItems();
+  var container = document.getElementById('order-items');
+  if (!items.length) {
+    container.innerHTML = '<p style="color:var(--gray);font-size:13px;text-align:center;padding:20px;">장바구니가 비어있습니다</p>';
+    return;
+  }
+  var total = 0;
+  container.innerHTML = items.map(function(item) {
+    var price = item.salePrice || item.price;
+    total += price * (item.qty || 1);
+    return '<div class="order-item">'
+      + '<img src="' + item.image + '" alt="' + item.name + '" onerror="this.src=\'https://via.placeholder.com/72\'">'
+      + '<div class="order-item-info">'
+      + '<div class="order-item-name">' + item.name + '</div>'
+      + '<div class="order-item-meta">수량 ' + (item.qty||1) + '개' + (item.optionText ? ' · ' + item.optionText : '') + '</div>'
+      + '</div>'
+      + '<div class="order-item-price">' + (price*(item.qty||1)).toLocaleString() + '원</div>'
+      + '</div>';
+  }).join('');
+
+  var delivery = 3000;
+  var hasFreeShip = items.some(function(item) {
+    return item.shippingMethod === '무료배송' || item.shippingFee === 0;
+  });
+  if (hasFreeShip || total >= 50000) delivery = 0;
+  orderRawAmount = total + delivery;
+  document.getElementById('sum-products').textContent = total.toLocaleString() + '원';
+  document.getElementById('sum-delivery').textContent = delivery === 0 ? '무료' : delivery.toLocaleString() + '원';
+  document.getElementById('sum-discount').textContent = '-0원';
+  document.getElementById('sum-total').textContent    = orderRawAmount.toLocaleString() + '원';
+  document.getElementById('btn-order').textContent    = orderRawAmount.toLocaleString() + '원 결제하기';
+
+  initPointSection();
+}
+
+function validateForm() {
+  var fields = [
+    { id: 'orderer-name',   msg: '주문자 이름을 입력해주세요' },
+    { id: 'orderer-phone',  msg: '주문자 연락처를 입력해주세요' },
+    { id: 'receiver-name',  msg: '받는 분 이름을 입력해주세요' },
+    { id: 'receiver-phone', msg: '받는 분 연락처를 입력해주세요' },
+    { id: 'address1',       msg: '배송지 주소를 입력해주세요' },
+  ];
+  for (var i = 0; i < fields.length; i++) {
+    var el = document.getElementById(fields[i].id);
+    if (!el.value.trim()) { alert(fields[i].msg); el.focus(); return false; }
+  }
+  var pw = document.getElementById('orderer-pw').value.trim();
+  if (!pw || pw.length < 4) { alert('주문 조회 비밀번호 4자리를 입력해주세요'); document.getElementById('orderer-pw').focus(); return false; }
+  if (!document.getElementById('agree1').checked ||
+      !document.getElementById('agree2').checked ||
+      !document.getElementById('agree3').checked) {
+    alert('필수 약관에 동의해주세요'); return false;
+  }
+  return true;
+}
+
+function buildOrderData(orderNo) {
+  var finalAmt = Math.max(0, orderRawAmount - usedPoints);
+  var items    = Cart.getItems();
+  return {
+    '주문번호':     orderNo,
+    '주문일시':     new Date().toLocaleString('ko-KR'),
+    '대리점ID':     getCurrentDealerId(),
+    '주문자명':     document.getElementById('orderer-name').value.trim(),
+    '연락처':       document.getElementById('orderer-phone').value.trim(),
+    '이메일':       document.getElementById('orderer-email').value.trim(),
+    '받는분':       document.getElementById('receiver-name').value.trim(),
+    '받는분연락처': document.getElementById('receiver-phone').value.trim(),
+    '배송주소':     document.getElementById('address1').value.trim() + ' ' + document.getElementById('address2').value.trim(),
+    '우편번호':     document.getElementById('post-code').value.trim(),
+    '상품번호':     items.map(function(i) { return i.id; }).join(', '),
+    '주문상품':     items.map(function(i) { return i.name + ' x' + (i.qty||1); }).join(', '),
+    '수량':         items.reduce(function(s,i) { return s+(i.qty||1); }, 0),
+    '결제금액':     finalAmt,
+    '결제방법':     selectedPay,
+    '사용포인트':   usedPoints,
+    '추천인코드':   '',
+    '회원구분':     '비회원',
+    '주문상태':     '결제대기',
+    '메모':         document.getElementById('delivery-memo').value,
+  };
+}
+
+function savePointDeduction(orderNo) {
+  if (usedPoints <= 0) return;
+  var SCRIPT_URL = (typeof CONFIG !== 'undefined') ? CONFIG.PG.API_PROXY_URL : '';
+  if (!SCRIPT_URL) return;
+  var user = null;
+  try { user = JSON.parse(sessionStorage.getItem('user') || 'null'); } catch(e) {}
+  fetch(SCRIPT_URL, {
+    method: 'POST', mode: 'no-cors',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({
+      action: 'savePointHistory',
+      data: {
+        이름: user ? user.name : '', 이메일: user ? user.email : '',
+        연락처: user ? user.phone : '', 구분: '사용', 금액: usedPoints,
+        설명: '주문 결제 포인트 사용 (' + orderNo + ')',
+        주문번호: orderNo, 일시: new Date().toLocaleString('ko-KR')
+      }
+    })
+  }).catch(function(e) { console.log('포인트 차감 기록 실패:', e); });
+
+  var remaining = Math.max(0, myPoints - usedPoints);
+  sessionStorage.setItem('myPoints', String(remaining));
+  try {
+    var hist = JSON.parse(sessionStorage.getItem('pointHistory') || '[]');
+    hist.push({ type:'minus', desc:'결제 포인트 사용 (' + orderNo + ')', amount: usedPoints, date: new Date().toLocaleDateString('ko-KR') });
+    sessionStorage.setItem('pointHistory', JSON.stringify(hist));
+  } catch(e) {}
+}
+
+function saveOrderToSheets(orderData) {
+  var SCRIPT_URL = (typeof CONFIG !== 'undefined') ? CONFIG.PG.API_PROXY_URL : '';
+  if (!SCRIPT_URL) { console.log('주문 데이터:', orderData); return; }
+  fetch(SCRIPT_URL, {
+    method: 'POST', mode: 'no-cors',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({ action: 'saveOrder', data: orderData })
+  }).catch(function(e) { console.log('Sheets 저장 실패:', e); });
+}
+
+function requestPG(orderData) {
+  var PG_MERCHANT_ID = (typeof CONFIG !== 'undefined') ? CONFIG.PG.MERCHANT_ID : '';
+
+  if (usedPoints > 0 && orderData['결제금액'] === 0) {
+    saveOrderToSheets(orderData);
+    savePointDeduction(orderData['주문번호']);
+    Cart.clear();
+    location.href = 'order-complete.html?no=' + orderData['주문번호'] + '&method=포인트전액';
+    return;
+  }
+
+  if (PG_MERCHANT_ID && typeof WinPay !== 'undefined') {
+    WinPay.pay({
+      orderNo:    orderData['주문번호'],
+      amount:     orderData['결제금액'],
+      goodsName:  orderData['주문상품'],
+      buyerName:  orderData['주문자명'],
+      buyerTel:   orderData['연락처'],
+      buyerEmail: orderData['이메일'],
+      onSuccess: function(tid) {
+        orderData['주문상태']    = '결제완료';
+        orderData['PG거래번호']  = tid;
+        saveOrderToSheets(orderData);
+        savePointDeduction(orderData['주문번호']);
+        Cart.clear();
+        location.href = 'order-complete.html?no=' + orderData['주문번호'] + '&method=' + selectedPay;
+      },
+      onFail: function(msg) {
+        alert('결제 실패: ' + msg);
+        var btn = document.getElementById('btn-order');
+        btn.disabled    = false;
+        btn.textContent = Math.max(0, orderRawAmount - usedPoints).toLocaleString() + '원 결제하기';
+      }
+    });
+    return;
+  }
+
+  saveOrderToSheets(orderData);
+  savePointDeduction(orderData['주문번호']);
+  Cart.clear();
+  location.href = 'order-complete.html?no=' + orderData['주문번호'] + '&method=' + selectedPay;
+}
+
+function submitOrder() {
+  if (!validateForm()) return;
+  var btn         = document.getElementById('btn-order');
+  btn.disabled    = true;
+  btn.textContent = '처리 중...';
+  var orderNo = 'ORD' + Date.now();
+  requestPG(buildOrderData(orderNo));
+  setTimeout(function() {
+    btn.disabled    = false;
+    btn.textContent = Math.max(0, orderRawAmount - usedPoints).toLocaleString() + '원 결제하기';
+  }, 5000);
+}
+
+function updatePGStatusBadge() {
+  var badge = document.getElementById('pg-status-badge');
+  if (!badge) return;
+  if (typeof CONFIG !== 'undefined' && CONFIG.PG.MERCHANT_ID) {
+    badge.className   = 'pg-status live';
+    badge.textContent = '✅ 실결제 연동 완료';
+  }
+}
+
+Cart.init();
+loadOrderItems();
+updatePGStatusBadge();
+initDealerBadge();
+</script>
+</body>
+</html>

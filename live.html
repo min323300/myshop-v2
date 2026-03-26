@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>라이브쇼핑 - 담누리마켓</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    /* ===== 라이브 전용 스타일 ===== */
+    .live-page { background: #f8f8f8; min-height: 100vh; }
+
+    /* 라이브 탭 네비 */
+    .live-nav {
+      background: #fff;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      gap: 0;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .live-nav::-webkit-scrollbar { display: none; }
+    .live-nav-btn {
+      flex-shrink: 0;
+      padding: 14px 20px;
+      font-size: 14px;
+      font-weight: 500;
+      color: #888;
+      border: none;
+      background: none;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .live-nav-btn.active {
+      color: #e85a2b;
+      border-bottom-color: #e85a2b;
+    }
+    .live-section { display: none; }
+    .live-section.active { display: block; }
+
+    /* ===== LIVE 방송 중 섹션 ===== */
+    .live-container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    /* 라이브 상태 배너 */
+    .live-status-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      background: #fff;
+      border-radius: 10px;
+      margin-bottom: 14px;
+      border: 1px solid #eee;
+    }
+    .live-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: #e8342b;
+      animation: blink 1.2s infinite;
+      flex-shrink: 0;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    .live-status-text { font-size: 13px; font-weight: 600; color: #e8342b; }
+    .live-status-sub { font-size: 12px; color: #888; margin-left: auto; }
+    .live-status-none { font-size: 13px; color: #aaa; }
+
+    /* 메인 레이아웃: 영상 + 사이드 */
+    .live-main-layout {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 14px;
+      align-items: start;
+    }
+    @media (max-width: 768px) {
+      .live-main-layout { grid-template-columns: 1fr; }
+    }
+
+    /* 영상 영역 */
+    .video-wrapper {
+      background: #111;
+      border-radius: 12px;
+      overflow: hidden;
+      position: relative;
+    }
+    .video-wrapper iframe {
+      width: 100%;
+      aspect-ratio: 16/9;
+      display: block;
+      border: none;
+    }
+    .video-placeholder {
+      aspect-ratio: 16/9;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #1a1a1a;
+      color: #fff;
+      gap: 10px;
+    }
+    .video-placeholder .ph-icon { font-size: 48px; }
+    .video-placeholder .ph-text { font-size: 15px; font-weight: 500; }
+    .video-placeholder .ph-sub { font-size: 13px; color: rgba(255,255,255,0.5); }
+
+    /* 타임딜 카운트다운 */
+    .timedeal-bar {
+      background: #fff3f0;
+      border-top: 1px solid #ffd9d0;
+      padding: 8px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .timedeal-bar .td-label { font-size: 12px; color: #c0392b; font-weight: 500; }
+    .timedeal-bar .td-timer { font-size: 18px; font-weight: 700; color: #e85a2b; font-variant-numeric: tabular-nums; letter-spacing: 1px; }
+
+    /* 사이드 패널 */
+    .live-sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .sidebar-card {
+      background: #fff;
+      border-radius: 10px;
+      border: 1px solid #eee;
+      overflow: hidden;
+    }
+    .sidebar-card-title {
+      padding: 11px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #333;
+      border-bottom: 1px solid #f0f0f0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .sidebar-card-title .badge-live {
+      font-size: 10px;
+      background: #e8342b;
+      color: #fff;
+      padding: 2px 7px;
+      border-radius: 10px;
+      font-weight: 600;
+    }
+
+    /* 상품 아이템 */
+    .live-product-item {
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid #f5f5f5;
+      transition: background 0.15s;
+    }
+    .live-product-item:last-child { border-bottom: none; }
+    .live-product-item:hover { background: #fafafa; }
+    .live-product-item.featured { background: #fff8f6; }
+    .lp-thumb {
+      width: 52px; height: 52px;
+      border-radius: 8px;
+      object-fit: cover;
+      background: #f5f5f5;
+      flex-shrink: 0;
+    }
+    .lp-info { flex: 1; min-width: 0; }
+    .lp-name { font-size: 13px; font-weight: 500; color: #222; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px; }
+    .lp-price-row { display: flex; align-items: center; gap: 5px; }
+    .lp-price { font-size: 14px; font-weight: 700; color: #e85a2b; }
+    .lp-original { font-size: 11px; color: #bbb; text-decoration: line-through; }
+    .lp-discount { font-size: 10px; background: #fff0ec; color: #e85a2b; padding: 1px 5px; border-radius: 4px; font-weight: 600; }
+    .btn-live-buy {
+      padding: 6px 12px;
+      background: #e85a2b;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: background 0.15s;
+    }
+    .btn-live-buy:hover { background: #c9471e; }
+
+    /* 모바일: 상품 가로 슬라이드 */
+    .mobile-product-strip {
+      display: none;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      padding: 10px 14px;
+      gap: 10px;
+    }
+    .mobile-product-strip::-webkit-scrollbar { display: none; }
+    @media (max-width: 768px) {
+      .mobile-product-strip { display: flex; }
+      .live-sidebar { display: none; }
+      .timedeal-bar { display: flex; }
+    }
+    .mstrip-card {
+      flex-shrink: 0;
+      width: 100px;
+      background: #fff;
+      border-radius: 8px;
+      border: 1px solid #eee;
+      overflow: hidden;
+      cursor: pointer;
+    }
+    .mstrip-card.featured { border-color: #e85a2b; }
+    .mstrip-card img, .mstrip-card .mstrip-img {
+      width: 100%;
+      height: 70px;
+      object-fit: cover;
+      background: #f5f5f5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+    .mstrip-info { padding: 5px 6px; }
+    .mstrip-name { font-size: 11px; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px; }
+    .mstrip-price { font-size: 12px; font-weight: 700; color: #e85a2b; }
+
+    /* 모바일 하단 고정 구매버튼 */
+    .mobile-buy-bar {
+      display: none;
+      position: sticky;
+      bottom: 0;
+      left: 0; right: 0;
+      background: #fff;
+      border-top: 1px solid #eee;
+      padding: 10px 14px;
+      z-index: 100;
+    }
+    @media (max-width: 768px) { .mobile-buy-bar { display: block; } }
+    .mobile-buy-btn {
+      display: block;
+      width: 100%;
+      padding: 13px;
+      background: #e85a2b;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      text-align: center;
+    }
+
+    /* ===== 다시보기 섹션 ===== */
+    .vod-container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+    .vod-filter {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .vod-filter-btn {
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1px solid #ddd;
+      font-size: 13px;
+      cursor: pointer;
+      background: #fff;
+      color: #666;
+      transition: all 0.15s;
+    }
+    .vod-filter-btn.active {
+      background: #e85a2b;
+      color: #fff;
+      border-color: #e85a2b;
+    }
+    .vod-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 16px;
+    }
+    .vod-card {
+      background: #fff;
+      border-radius: 12px;
+      border: 1px solid #eee;
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .vod-card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+    .vod-thumb-wrap {
+      position: relative;
+      aspect-ratio: 16/9;
+      background: #1a1a1a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .vod-thumb-wrap img { width: 100%; height: 100%; object-fit: cover; }
+    .vod-thumb-placeholder { font-size: 36px; }
+    .vod-duration {
+      position: absolute;
+      bottom: 7px; right: 8px;
+      background: rgba(0,0,0,0.75);
+      color: #fff;
+      font-size: 11px;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-weight: 500;
+    }
+    .vod-views {
+      position: absolute;
+      bottom: 7px; left: 8px;
+      background: rgba(0,0,0,0.75);
+      color: #fff;
+      font-size: 11px;
+      padding: 2px 7px;
+      border-radius: 4px;
+    }
+    .vod-play-icon {
+      position: absolute;
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .vod-play-icon svg { margin-left: 3px; }
+    .vod-info { padding: 12px 14px; }
+    .vod-title { font-size: 14px; font-weight: 600; color: #222; margin-bottom: 4px; line-height: 1.4; }
+    .vod-meta { font-size: 12px; color: #999; margin-bottom: 8px; }
+    .vod-tags { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 6px; }
+    .vod-tag { font-size: 11px; background: #f5f5f5; color: #666; padding: 2px 8px; border-radius: 10px; }
+    .vod-sales { font-size: 12px; color: #e85a2b; font-weight: 600; }
+
+    /* VOD 빈 상태 */
+    .vod-empty {
+      text-align: center;
+      padding: 60px 20px;
+      color: #aaa;
+    }
+    .vod-empty .empty-icon { font-size: 48px; margin-bottom: 12px; }
+    .vod-empty p { font-size: 14px; }
+
+    /* ===== 방송 일정 섹션 ===== */
+    .schedule-container {
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+    .schedule-item {
+      background: #fff;
+      border-radius: 10px;
+      border: 1px solid #eee;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 10px;
+      transition: border-color 0.15s;
+    }
+    .schedule-item.is-live { border-color: #e8342b; background: #fff8f8; }
+    .schedule-time-block { min-width: 70px; text-align: center; }
+    .schedule-date { font-size: 11px; color: #aaa; }
+    .schedule-time { font-size: 15px; font-weight: 700; color: #333; }
+    .schedule-body { flex: 1; min-width: 0; }
+    .schedule-title { font-size: 14px; font-weight: 600; color: #222; margin-bottom: 3px; }
+    .schedule-dealer { font-size: 12px; color: #888; }
+    .badge-status {
+      flex-shrink: 0;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 20px;
+    }
+    .badge-live-now { background: #e8342b; color: #fff; }
+    .badge-upcoming { background: #e8f0fe; color: #1a73e8; }
+    .badge-ended { background: #f0f0f0; color: #888; }
+
+    /* 일정 없음 */
+    .schedule-empty {
+      text-align: center;
+      padding: 60px 20px;
+      color: #aaa;
+    }
+
+    /* 로딩 */
+    .live-loading {
+      text-align: center;
+      padding: 40px;
+      color: #aaa;
+      font-size: 14px;
+    }
+    .spinner {
+      display: inline-block;
+      width: 24px; height: 24px;
+      border: 2px solid #eee;
+      border-top-color: #e85a2b;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      margin-bottom: 10px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body class="live-page">
+
+  <!-- 헤더 (기존 사이트 공통 헤더 로드) -->
+  <div id="header-placeholder"></div>
+
+  <!-- 라이브 탭 네비 -->
+  <div class="live-nav" id="live-nav">
+    <button class="live-nav-btn active" onclick="switchTab('on-air', this)">🔴 방송중</button>
+    <button class="live-nav-btn" onclick="switchTab('vod', this)">📼 다시보기</button>
+    <button class="live-nav-btn" onclick="switchTab('schedule', this)">📅 방송 일정</button>
+  </div>
+
+  <!-- ===== ON AIR 섹션 ===== -->
+  <div class="live-section active" id="tab-on-air">
+    <div class="live-container">
+
+      <!-- 상태 바 -->
+      <div class="live-status-bar" id="live-status-bar">
+        <div class="live-dot" id="live-dot" style="display:none;"></div>
+        <span id="live-status-text" class="live-status-none">방송 정보를 불러오는 중...</span>
+        <span class="live-status-sub" id="live-viewer-count"></span>
+      </div>
+
+      <!-- 메인 레이아웃 -->
+      <div class="live-main-layout">
+
+        <!-- 영상 영역 -->
+        <div>
+          <div class="video-wrapper" id="video-wrapper">
+            <div class="video-placeholder" id="video-placeholder">
+              <div class="ph-icon">📺</div>
+              <div class="ph-text">방송 준비중</div>
+              <div class="ph-sub">방송이 시작되면 여기서 시청하세요</div>
+            </div>
+          </div>
+
+          <!-- 타임딜 (방송중일 때만 표시) -->
+          <div class="timedeal-bar" id="timedeal-bar" style="display:none;">
+            <span class="td-label">⏰ 라이브 특가 마감까지</span>
+            <span class="td-timer" id="countdown-timer">00:00:00</span>
+          </div>
+
+          <!-- 모바일 상품 슬라이드 -->
+          <div class="mobile-product-strip" id="mobile-product-strip">
+            <!-- JS로 채워짐 -->
+          </div>
+        </div>
+
+        <!-- PC 사이드 패널 -->
+        <div class="live-sidebar">
+          <div class="sidebar-card" id="sidebar-products">
+            <div class="sidebar-card-title">
+              방송 중 상품
+              <span class="badge-live" id="sidebar-live-badge" style="display:none;">LIVE</span>
+            </div>
+            <div id="sidebar-product-list">
+              <div class="live-loading">
+                <div class="spinner"></div>
+                <div>상품 불러오는 중...</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 모바일 하단 구매 버튼 -->
+      <div class="mobile-buy-bar" id="mobile-buy-bar" style="display:none;">
+        <button class="mobile-buy-btn" id="mobile-buy-btn" onclick="mobileBuy()">
+          상품을 선택해 구매하세요
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===== 다시보기 섹션 ===== -->
+  <div class="live-section" id="tab-vod">
+    <div class="vod-container">
+
+      <!-- 필터 -->
+      <div class="vod-filter" id="vod-filter">
+        <button class="vod-filter-btn active" onclick="filterVod('전체', this)">전체</button>
+        <!-- 대리점 필터는 JS로 동적 추가 -->
+      </div>
+
+      <!-- VOD 그리드 -->
+      <div id="vod-grid" class="vod-grid">
+        <div class="live-loading" style="grid-column:1/-1;">
+          <div class="spinner"></div>
+          <div>다시보기 불러오는 중...</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===== 방송 일정 섹션 ===== -->
+  <div class="live-section" id="tab-schedule">
+    <div class="schedule-container">
+      <div id="schedule-list">
+        <div class="live-loading">
+          <div class="spinner"></div>
+          <div>일정 불러오는 중...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 기존 JS 파일 로드 -->
+  <script src="js/config.js"></script>
+  <script src="js/sheets.js"></script>
+  <script src="js/app.js"></script>
+
+  <script>
+  // ============================================================
+  // 라이브쇼핑 메인 로직
+  // ============================================================
+
+  // 현재 선택된 상품 (모바일 구매버튼용)
+  let selectedProduct = null;
+  let countdownInterval = null;
+  let allBroadcasts = [];
+
+  // ---- 탭 전환 ----
+  function switchTab(tabId, btn) {
+    document.querySelectorAll('.live-section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.live-nav-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + tabId).classList.add('active');
+    btn.classList.add('active');
+  }
+
+  // ---- Apps Script에서 라이브방송 시트 데이터 불러오기 ----
+  async function loadLiveData() {
+    try {
+      const url = CONFIG.APPS_SCRIPT_URL + '?action=getLiveBroadcasts';
+      const res = await fetch(url);
+      const data = await res.json();
+      if (data.success) {
+        allBroadcasts = data.broadcasts || [];
+        renderOnAir();
+        renderVod();
+        renderSchedule();
+      }
+    } catch(e) {
+      console.log('라이브 데이터 로드 오류:', e);
+      renderOnAirEmpty();
+      renderVodEmpty();
+      renderScheduleEmpty();
+    }
+  }
+
+  // ---- ON AIR 렌더링 ----
+  function renderOnAir() {
+    const now = new Date();
+    const live = allBroadcasts.find(b => b.상태 === '진행중');
+
+    if (!live) {
+      renderOnAirEmpty();
+      return;
+    }
+
+    // 상태바 업데이트
+    document.getElementById('live-dot').style.display = 'block';
+    document.getElementById('live-status-text').textContent = live.제목;
+    document.getElementById('live-status-text').style.color = '#e8342b';
+    document.getElementById('live-status-text').className = 'live-status-text';
+    if (live.시청자수) {
+      document.getElementById('live-viewer-count').textContent = live.시청자수 + '명 시청중';
+    }
+
+    // 유튜브 영상 임베드
+    if (live.유튜브URL) {
+      const videoId = extractYoutubeId(live.유튜브URL);
+      if (videoId) {
+        document.getElementById('video-wrapper').innerHTML = `
+          <iframe
+            src="https://www.youtube.com/embed/${videoId}?autoplay=0&rel=0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen>
+          </iframe>
+        `;
+      }
+    }
+
+    // 타임딜 카운트다운
+    if (live.마감시각) {
+      document.getElementById('timedeal-bar').style.display = 'flex';
+      startCountdown(live.마감시각);
+    }
+
+    // 상품 목록 파싱
+    const productIds = live.연결상품ID ? live.연결상품ID.split(',').map(s => s.trim()) : [];
+    loadLiveProducts(productIds, live.특가정보);
+  }
+
+  function renderOnAirEmpty() {
+    document.getElementById('live-dot').style.display = 'none';
+    document.getElementById('live-status-text').textContent = '현재 진행 중인 방송이 없습니다';
+    document.getElementById('live-status-text').style.color = '#aaa';
+    document.getElementById('sidebar-product-list').innerHTML = `
+      <div style="padding:30px;text-align:center;color:#aaa;font-size:13px;">
+        방송 중 상품이 없습니다
+      </div>
+    `;
+    document.getElementById('mobile-product-strip').innerHTML = '';
+  }
+
+  // ---- 라이브 상품 불러오기 ----
+  async function loadLiveProducts(productIds, saleInfo) {
+    try {
+      const allProducts = await ProductAPI.getAll();
+      let products = productIds.length > 0
+        ? allProducts.filter(p => productIds.includes(String(p.id)))
+        : allProducts.slice(0, 5);
+
+      // 특가 정보 파싱 (예: "1:22000,2:19000")
+      const saleMap = {};
+      if (saleInfo) {
+        saleInfo.split(',').forEach(pair => {
+          const [id, price] = pair.split(':');
+          if (id && price) saleMap[id.trim()] = parseInt(price.trim());
+        });
+      }
+
+      products = products.map(p => ({
+        ...p,
+        livePrice: saleMap[String(p.id)] || p.salePrice || p.price
+      }));
+
+      renderProductSidebar(products);
+      renderMobileStrip(products);
+
+      // 첫 번째 상품 기본 선택
+      if (products.length > 0) {
+        selectProduct(products[0]);
+      }
+
+      document.getElementById('sidebar-live-badge').style.display = 'inline-block';
+
+    } catch(e) {
+      document.getElementById('sidebar-product-list').innerHTML = `
+        <div style="padding:20px;text-align:center;color:#aaa;font-size:13px;">상품 불러오기 실패</div>
+      `;
+    }
+  }
+
+  function renderProductSidebar(products) {
+    const html = products.map((p, i) => `
+      <div class="live-product-item ${i === 0 ? 'featured' : ''}" id="lp-${p.id}" onclick="selectProduct(${JSON.stringify(p).replace(/"/g,'&quot;')})">
+        <img class="lp-thumb" src="${p.image}" alt="${p.name}" onerror="this.src='https://via.placeholder.com/52x52?text=상품'">
+        <div class="lp-info">
+          <div class="lp-name">${p.name}</div>
+          <div class="lp-price-row">
+            <span class="lp-price">${p.livePrice.toLocaleString()}원</span>
+            ${p.price > p.livePrice ? `<span class="lp-original">${p.price.toLocaleString()}원</span>` : ''}
+            ${p.price > p.livePrice ? `<span class="lp-discount">${Math.round((1-p.livePrice/p.price)*100)}%</span>` : ''}
+          </div>
+        </div>
+        <button class="btn-live-buy" onclick="event.stopPropagation(); buyNow(${JSON.stringify(p).replace(/"/g,'&quot;')}, ${p.livePrice})">구매</button>
+      </div>
+    `).join('');
+    document.getElementById('sidebar-product-list').innerHTML = html;
+  }
+
+  function renderMobileStrip(products) {
+    const strip = document.getElementById('mobile-product-strip');
+    strip.innerHTML = products.map((p, i) => `
+      <div class="mstrip-card ${i===0?'featured':''}" onclick="selectProduct(${JSON.stringify(p).replace(/"/g,'&quot;')})">
+        <img src="${p.image}" style="width:100%;height:70px;object-fit:cover;" onerror="this.style.display='none'" alt="${p.name}">
+        <div class="mstrip-info">
+          <div class="mstrip-name">${p.name}</div>
+          <div class="mstrip-price">${p.livePrice.toLocaleString()}원</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function selectProduct(product) {
+    selectedProduct = product;
+    // 모바일 구매 버튼 업데이트
+    const bar = document.getElementById('mobile-buy-bar');
+    const btn = document.getElementById('mobile-buy-btn');
+    bar.style.display = 'block';
+    btn.textContent = `${product.name} · ${product.livePrice.toLocaleString()}원 구매`;
+    // 사이드바 하이라이트
+    document.querySelectorAll('.live-product-item').forEach(el => el.classList.remove('featured'));
+    const el = document.getElementById('lp-' + product.id);
+    if (el) el.classList.add('featured');
+  }
+
+  function mobileBuy() {
+    if (!selectedProduct) return;
+    buyNow(selectedProduct, selectedProduct.livePrice);
+  }
+
+  function buyNow(product, price) {
+    // 장바구니에 담고 주문 페이지로
+    const p = { ...product, salePrice: price };
+    Cart.add(p, 1);
+    window.location.href = dealerUrl('order.html');
+  }
+
+  // ---- VOD 다시보기 렌더링 ----
+  function renderVod() {
+    const vods = allBroadcasts.filter(b => b.상태 === '종료' && b.유튜브URL);
+
+    // 대리점 필터 버튼 동적 생성
+    const dealers = [...new Set(vods.map(v => v.대리점명).filter(Boolean))];
+    const filterEl = document.getElementById('vod-filter');
+    dealers.forEach(d => {
+      const btn = document.createElement('button');
+      btn.className = 'vod-filter-btn';
+      btn.textContent = d;
+      btn.onclick = function() { filterVod(d, this); };
+      filterEl.appendChild(btn);
+    });
+
+    renderVodGrid(vods);
+  }
+
+  function renderVodGrid(vods) {
+    const grid = document.getElementById('vod-grid');
+    if (!vods.length) {
+      grid.innerHTML = `
+        <div class="vod-empty" style="grid-column:1/-1;">
+          <div class="empty-icon">📼</div>
+          <p>아직 다시보기 영상이 없습니다<br>첫 번째 라이브 방송 후 등록됩니다</p>
+        </div>
+      `;
+      return;
+    }
+    grid.innerHTML = vods.map(v => {
+      const videoId = extractYoutubeId(v.유튜브URL);
+      const thumb = videoId ? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg` : '';
+      return `
+        <div class="vod-card" data-dealer="${v.대리점명||''}" onclick="openVod('${v.유튜브URL}')">
+          <div class="vod-thumb-wrap">
+            ${thumb
+              ? `<img src="${thumb}" alt="${v.제목}">`
+              : `<div class="vod-thumb-placeholder">📺</div>`
+            }
+            <div class="vod-play-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
+            </div>
+            ${v.방송길이 ? `<div class="vod-duration">${v.방송길이}</div>` : ''}
+            ${v.조회수 ? `<div class="vod-views">${parseInt(v.조회수).toLocaleString()}회</div>` : ''}
+          </div>
+          <div class="vod-info">
+            <div class="vod-title">${v.제목}</div>
+            <div class="vod-meta">${v.대리점명||'담누리마켓'} · ${formatDate(v.방송일시)}</div>
+            ${v.연결상품명 ? `<div class="vod-tags">${v.연결상품명.split(',').map(t=>`<span class="vod-tag">${t.trim()}</span>`).join('')}</div>` : ''}
+            ${v.방송매출 ? `<div class="vod-sales">방송 매출 ${parseInt(v.방송매출).toLocaleString()}원</div>` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function filterVod(dealer, btn) {
+    document.querySelectorAll('.vod-filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const vods = allBroadcasts.filter(b => b.상태 === '종료' && b.유튜브URL);
+    const filtered = dealer === '전체' ? vods : vods.filter(v => v.대리점명 === dealer);
+    renderVodGrid(filtered);
+  }
+
+  function openVod(url) {
+    window.open(url, '_blank');
+  }
+
+  function renderVodEmpty() {
+    document.getElementById('vod-grid').innerHTML = `
+      <div class="vod-empty" style="grid-column:1/-1;">
+        <div class="empty-icon">📼</div>
+        <p>아직 다시보기 영상이 없습니다</p>
+      </div>
+    `;
+  }
+
+  // ---- 방송 일정 렌더링 ----
+  function renderSchedule() {
+    const now = new Date();
+    const schedules = allBroadcasts
+      .filter(b => b.상태 === '진행중' || b.상태 === '예정')
+      .sort((a, b) => new Date(a.방송일시) - new Date(b.방송일시));
+
+    const list = document.getElementById('schedule-list');
+    if (!schedules.length) {
+      renderScheduleEmpty();
+      return;
+    }
+
+    list.innerHTML = schedules.map(s => {
+      const isLive = s.상태 === '진행중';
+      const dt = new Date(s.방송일시);
+      return `
+        <div class="schedule-item ${isLive ? 'is-live' : ''}">
+          <div class="schedule-time-block">
+            <div class="schedule-date">${formatDateShort(dt)}</div>
+            <div class="schedule-time">${formatTime(dt)}</div>
+          </div>
+          <div class="schedule-body">
+            <div class="schedule-title">${s.제목}</div>
+            <div class="schedule-dealer">${s.대리점명||'담누리마켓'} · 유튜브 라이브</div>
+          </div>
+          <span class="badge-status ${isLive ? 'badge-live-now' : 'badge-upcoming'}">
+            ${isLive ? '● LIVE' : '예정'}
+          </span>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function renderScheduleEmpty() {
+    document.getElementById('schedule-list').innerHTML = `
+      <div class="schedule-empty">
+        <div style="font-size:40px;margin-bottom:12px;">📅</div>
+        <p style="font-size:14px;color:#aaa;">예정된 방송이 없습니다<br>곧 새로운 방송 일정을 공개할게요!</p>
+      </div>
+    `;
+  }
+
+  // ---- 카운트다운 타이머 ----
+  function startCountdown(endTimeStr) {
+    if (countdownInterval) clearInterval(countdownInterval);
+    const endTime = new Date(endTimeStr);
+    function update() {
+      const now = new Date();
+      const diff = Math.max(0, endTime - now);
+      const h = String(Math.floor(diff / 3600000)).padStart(2, '0');
+      const m = String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0');
+      const s = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
+      const el = document.getElementById('countdown-timer');
+      if (el) el.textContent = `${h}:${m}:${s}`;
+      if (diff === 0) clearInterval(countdownInterval);
+    }
+    update();
+    countdownInterval = setInterval(update, 1000);
+  }
+
+  // ---- 유튜브 ID 추출 ----
+  function extractYoutubeId(url) {
+    if (!url) return null;
+    const patterns = [
+      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/live\/)([^&\n?#]+)/,
+      /youtube\.com\/embed\/([^&\n?#]+)/
+    ];
+    for (const p of patterns) {
+      const m = url.match(p);
+      if (m) return m[1];
+    }
+    return null;
+  }
+
+  // ---- 날짜 포맷 ----
+  function formatDate(str) {
+    if (!str) return '';
+    const d = new Date(str);
+    return `${d.getMonth()+1}/${d.getDate()}`;
+  }
+  function formatDateShort(d) {
+    const days = ['일','월','화','수','목','금','토'];
+    return `${d.getMonth()+1}/${d.getDate()}(${days[d.getDay()]})`;
+  }
+  function formatTime(d) {
+    const h = d.getHours();
+    const m = String(d.getMinutes()).padStart(2, '0');
+    return `${h >= 12 ? '오후' : '오전'} ${h > 12 ? h-12 : h}:${m}`;
+  }
+
+  // ---- 초기화 ----
+  document.addEventListener('DOMContentLoaded', () => {
+    Cart.init();
+    loadLiveData();
+  });
+  </script>
+
+</body>
+</html>

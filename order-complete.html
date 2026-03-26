@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>주문완료 - 담누리마켓</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .wrap { max-width: 560px; margin: 60px auto; padding: 0 20px; text-align: center; }
+    .icon { font-size: 72px; margin-bottom: 16px; }
+    .title { font-size: 26px; font-weight: 700; color: #1E3A5F; margin-bottom: 8px; }
+    .sub { font-size: 15px; color: #888; margin-bottom: 28px; }
+    .box { background:#f8f9ff; border:1px solid #dde3f5; border-radius:12px;
+      padding:24px; text-align:left; margin-bottom:28px; }
+    .box h3 { font-size:15px; color:#1E3A5F; font-weight:700; margin:0 0 16px; }
+    .row { display:flex; justify-content:space-between; padding:9px 0;
+      border-bottom:1px solid #eee; font-size:14px; }
+    .row:last-child { border-bottom:none; }
+    .label { color:#999; }
+    .value { font-weight:600; color:#222; }
+    .price { color:#FF5733; font-size:16px; }
+    .btns { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
+    .btn-a { background:#FF5733; color:#fff; padding:13px 30px; border-radius:8px;
+      font-size:15px; font-weight:600; text-decoration:none; }
+    .btn-b { background:#fff; color:#1E3A5F; border:2px solid #1E3A5F;
+      padding:13px 30px; border-radius:8px; font-size:15px; font-weight:600; text-decoration:none; }
+    .fail-title { font-size:26px; font-weight:700; color:#C0392B; margin-bottom:8px; }
+    .fail-box { background:#fff5f5; border:1px solid #f5c6c6; border-radius:8px;
+      padding:16px; font-size:14px; color:#C0392B; margin-bottom:28px; }
+    .spinner { display:inline-block; width:40px; height:40px; border:4px solid #ddd;
+      border-top-color:#FF5733; border-radius:50%; animation:spin .8s linear infinite; margin-bottom:12px; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .test-badge { display:inline-block; background:#fff3cd; color:#856404; border-radius:20px;
+      padding:4px 14px; font-size:12px; font-weight:700; margin-bottom:16px; }
+  </style>
+</head>
+<body>
+
+<main class="wrap" id="area">
+  <div class="spinner"></div>
+  <p class="sub">결제 결과를 확인하고 있습니다...</p>
+</main>
+
+<!-- ===== 풀 푸터 (index.html 동일 구조 / main.js 자동 반영) ===== -->
+<footer class="footer">
+  <div class="footer-inner">
+    <div>
+      <h4 id="footer-store-name">🏪 담누리마켓</h4>
+      <p style="font-size:12px;line-height:1.8;margin-top:8px;color:#aaa;">
+        다양한 상품을 합리적인 가격에<br>고객님께 전달합니다.
+      </p>
+    </div>
+    <div>
+      <h4>고객센터</h4>
+      <ul>
+        <li><a href="#" id="footer-phone">📞 1588-3507</a></li>
+        <li><a href="#">평일 9:00 ~ 18:00</a></li>
+        <li><a href="#" id="footer-email">📧 hypo3300@naver.com</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>바로가기</h4>
+      <ul>
+        <li><a href="products.html">상품 목록</a></li>
+        <li><a href="cart.html">장바구니</a></li>
+        <li><a href="mypage.html">마이페이지</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>SNS</h4>
+      <ul>
+        <li><a href="#">📸 인스타그램</a></li>
+        <li><a href="#">💛 카카오채널</a></li>
+        <li><a href="#">▶ 유튜브</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p id="footer-biz">상호: (주)비에스컴퍼니 | 사업자번호: 761-87-02647 | 대표: 배상민 | 통신판매업: 제2023-의정부흥선-0457호</p>
+    <p id="footer-addr" style="margin-top:4px;">주소: 경기도 의정부시 호국로 1195-1 4층 | TEL: 1588-3507 | EMAIL: hypo3300@naver.com</p>
+    <p id="footer-copy" style="margin-top:4px;">© 2026 담누리마켓. All rights reserved.</p>
+  </div>
+</footer>
+
+<script src="js/config.js"></script>
+<script src="js/sheets.js"></script>
+<script src="js/app.js"></script>
+<script src="js/main.js"></script>
+<script>
+/**
+ * order-complete.html v2.2
+ */
+(async function() {
+
+  var SERVER_URL = 'https://jh.winglobalpay.com';
+  var area       = document.getElementById('area');
+  var p          = new URLSearchParams(location.search);
+  var dealer     = p.get('dealer') || '';
+  var shopUrl    = dealer ? 'index.html?dealer=' + dealer : 'index.html';
+  var SCRIPT_URL = (typeof CONFIG !== 'undefined') ? CONFIG.APPS_SCRIPT_URL || CONFIG.PG.API_PROXY_URL : '';
+
+  // ── 방식 A ──────────────────────────────────────────────
+  var noParam = p.get('no');
+  if (noParam) {
+    renderSuccess({
+      orderNo:   noParam,
+      amt:       '0',
+      goodsName: '',
+      ordNm:     '',
+      method:    decodeURIComponent(p.get('method') || '신용카드'),
+      isTest:    true
+    });
+    return;
+  }
+
+  // ── 방식 B ──────────────────────────────────────────────
+  var orderNo = p.get('orderNo');
+  if (orderNo) {
+    if (SCRIPT_URL) {
+      fetch(SCRIPT_URL, {
+        method:  'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({
+          action: 'updateOrderStatus',
+          data: { 주문번호: orderNo, 주문상태: '결제완료' }
+        })
+      }).then(function(r) { return r.text(); })
+        .then(function(t) { console.log('[complete] 방식B 업데이트 성공:', t); })
+        .catch(function(e) { console.warn('[complete] 방식B 업데이트 실패:', e); });
+    }
+    renderSuccess({
+      orderNo:   orderNo,
+      amt:       p.get('amt') || '0',
+      goodsName: decodeURIComponent(p.get('goodsName') || ''),
+      ordNm:     decodeURIComponent(p.get('ordNm') || ''),
+      method:    decodeURIComponent(p.get('method') || '신용카드'),
+      isTest:    false
+    });
+    return;
+  }
+
+  // ── 방식 C-1 ────────────────────────────────────────────
+  var paymentDataRaw = p.get('paymentData');
+  if (paymentDataRaw) {
+    try {
+      var pg = JSON.parse(decodeURIComponent(paymentDataRaw));
+      if (pg.success === true) {
+        await saveAndRender(pg.tid, pg);
+      } else {
+        renderFail(pg.message || '결제 실패');
+      }
+    } catch(e) {
+      renderFail('결제 데이터 파싱 오류');
+    }
+    return;
+  }
+
+  // ── 방식 C-2 ────────────────────────────────────────────
+  var successParam = p.get('success');
+  var tidParam     = p.get('tid');
+  if (successParam !== null) {
+    if (successParam === 'true' && tidParam) {
+      await saveAndRender(tidParam, {
+        success:   true,
+        tid:       tidParam,
+        wTid:      p.get('wTid')     || '',
+        amt:       p.get('amt')      || '0',
+        goodsName: decodeURIComponent(p.get('goodsName') || ''),
+        ordNm:     decodeURIComponent(p.get('ordNm')     || ''),
+      });
+    } else {
+      renderFail(decodeURIComponent(p.get('message') || '결제가 완료되지 않았습니다.'));
+    }
+    return;
+  }
+
+  // ── 방식 D ──────────────────────────────────────────────
+  if (tidParam) {
+    await handleMobileResult(tidParam);
+    return;
+  }
+
+  renderFail('주문 정보를 찾을 수 없습니다.');
+
+  // ─────────────────────────────────────────────────────────
+
+  async function handleMobileResult(tid) {
+    try {
+      var jwt = getValidJwt();
+      if (!jwt) {
+        var cfgRes   = await fetch(SCRIPT_URL + '?action=getPGConfig');
+        var cfg      = await cfgRes.json();
+        var loginRes = await fetch(SERVER_URL + '/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + cfg.payKey },
+          body: JSON.stringify({ tmnId: cfg.tmnId })
+        });
+        var loginData = await loginRes.json();
+        if (!loginData.token) throw new Error('로그인 실패');
+        jwt = loginData.token;
+        sessionStorage.setItem('wp_jwt', jwt);
+      }
+      var statusRes  = await fetch(SERVER_URL + '/api/payment/status/' + tid, {
+        headers: { 'Authorization': 'Bearer ' + jwt }
+      });
+      var statusData = await statusRes.json();
+      if (statusData.success === true) {
+        await saveAndRender(tid, statusData);
+      } else {
+        renderFail(statusData.message || '결제가 완료되지 않았습니다.');
+      }
+    } catch(e) {
+      console.error('[order-complete] 모바일 결과 조회 실패:', e);
+      renderFail('결제 결과를 확인할 수 없습니다.\n마이페이지에서 주문 내역을 확인해주세요.');
+    }
+  }
+
+  function getValidJwt() {
+    var token = sessionStorage.getItem('wp_jwt') || localStorage.getItem('jwtToken');
+    if (!token) return '';
+    try {
+      var payload = JSON.parse(atob(token.split('.')[1]));
+      if (payload.exp && payload.exp < Math.floor(Date.now()/1000)) return '';
+      return token;
+    } catch(e) { return token; }
+  }
+
+  async function saveAndRender(tid, pg) {
+    var saved      = JSON.parse(localStorage.getItem('wp_order') || '{}');
+    var newOrderNo = 'ORD' + Date.now();
+
+    var existingOrderNo = saved.orderNo || '';
+    if (existingOrderNo && SCRIPT_URL) {
+      try {
+        await fetch(SCRIPT_URL, {
+          method:  'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify({
+            action: 'updateOrderStatus',
+            data: { 주문번호: existingOrderNo, 주문상태: '결제완료' }
+          })
+        });
+        console.log('[complete] 기존 주문 결제완료 업데이트 성공:', existingOrderNo);
+        newOrderNo = existingOrderNo;
+      } catch(e) {
+        console.warn('[complete] 기존 주문 업데이트 실패:', e);
+      }
+    } else {
+      try {
+        if (SCRIPT_URL) {
+          await fetch(SCRIPT_URL, {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action:       'saveOrder',
+              주문번호:     newOrderNo,
+              주문일시:     new Date().toLocaleString('ko-KR'),
+              대리점ID:     dealer,
+              주문자명:     pg.ordNm           || saved.ordNm    || '',
+              연락처:       saved.phone        || '',
+              이메일:       saved.email        || '',
+              받는분:       saved.receiverName || pg.ordNm || saved.ordNm || '',
+              받는분연락처: saved.receiverPhone|| saved.phone || '',
+              배송주소:     saved.address      || '',
+              우편번호:     saved.zipCode      || '',
+              상품번호:     saved.productCode  || '',
+              주문상품:     pg.goodsName       || saved.goodsName || '',
+              수량:         saved.qty          || 1,
+              결제금액:     pg.amt             || saved.amt || 0,
+              결제방법:     'card',
+              추천인코드:   saved.referralCode || '',
+              회원구분:     (saved.userId && saved.userId !== 'guest') ? '회원' : '비회원',
+              주문상태:     '결제완료',
+              메모:         saved.memo         || '',
+              PG거래번호:   tid,
+              PG주문번호:   pg.wTid            || '',
+            })
+          });
+        }
+      } catch(e) {
+        console.warn('[order-complete] 주문 저장 실패:', e);
+      }
+    }
+
+    localStorage.removeItem('cart');
+    localStorage.removeItem('wp_tid');
+    localStorage.removeItem('wp_order');
+    sessionStorage.removeItem('wp_jwt');
+
+    renderSuccess({
+      orderNo:   newOrderNo,
+      amt:       pg.amt || saved.amt || '0',
+      goodsName: pg.goodsName || saved.goodsName || '',
+      ordNm:     pg.ordNm     || saved.ordNm     || '',
+      method:    'card',
+      isTest:    false
+    });
+  }
+
+  function renderSuccess(o) {
+    var amtNum  = Number(o.amt) || 0;
+    var amtText = amtNum > 0 ? '₩' + amtNum.toLocaleString() : '-';
+    area.innerHTML =
+      (o.isTest ? '<div class="test-badge">🔧 테스트 모드 (PG 미연동)</div>' : '')
+      + '<div class="icon">🎉</div>'
+      + '<h1 class="title">주문이 완료되었습니다!</h1>'
+      + '<p class="sub">주문해주셔서 감사합니다. 빠르게 배송해드릴게요.</p>'
+      + '<div class="box"><h3>📦 주문 정보</h3>'
+      + '<div class="row"><span class="label">주문번호</span><span class="value">' + o.orderNo + '</span></div>'
+      + (o.goodsName ? '<div class="row"><span class="label">상품명</span><span class="value">' + o.goodsName + '</span></div>' : '')
+      + (o.ordNm     ? '<div class="row"><span class="label">주문자</span><span class="value">'  + o.ordNm     + '</span></div>' : '')
+      + '<div class="row"><span class="label">결제금액</span><span class="value price">' + amtText + '</span></div>'
+      + '<div class="row"><span class="label">결제방법</span><span class="value">' + (o.method || '신용카드') + '</span></div>'
+      + '<div class="row"><span class="label">배송예정</span><span class="value">영업일 기준 2~3일</span></div>'
+      + '</div>'
+      + '<div class="btns">'
+      + '<a href="' + shopUrl + '" class="btn-a">쇼핑 계속하기</a>'
+      + '<a href="mypage.html" class="btn-b">주문 내역 확인</a>'
+      + '</div>';
+  }
+
+  function renderFail(msg) {
+    area.innerHTML =
+      '<div class="icon">😢</div>'
+      + '<h1 class="fail-title">결제가 완료되지 않았습니다</h1>'
+      + '<div class="fail-box">' + msg + '</div>'
+      + '<div class="btns">'
+      + '<a href="javascript:history.back()" class="btn-a">다시 시도</a>'
+      + '<a href="' + shopUrl + '" class="btn-b">쇼핑 계속</a>'
+      + '</div>';
+  }
+
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests; script-src 'self' 'unsafe-eval' 'unsafe-inline' https:">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>상품 목록 - 담누리마켓</title>
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="담누리마켓">
+  <meta property="og:title" content="🛒 상품 목록 - 담누리마켓">
+  <meta property="og:description" content="담누리마켓의 다양한 상품을 만나보세요!">
+  <meta property="og:image" content="https://gasway.shop/images/og-image.jpg.png">
+  <meta property="og:url" content="https://gasway.shop/products.html">
+  <meta property="og:locale" content="ko_KR">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .products-layout { display: grid; grid-template-columns: 220px 1fr; gap: 24px; margin-top: 20px; }
+    .filter-panel { background: var(--white); border-radius: var(--radius); border: 1px solid var(--border); padding: 20px; height: fit-content; position: sticky; top: 120px; }
+    .filter-group { margin-bottom: 24px; }
+    .filter-group h4 { font-size: 13px; font-weight: 700; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .filter-item { display: flex; align-items: center; gap: 8px; padding: 5px 0; font-size: 13px; color: var(--gray-dark); cursor: pointer; }
+    .filter-item input { accent-color: var(--accent); }
+    .price-range { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .price-range input { width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; font-size: 12px; outline: none; }
+    .price-range input:focus { border-color: var(--accent); }
+    .products-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .products-count { font-size: 13px; color: var(--gray); }
+    .sort-select { border: 1px solid var(--border); border-radius: 6px; padding: 6px 12px; font-size: 13px; font-family: var(--font-main); outline: none; background: var(--white); cursor: pointer; }
+    .sort-select:focus { border-color: var(--accent); }
+    .filter-btn { display: none; }
+    .pagination { display: flex; justify-content: center; gap: 6px; margin-top: 32px; }
+    .page-btn { width: 36px; height: 36px; border-radius: 8px; border: 1px solid var(--border); background: var(--white); font-size: 13px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: var(--transition); }
+    .page-btn:hover, .page-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .filter-apply { width: 100%; padding: 10px; background: var(--accent); color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; margin-top: 8px; cursor: pointer; }
+
+    /* ===== 풀 푸터 스타일 ===== */
+    .footer-full {
+      background: #1a1a1a;
+      color: #ccc;
+      margin-top: 60px;
+    }
+    .footer-full .footer-top {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 48px 24px 36px;
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 40px;
+    }
+    .footer-full .footer-brand-name {
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 10px;
+    }
+    .footer-full .footer-brand-desc {
+      font-size: 13px;
+      line-height: 1.8;
+      color: #999;
+    }
+    .footer-full .footer-col-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 16px;
+    }
+    .footer-full .footer-col-item {
+      font-size: 13px;
+      line-height: 2.2;
+      color: #aaa;
+    }
+    .footer-full .footer-col-item a {
+      color: #aaa;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .footer-full .footer-col-item a:hover { color: #fff; }
+    .footer-full .footer-divider {
+      border: none;
+      border-top: 1px solid #333;
+      margin: 0;
+    }
+
+    /* ===== 사업자 정보 하단바 (PG 심사 필수) ===== */
+    .footer-biz {
+      background: #111;
+      text-align: center;
+      padding: 18px 20px;
+    }
+    .footer-biz p {
+      font-size: 12px;
+      color: #777;
+      line-height: 2.0;
+      margin: 0;
+    }
+    .footer-biz .biz-copyright {
+      font-size: 12px;
+      color: #555;
+      margin-top: 6px;
+    }
+
+    @media (max-width: 768px) {
+      .products-layout { grid-template-columns: 1fr; }
+      .filter-panel { display: none; position: fixed; inset: 0; z-index: 800; border-radius: 0; overflow-y: auto; }
+      .filter-panel.mobile-open { display: block; }
+      .filter-btn { display: flex; align-items: center; gap: 6px; border: 1px solid var(--border); border-radius: 8px; padding: 8px 14px; font-size: 13px; background: var(--white); cursor: pointer; }
+      .footer-full .footer-top { grid-template-columns: 1fr 1fr; gap: 28px; padding: 36px 20px 28px; }
+      .footer-biz p { font-size: 11px; }
+    }
+    @media (max-width: 480px) {
+      .footer-full .footer-top { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-notice">🚚 담누리마켓 | 5만원 이상 무료배송</div>
+  <div class="header-main">
+    <a href="index.html" class="header-logo">
+      <span>🏪</span><span id="store-name">담누리마켓</span>
+    </a>
+    <div class="header-search">
+      <div class="search-bar" onclick="Search.open()">
+        <input type="text" placeholder="상품을 검색하세요" readonly>
+        <button>🔍</button>
+      </div>
+    </div>
+    <div class="header-icons">
+      <a href="mypage.html" class="header-icon"><span class="icon-emoji">👤</span><span id="login-label">로그인</span></a>
+      <a href="cart.html" class="header-icon"><span class="icon-emoji">🛒</span><span>장바구니</span><span class="cart-badge">0</span></a>
+    </div>
+  </div>
+  <nav class="header-nav">
+    <div class="nav-inner" id="main-nav">
+      <button class="nav-item active" onclick="filterByNav('all', this)">🏠 전체</button>
+    </div>
+  </nav>
+</header>
+
+<div class="search-modal" id="search-modal">
+  <div class="search-modal-box">
+    <div class="search-modal-header">
+      <span>🔍</span>
+      <input type="text" class="search-modal-input" id="search-input" placeholder="검색어를 입력하세요"
+        oninput="Search.run(this.value)">
+      <button class="search-modal-close" onclick="Search.close()">✕</button>
+    </div>
+    <div id="search-results"><p class="search-empty">검색어를 입력하세요</p></div>
+  </div>
+</div>
+
+<main>
+  <div class="main-wrap">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-top:20px;">
+      <h1 style="font-size:20px; font-weight:800;" id="page-heading">전체 상품</h1>
+      <button class="filter-btn" onclick="document.getElementById('filter-panel').classList.toggle('mobile-open')">
+        🔧 필터
+      </button>
+    </div>
+
+    <div class="products-layout">
+      <aside class="filter-panel" id="filter-panel">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+          <strong>필터</strong>
+          <button onclick="resetFilters()" style="font-size:12px; color:var(--gray); background:none; border:none; cursor:pointer;">초기화</button>
+        </div>
+
+        <div class="filter-group">
+          <h4>카테고리</h4>
+          <div id="filter-categories">
+            <label class="filter-item"><input type="radio" name="cat" value="all" checked> 전체</label>
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <h4>가격</h4>
+          <div class="price-range">
+            <input type="number" id="price-min" placeholder="최소" step="1000">
+            <input type="number" id="price-max" placeholder="최대" step="1000">
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <h4>상품 유형</h4>
+          <label class="filter-item"><input type="checkbox" id="filter-sale"> 할인 상품만</label>
+          <label class="filter-item"><input type="checkbox" id="filter-new"> 신상품만</label>
+          <label class="filter-item"><input type="checkbox" id="filter-best"> 베스트만</label>
+        </div>
+
+        <button class="filter-apply" onclick="applyFilters()">적용하기</button>
+      </aside>
+
+      <div>
+        <div class="products-header">
+          <span class="products-count" id="products-count">상품 로딩 중...</span>
+          <select class="sort-select" id="sort-select" onchange="sortProducts()">
+            <option value="default">기본순</option>
+            <option value="price-asc">가격 낮은순</option>
+            <option value="price-desc">가격 높은순</option>
+            <option value="name">이름순</option>
+            <option value="discount">할인율순</option>
+          </select>
+        </div>
+
+        <div class="product-grid" id="product-grid">
+          <div class="skeleton skeleton-card"></div>
+          <div class="skeleton skeleton-card"></div>
+          <div class="skeleton skeleton-card"></div>
+          <div class="skeleton skeleton-card"></div>
+          <div class="skeleton skeleton-card"></div>
+          <div class="skeleton skeleton-card"></div>
+        </div>
+
+        <div class="pagination" id="pagination"></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- ===== 풀 푸터 (PG 심사 필수 항목 포함) ===== -->
+<footer class="footer-full">
+  <div class="footer-top">
+    <!-- 브랜드 소개 -->
+    <div>
+      <div class="footer-brand-name">🏪 <span id="footer-brand">담누리마켓</span></div>
+      <div class="footer-brand-desc">
+        다양한 상품을 합리적인 가격에<br>고객님께 전달합니다.
+      </div>
+    </div>
+    <!-- 고객센터 -->
+    <div>
+      <div class="footer-col-title">고객센터</div>
+      <div class="footer-col-item">
+        📞 <span id="footer-tel">1588-3507</span><br>
+        평일 9:00 ~ 18:00<br>
+        📧 <span id="footer-email">hypo3300@naver.com</span>
+      </div>
+    </div>
+    <!-- 바로가기 -->
+    <div>
+      <div class="footer-col-title">바로가기</div>
+      <div class="footer-col-item">
+        <a href="index.html">홈</a><br>
+        <a href="products.html">상품 목록</a><br>
+        <a href="cart.html">장바구니</a><br>
+        <a href="mypage.html">마이페이지</a>
+      </div>
+    </div>
+    <!-- SNS -->
+    <div>
+      <div class="footer-col-title">SNS</div>
+      <div class="footer-col-item">
+        📸 인스타그램<br>
+        💛 카카오채널<br>
+        ▶ 유튜브
+      </div>
+    </div>
+  </div>
+
+  <hr class="footer-divider">
+
+  <!-- 사업자 정보 (PG 심사 고정 노출 필수) -->
+  <div class="footer-biz">
+    <p>
+      상호: <span id="biz-name">(주)비에스컴퍼니</span>
+      &nbsp;|&nbsp; 대표자: <span id="biz-ceo">배상민</span>
+      &nbsp;|&nbsp; 사업자등록번호: <span id="biz-regno">761-87-02647</span>
+      &nbsp;|&nbsp; 전화: <span id="biz-tel">1588-3507</span>
+      &nbsp;|&nbsp; 이메일: <span id="biz-email">hypo3300@naver.com</span><br>
+      주소: <span id="biz-addr">경기도 의정부시 호국로 1195-1 4층</span>
+      &nbsp;|&nbsp; 통신판매업신고번호: <span id="biz-mailorder">제2023-의정부흥선-0457호</span>
+    </p>
+    <p class="biz-copyright">© <span id="biz-year">2026</span> <span id="biz-brand">담누리마켓</span>. All rights reserved.</p>
+  </div>
+</footer>
+
+<script src="js/config.js"></script>
+<script src="js/sheets.js"></script>
+<script src="js/app.js"></script>
+<script>
+// ===== 로그인 상태 헤더 반영 =====
+(function() {
+  try {
+    var userData = sessionStorage.getItem('user');
+    if (!userData) return;
+    var user = JSON.parse(userData);
+    if (!user || !user.name) return;
+    var label = document.getElementById('login-label');
+    if (label) label.textContent = user.name + '님';
+  } catch(e) {}
+})();
+
+// ===== 사업자 정보 Google Sheets에서 동적 로드 =====
+async function loadBizInfo() {
+  try {
+    const url = CONFIG.APPS_SCRIPT_URL + '?action=getBizInfo';
+    const res = await fetch(url);
+    const data = await res.json();
+    if (!data || data.error) return; // 실패 시 하드코딩 기본값 유지
+
+    // 시트 컬럼 순서: 상호, 사업자번호, 대표자, 주소, 전화, 이메일, 도메인, 저작권연도, 브랜드명, 통신판매업번호
+    const biz = data.biz || data;
+    if (biz.상호)         { document.getElementById('biz-name').textContent    = biz.상호; }
+    if (biz.대표자)       { document.getElementById('biz-ceo').textContent     = biz.대표자; }
+    if (biz.사업자번호)   { document.getElementById('biz-regno').textContent   = biz.사업자번호; }
+    if (biz.전화)         { document.getElementById('biz-tel').textContent     = biz.전화;
+                            document.getElementById('footer-tel').textContent  = biz.전화; }
+    if (biz.이메일)       { document.getElementById('biz-email').textContent   = biz.이메일;
+                            document.getElementById('footer-email').textContent = biz.이메일; }
+    if (biz.주소)         { document.getElementById('biz-addr').textContent    = biz.주소; }
+    if (biz.통신판매업번호){ document.getElementById('biz-mailorder').textContent = biz.통신판매업번호; }
+    if (biz.저작권연도)   { document.getElementById('biz-year').textContent    = biz.저작권연도; }
+    if (biz.브랜드명)     { document.getElementById('biz-brand').textContent   = biz.브랜드명;
+                            document.getElementById('footer-brand').textContent = biz.브랜드명; }
+  } catch(e) {
+    // 네트워크 실패 시 HTML에 하드코딩된 기본값 그대로 표시
+    console.log('사업자정보 로드 실패 (기본값 사용):', e.message);
+  }
+}
+
+// ===== 상품 목록 로직 =====
+let allProducts = [];
+let filteredProducts = [];
+let currentPage = 1;
+const PER_PAGE = CONFIG.PRODUCTS_PER_PAGE;
+let currentCategoryName = 'all';
+
+function createProductCard(p) {
+  const price = p.salePrice || p.price;
+  const discount = p.salePrice ? Math.round((1 - p.salePrice / p.price) * 100) : 0;
+  const productJson = JSON.stringify(p).replace(/"/g, '&quot;');
+  return `
+    <div class="product-card" onclick="location.href=dealerUrl('product.html?id=${p.id}')">
+      <div class="product-img-wrap">
+        <img src="${p.image}" alt="${p.name}" loading="lazy"
+          onerror="this.src='https://via.placeholder.com/400x400?text=${encodeURIComponent(p.name)}'">
+        ${p.badge ? `<span class="product-badge badge-${p.badge.toLowerCase()}">${p.badge}</span>` : ''}
+        <button class="product-wish" onclick="event.stopPropagation(); this.textContent=this.textContent==='❤️'?'🤍':'❤️'">🤍</button>
+        <button class="product-quick-add" onclick="event.stopPropagation(); Cart.add(${productJson})">🛒 빠른 담기</button>
+      </div>
+      <div class="product-info">
+        <div class="product-category">${p.category}</div>
+        <div class="product-name">${p.name}</div>
+        <div class="product-price">
+          <span class="price-sale">${price.toLocaleString()}원</span>
+          ${p.salePrice ? `<span class="price-original">${p.price.toLocaleString()}원</span>` : ''}
+          ${discount ? `<span class="price-discount">${discount}%</span>` : ''}
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderPage() {
+  const start = (currentPage - 1) * PER_PAGE;
+  const pageItems = filteredProducts.slice(start, start + PER_PAGE);
+  const grid = document.getElementById('product-grid');
+  if (!pageItems.length) {
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--gray);">검색 결과가 없습니다 😢</div>';
+  } else {
+    grid.innerHTML = pageItems.map(createProductCard).join('');
+  }
+  document.getElementById('products-count').textContent = `총 ${filteredProducts.length}개 상품`;
+  renderPagination();
+}
+
+function renderPagination() {
+  const total = Math.ceil(filteredProducts.length / PER_PAGE);
+  const el = document.getElementById('pagination');
+  if (total <= 1) { el.innerHTML = ''; return; }
+  let html = '';
+  for (let i = 1; i <= total; i++) {
+    html += `<button class="page-btn${i === currentPage ? ' active' : ''}" onclick="goPage(${i})">${i}</button>`;
+  }
+  el.innerHTML = html;
+}
+
+function goPage(n) {
+  currentPage = n;
+  renderPage();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function sortProducts() {
+  const sort = document.getElementById('sort-select').value;
+  filteredProducts = [...filteredProducts].sort((a, b) => {
+    const pa = a.salePrice || a.price, pb = b.salePrice || b.price;
+    if (sort === 'price-asc') return pa - pb;
+    if (sort === 'price-desc') return pb - pa;
+    if (sort === 'name') return a.name.localeCompare(b.name);
+    if (sort === 'discount') {
+      const da = a.salePrice ? (1 - a.salePrice / a.price) : 0;
+      const db = b.salePrice ? (1 - b.salePrice / b.price) : 0;
+      return db - da;
+    }
+    return 0;
+  });
+  currentPage = 1;
+  renderPage();
+}
+
+function applyFilters() {
+  const minP = parseInt(document.getElementById('price-min').value) || 0;
+  const maxP = parseInt(document.getElementById('price-max').value) || Infinity;
+  const onlySale = document.getElementById('filter-sale').checked;
+  const onlyNew = document.getElementById('filter-new').checked;
+  const onlyBest = document.getElementById('filter-best').checked;
+
+  let base = currentCategoryName === 'all'
+    ? [...allProducts]
+    : allProducts.filter(p => p.category.trim() === currentCategoryName.trim());
+
+  filteredProducts = base.filter(p => {
+    const price = p.salePrice || p.price;
+    if (price < minP || price > maxP) return false;
+    if (onlySale && !p.salePrice) return false;
+    if (onlyNew && p.badge !== 'NEW') return false;
+    if (onlyBest && p.badge !== 'BEST') return false;
+    return true;
+  });
+  currentPage = 1;
+  renderPage();
+  document.getElementById('filter-panel').classList.remove('mobile-open');
+}
+
+function resetFilters() {
+  document.getElementById('price-min').value = '';
+  document.getElementById('price-max').value = '';
+  document.getElementById('filter-sale').checked = false;
+  document.getElementById('filter-new').checked = false;
+  document.getElementById('filter-best').checked = false;
+  currentCategoryName = 'all';
+  filteredProducts = [...allProducts];
+  currentPage = 1;
+  renderPage();
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  document.querySelector('.nav-item').classList.add('active');
+}
+
+function filterByNav(categoryName, btn) {
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  currentCategoryName = categoryName;
+  if (categoryName === 'all') {
+    filteredProducts = [...allProducts];
+    document.getElementById('page-heading').textContent = '전체 상품';
+  } else {
+    filteredProducts = allProducts.filter(p => p.category.trim() === categoryName.trim());
+    document.getElementById('page-heading').textContent = categoryName + ' 상품';
+  }
+  currentPage = 1;
+  renderPage();
+}
+
+async function initPage() {
+  document.getElementById('store-name').textContent = CONFIG.STORE.BRAND || CONFIG.STORE.NAME;
+  Cart.init();
+
+  // 사업자 정보 로드 (구글 시트 → 푸터 자동 반영)
+  loadBizInfo();
+
+  const params = new URLSearchParams(location.search);
+  const filterParam = params.get('filter');
+  const categoryParam = params.get('category');
+
+  if (filterParam) {
+    document.getElementById('page-heading').textContent =
+      {sale:'특가 상품', new:'신상품', best:'베스트 상품'}[filterParam] || '전체 상품';
+  }
+
+  try {
+    allProducts = await ProductAPI.getAll();
+    if (!allProducts.length) throw new Error('empty');
+  } catch(e) {
+    allProducts = [];
+  }
+
+  if (filterParam === 'sale') filteredProducts = allProducts.filter(p => p.salePrice > 0);
+  else if (filterParam === 'new') filteredProducts = allProducts.filter(p => p.badge === 'NEW');
+  else if (filterParam === 'best') filteredProducts = allProducts.filter(p => p.badge === 'BEST' || p.isFeatured);
+  else if (categoryParam) {
+    currentCategoryName = categoryParam;
+    filteredProducts = allProducts.filter(p => p.category.trim() === categoryParam.trim());
+    document.getElementById('page-heading').textContent = categoryParam + ' 상품';
+  } else {
+    filteredProducts = [...allProducts];
+  }
+
+  try {
+    const categories = await CategoryAPI.getMain();
+    const catContainer = document.getElementById('filter-categories');
+    const nav = document.getElementById('main-nav');
+
+    categories.forEach(c => {
+      const catName = c.name.trim();
+      catContainer.innerHTML += `
+        <label class="filter-item">
+          <input type="radio" name="cat" value="${catName}"
+            onchange="filterByNav('${catName}', null)">
+          ${c.icon} ${catName}
+        </label>`;
+
+      const btn = document.createElement('button');
+      btn.className = 'nav-item';
+      btn.textContent = `${c.icon} ${catName}`;
+      btn.setAttribute('data-category', catName);
+      btn.onclick = function() { filterByNav(catName, this); };
+      nav.appendChild(btn);
+    });
+
+    if (categoryParam) {
+      document.querySelectorAll('.nav-item').forEach(b => {
+        if (b.getAttribute('data-category') === categoryParam) {
+          b.classList.add('active');
+          document.querySelector('.nav-item').classList.remove('active');
+        }
+      });
+    }
+  } catch(e) {
+    console.log('카테고리 로드 실패:', e);
+  }
+
+  renderPage();
+}
+
+initPage();
+</script>
+</body>
+</html>

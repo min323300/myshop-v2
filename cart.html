@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests; script-src 'self' 'unsafe-eval' 'unsafe-inline' https:">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>장바구니 - 담누리마켓</title>
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="담누리마켓">
+  <meta property="og:title" content="🛍️ 장바구니 - 담누리마켓">
+  <meta property="og:description" content="담누리마켓 장바구니에서 주문을 완료하세요!">
+  <meta property="og:image" content="https://gasway.shop/images/og-image.jpg.png">
+  <meta property="og:url" content="https://gasway.shop/cart.html">
+  <meta property="og:locale" content="ko_KR">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .cart-layout { display: grid; grid-template-columns: 1fr 360px; gap: 24px; margin-top: 24px; }
+    .cart-table { background: var(--white); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; }
+    .cart-table-head { display: grid; grid-template-columns: 1fr 100px 120px 80px; gap: 12px; padding: 12px 20px; background: var(--bg); border-bottom: 1px solid var(--border); font-size: 12px; color: var(--gray); font-weight: 600; }
+    .cart-item { display: grid; grid-template-columns: 1fr 100px 120px 80px; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--border); align-items: center; }
+    .cart-item:last-child { border-bottom: none; }
+    .cart-product { display: flex; gap: 12px; align-items: center; }
+    .cart-product img { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); }
+    .cart-product-name { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+    .cart-product-price { font-size: 12px; color: var(--gray); }
+    .cart-qty { display: flex; align-items: center; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+    .cart-qty button { padding: 6px 10px; background: var(--bg); border: none; font-size: 14px; cursor: pointer; }
+    .cart-qty input { width: 36px; text-align: center; border: none; border-left: 1px solid var(--border); border-right: 1px solid var(--border); font-size: 13px; font-weight: 600; padding: 6px 0; font-family: var(--font-main); }
+    .cart-subtotal { font-size: 14px; font-weight: 700; }
+    .cart-remove { background: none; border: none; color: var(--gray-light); font-size: 16px; cursor: pointer; padding: 4px 8px; border-radius: 4px; transition: var(--transition); }
+    .cart-remove:hover { background: #fee2e2; color: #ef4444; }
+    .cart-summary { background: var(--white); border-radius: var(--radius); border: 1px solid var(--border); padding: 24px; height: fit-content; position: sticky; top: 130px; }
+    .cart-summary h3 { font-size: 16px; font-weight: 800; margin-bottom: 20px; }
+    .summary-row { display: flex; justify-content: space-between; font-size: 14px; padding: 8px 0; }
+    .summary-row.total { border-top: 1px solid var(--border); margin-top: 8px; padding-top: 16px; font-weight: 800; font-size: 18px; color: var(--accent); }
+    .checkout-btn { width: 100%; padding: 16px; background: var(--accent); color: #fff; border: none; border-radius: 10px; font-size: 16px; font-weight: 800; margin-top: 16px; cursor: pointer; transition: var(--transition); }
+    .checkout-btn:hover { background: var(--accent-dark); }
+    .checkout-btn:disabled { background: var(--gray-light); cursor: not-allowed; }
+    .cart-empty { text-align: center; padding: 80px 20px; }
+    .cart-empty .empty-icon { font-size: 64px; margin-bottom: 16px; }
+    .cart-empty p { font-size: 16px; color: var(--gray); margin-bottom: 24px; }
+    .cart-empty a { display: inline-block; background: var(--accent); color: #fff; padding: 12px 28px; border-radius: 8px; font-weight: 700; }
+    .select-all { display: flex; align-items: center; gap: 8px; padding: 12px 20px; font-size: 13px; border-bottom: 1px solid var(--border); }
+    .select-all input { accent-color: var(--accent); }
+    @media (max-width: 768px) {
+      .cart-layout { grid-template-columns: 1fr; }
+      .cart-table-head { display: none; }
+      .cart-item { grid-template-columns: 1fr; }
+      .cart-product { flex-direction: row; }
+      .cart-summary { position: static; }
+    }
+  </style>
+</head>
+<body>
+<header class="header">
+  <div class="header-main">
+    <a href="index.html" class="header-logo"><span>🏪</span><span id="store-name">담누리마켓</span></a>
+    <div style="flex:1"></div>
+    <div class="header-icons">
+      <a href="mypage.html" class="header-icon"><span class="icon-emoji">👤</span><span id="login-label">로그인</span></a>
+      <a href="cart.html" class="header-icon"><span class="icon-emoji">🛒</span><span>장바구니</span><span class="cart-badge">0</span></a>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="main-wrap">
+    <h1 style="font-size:22px; font-weight:900; margin-top:24px; margin-bottom:4px;">🛒 장바구니</h1>
+    <p style="font-size:13px; color:var(--gray); margin-bottom:0;">선택한 상품을 확인하고 주문하세요</p>
+
+    <div class="cart-layout" id="cart-layout">
+      <div>
+        <div class="cart-table" id="cart-table">
+          <div class="cart-empty">
+            <div class="empty-icon">🛒</div>
+            <p>장바구니가 비어있습니다</p>
+            <a href="products.html">쇼핑 계속하기</a>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="cart-summary">
+          <h3>주문 요약</h3>
+          <div class="summary-row">
+            <span>상품 금액</span>
+            <span id="sum-products">0원</span>
+          </div>
+          <div class="summary-row">
+            <span>배송비</span>
+            <span id="sum-delivery">3,000원</span>
+          </div>
+          <div class="summary-row">
+            <span>할인</span>
+            <span id="sum-discount" style="color:var(--accent)">-0원</span>
+          </div>
+          <div class="summary-row total">
+            <span>최종 결제금액</span>
+            <span id="sum-total">0원</span>
+          </div>
+          <button class="checkout-btn" id="checkout-btn" onclick="checkout()">
+            결제하기
+          </button>
+          <div style="margin-top:12px; text-align:center; font-size:11px; color:var(--gray-light);">
+            🔒 안전한 결제 시스템으로 보호됩니다
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- ===== 풀 푸터 (index.html 동일 구조 / main.js 자동 반영) ===== -->
+<footer class="footer">
+  <div class="footer-inner">
+    <div>
+      <h4 id="footer-store-name">🏪 담누리마켓</h4>
+      <p style="font-size:12px;line-height:1.8;margin-top:8px;color:#aaa;">
+        다양한 상품을 합리적인 가격에<br>고객님께 전달합니다.
+      </p>
+    </div>
+    <div>
+      <h4>고객센터</h4>
+      <ul>
+        <li><a href="#" id="footer-phone">📞 1588-3507</a></li>
+        <li><a href="#">평일 9:00 ~ 18:00</a></li>
+        <li><a href="#" id="footer-email">📧 hypo3300@naver.com</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>바로가기</h4>
+      <ul>
+        <li><a href="products.html">상품 목록</a></li>
+        <li><a href="cart.html">장바구니</a></li>
+        <li><a href="mypage.html">마이페이지</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>SNS</h4>
+      <ul>
+        <li><a href="#">📸 인스타그램</a></li>
+        <li><a href="#">💛 카카오채널</a></li>
+        <li><a href="#">▶ 유튜브</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p id="footer-biz">상호: (주)비에스컴퍼니 | 사업자번호: 761-87-02647 | 대표: 배상민 | 통신판매업: 제2023-의정부흥선-0457호</p>
+    <p id="footer-addr" style="margin-top:4px;">주소: 경기도 의정부시 호국로 1195-1 4층 | TEL: 1588-3507 | EMAIL: hypo3300@naver.com</p>
+    <p id="footer-copy" style="margin-top:4px;">© 2026 담누리마켓. All rights reserved.</p>
+  </div>
+</footer>
+
+<script src="js/config.js"></script>
+<script src="js/sheets.js"></script>
+<script src="js/app.js"></script>
+<script src="js/main.js"></script>
+<script>
+function renderCart() {
+  var items = Cart.getItems();
+  var table = document.getElementById('cart-table');
+  var checkoutBtn = document.getElementById('checkout-btn');
+
+  if (!items.length) {
+    table.innerHTML = '<div class="cart-empty">'
+      + '<div class="empty-icon">🛒</div>'
+      + '<p>장바구니가 비어있습니다</p>'
+      + '<a href="products.html">쇼핑 계속하기</a>'
+      + '</div>';
+    checkoutBtn.disabled = true;
+    updateSummary();
+    return;
+  }
+
+  checkoutBtn.disabled = false;
+  table.innerHTML = '<div class="select-all">'
+    + '<input type="checkbox" id="select-all" checked onchange="toggleAll(this.checked)"> 전체 선택'
+    + '<button onclick="removeSelected()" style="margin-left:auto;background:none;border:1px solid var(--border);padding:4px 10px;border-radius:6px;font-size:12px;cursor:pointer;color:var(--gray);">선택 삭제</button>'
+    + '</div>'
+    + '<div class="cart-table-head"><div>상품 정보</div><div>수량</div><div>금액</div><div>삭제</div></div>'
+    + items.map(function(item) {
+      return '<div class="cart-item" data-id="' + item.id + '">'
+        + '<div class="cart-product">'
+        + '<input type="checkbox" checked style="accent-color:var(--accent)">'
+        + '<img src="' + item.image + '" alt="' + item.name + '" onerror="this.src=\'https://via.placeholder.com/64x64\'">'
+        + '<div><div class="cart-product-name">' + item.name + '</div>'
+        + '<div class="cart-product-price">' + item.price.toLocaleString() + '원</div></div>'
+        + '</div>'
+        + '<div class="cart-qty">'
+        + '<button onclick="changeQty(\'' + item.id + '\',' + (item.qty-1) + ')">−</button>'
+        + '<input type="number" value="' + item.qty + '" min="1" onchange="changeQty(\'' + item.id + '\',+this.value)">'
+        + '<button onclick="changeQty(\'' + item.id + '\',' + (item.qty+1) + ')">+</button>'
+        + '</div>'
+        + '<div class="cart-subtotal">' + (item.price * item.qty).toLocaleString() + '원</div>'
+        + '<button class="cart-remove" onclick="removeItem(\'' + item.id + '\')">✕</button>'
+        + '</div>';
+    }).join('');
+
+  updateSummary();
+}
+
+function updateSummary() {
+  var total = Cart.getTotal();
+  var delivery = total > 50000 ? 0 : (total > 0 ? 3000 : 0);
+  document.getElementById('sum-products').textContent = total.toLocaleString() + '원';
+  document.getElementById('sum-delivery').textContent = delivery === 0 ? '무료' : delivery.toLocaleString() + '원';
+  document.getElementById('sum-discount').textContent = '-0원';
+  document.getElementById('sum-total').textContent = (total + delivery).toLocaleString() + '원';
+  if (delivery === 0 && total > 0) document.getElementById('sum-delivery').style.color = 'var(--accent)';
+}
+
+function changeQty(id, qty) {
+  if (qty < 1) return;
+  Cart.updateQty(id, qty);
+  renderCart();
+}
+
+function removeItem(id) {
+  Cart.remove(id);
+  renderCart();
+}
+
+function toggleAll(checked) {
+  document.querySelectorAll('.cart-item input[type=checkbox]').forEach(function(cb){ cb.checked = checked; });
+}
+
+function removeSelected() {
+  document.querySelectorAll('.cart-item').forEach(function(row) {
+    var cb = row.querySelector('input[type=checkbox]');
+    if (cb && cb.checked) Cart.remove(row.dataset.id);
+  });
+  renderCart();
+}
+
+function checkout() {
+  if (!Cart.getItems().length) {
+    alert('장바구니가 비어있습니다.');
+    return;
+  }
+  var params = new URLSearchParams(window.location.search);
+  var dealerId = params.get('dealer');
+  var url = 'order.html' + (dealerId ? '?dealer=' + dealerId : '');
+  location.href = url;
+}
+
+// ✅ 로그인 상태 헤더 반영
+(function() {
+  try {
+    var userData = sessionStorage.getItem('user');
+    if (!userData) return;
+    var user = JSON.parse(userData);
+    if (!user || !user.name) return;
+    var label = document.getElementById('login-label');
+    if (label) label.textContent = user.name + '님';
+  } catch(e) {}
+})();
+
+Cart.init();
+renderCart();
+</script>
+</body>
+</html>
