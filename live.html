@@ -34,7 +34,7 @@
       align-items: start;
     }
     @media (max-width: 900px) {
-      .live-main-layout { grid-template-columns: 1fr; }
+      .live-main-layout { grid-template-columns: 1fr; display: flex; flex-direction: column; }
     }
 
     /* 왼쪽 열 */
@@ -64,10 +64,41 @@
 
     /* 오른쪽 열: 채팅 + 상품 */
     .live-right { display: flex; flex-direction: column; gap: 12px; }
-    @media (max-width: 900px) { .live-right { order: -1; } }
+    @media (max-width: 900px) { .live-right { order: 2; } .live-left { order: 1; } }
+
+    /* ══ 모바일 탭 전환 (영상/채팅) ══ */
+    .mobile-view-tabs {
+      display: none;
+      background: #fff;
+      border-bottom: 1px solid #eee;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+    @media (max-width: 900px) { .mobile-view-tabs { display: flex; } }
+    .mvt-btn {
+      flex: 1; padding: 12px 0; font-size: 14px; font-weight: 600;
+      border: none; background: none; cursor: pointer; color: #aaa;
+      border-bottom: 3px solid transparent; transition: all 0.2s;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .mvt-btn.active { color: #e85a2b; border-bottom-color: #e85a2b; }
+
+    /* 모바일에서 채팅/상품 패널 토글 */
+    @media (max-width: 900px) {
+      /* 채팅 패널: 기본 숨김 → 활성화 시 표시 */
+      .live-right { display: none; }
+      .live-right.mobile-active { display: flex; }
+      /* 상품 패널: 기본 표시 → 채팅 활성화 시 숨김 */
+      .mobile-products-panel { display: block; }
+      .mobile-products-panel.mobile-hidden { display: none; }
+    }
 
     /* ★ 채팅 카드 */
     .chat-card { background: #fff; border-radius: 10px; border: 1px solid #eee; overflow: hidden; display: flex; flex-direction: column; height: 500px; }
+    @media (max-width: 900px) {
+      .chat-card { height: calc(100vh - 220px); min-height: 380px; border-radius: 0; border-left: none; border-right: none; }
+    }
     .chat-card-title { padding: 11px 14px; font-size: 13px; font-weight: 600; color: #333; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; gap: 6px; background: #fafafa; flex-shrink: 0; }
     .badge-live { font-size: 10px; background: #e8342b; color: #fff; padding: 2px 7px; border-radius: 10px; font-weight: 600; }
     .badge-vod-tag { font-size: 10px; background: #1565c0; color: #fff; padding: 2px 7px; border-radius: 10px; font-weight: 600; }
@@ -225,6 +256,16 @@
         <span class="live-status-sub" id="live-viewer-count"></span>
       </div>
 
+      <!-- ★ 모바일 탭 전환 바 (영상 아래 고정) -->
+      <div class="mobile-view-tabs">
+        <button class="mvt-btn active" id="mvt-product" onclick="switchMobileView('product')">
+          🛒 상품
+        </button>
+        <button class="mvt-btn" id="mvt-chat" onclick="switchMobileView('chat')">
+          💬 채팅
+        </button>
+      </div>
+
       <!-- 메인 레이아웃 -->
       <div class="live-main-layout">
 
@@ -241,11 +282,15 @@
             <span class="td-label">⏰ 라이브 특가 마감까지</span>
             <span class="td-timer" id="countdown-timer">00:00:00</span>
           </div>
-          <div class="mobile-product-strip" id="mobile-product-strip"></div>
+
+          <!-- 모바일 상품 패널 (탭 전환 대상) -->
+          <div class="mobile-products-panel" id="mobile-products-panel">
+            <div class="mobile-product-strip" id="mobile-product-strip"></div>
+          </div>
         </div>
 
         <!-- 오른쪽: 채팅 + 상품 -->
-        <div class="live-right">
+        <div class="live-right" id="onair-chat-section">
 
           <!-- ★ 채팅 카드 -->
           <div class="chat-card">
@@ -258,8 +303,8 @@
               allow="accelerometer; autoplay; clipboard-write; encrypted-media"></iframe>
           </div>
 
-          <!-- 방송 중 상품 -->
-          <div class="sidebar-card">
+          <!-- 방송 중 상품 (데스크톱 우측) -->
+          <div class="sidebar-card" id="sidebar-product-wrap">
             <div class="sidebar-card-title">
               🛒 방송 중 상품
               <span class="badge-live" id="sidebar-live-badge" style="display:none;">LIVE</span>
@@ -395,6 +440,29 @@
     document.querySelectorAll('.live-nav-btn').forEach(b => b.classList.remove('active'));
     document.getElementById('tab-' + tabId).classList.add('active');
     btn.classList.add('active');
+  }
+
+  // ── ★ 모바일 상품/채팅 탭 전환 ──────────────────────────
+  function switchMobileView(view) {
+    const chatPanel     = document.getElementById('onair-chat-section');   // live-right
+    const productPanel  = document.getElementById('mobile-products-panel');
+    const sidebarCard   = document.getElementById('sidebar-product-wrap'); // 사이드바 (데스크톱용)
+    const btnProduct    = document.getElementById('mvt-product');
+    const btnChat       = document.getElementById('mvt-chat');
+
+    if (view === 'chat') {
+      // 채팅 보이기 / 상품 숨기기
+      chatPanel.classList.add('mobile-active');
+      productPanel.classList.add('mobile-hidden');
+      btnChat.classList.add('active');
+      btnProduct.classList.remove('active');
+    } else {
+      // 상품 보이기 / 채팅 숨기기
+      chatPanel.classList.remove('mobile-active');
+      productPanel.classList.remove('mobile-hidden');
+      btnProduct.classList.add('active');
+      btnChat.classList.remove('active');
+    }
   }
 
   // ── 데이터 로드 ───────────────────────────────────────────
