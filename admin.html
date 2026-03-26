@@ -281,21 +281,40 @@
       </div>
     </div>
 
-    <!-- ⑥ 정산 -->
-    <div id="page-settlement" class="page">
-      <div class="ph"><div><div class="ph-title">정산 관리</div></div></div>
-      <div class="stat-grid">
-        <div class="sc c-blue"><div class="sc-top"><div class="sc-icon">💰</div></div><div class="sc-val">0원</div><div class="sc-label">총 매출</div></div>
-        <div class="sc c-orange"><div class="sc-top"><div class="sc-icon">🏦</div></div><div class="sc-val">0원</div><div class="sc-label">PG 수수료 (2.5%)</div></div>
-        <div class="sc c-red"><div class="sc-top"><div class="sc-icon">🏪</div></div><div class="sc-val">0원</div><div class="sc-label">본사 마진 (2%)</div></div>
-        <div class="sc c-green"><div class="sc-top"><div class="sc-icon">💵</div></div><div class="sc-val">0원</div><div class="sc-label">가맹점 수령 (95.5%)</div></div>
-      </div>
-      <div class="card">
-        <div class="card-hd"><div class="card-title">💰 정산 내역</div></div>
-        <div class="tw" id="settle-tw"><div class="loading"><div class="lspin">⏳</div></div></div>
-      </div>
+   <!-- ⑥ 정산 -->
+<div id="page-settlement" class="page">
+  <div class="ph">
+    <div><div class="ph-title">정산 관리</div><div class="ph-sub" id="settle-month-label"></div></div>
+    <div class="ph-acts">
+      <input type="month" id="settle-month" style="padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:var(--font);outline:none;">
+      <button class="btn btn-outline" onclick="loadSettlement()">🔄 조회</button>
+      <button class="btn btn-primary" onclick="runCalcSettlement()" style="background:#1a7f4b;">⚙️ 정산 계산</button>
     </div>
-
+  </div>
+  <!-- 본사마진율 설정 -->
+  <div class="card" style="margin-bottom:16px;padding:16px 20px;">
+    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+      <span style="font-size:13px;font-weight:600;color:#444;">⚙️ 본사 마진율</span>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <input type="number" id="hq-margin-rate" step="0.01" min="0.1" max="0.2" value="0.2"
+          style="width:80px;padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;text-align:center;">
+        <span style="font-size:13px;color:#666;">%</span>
+        <button onclick="saveHqMargin()" class="btn btn-primary" style="font-size:12px;padding:6px 14px;">💾 저장</button>
+      </div>
+      <span style="font-size:12px;color:#aaa;">0.1% ~ 0.2% 범위에서 조정 가능</span>
+    </div>
+  </div>
+  <div class="stat-grid" id="settle-stat-grid">
+    <div class="sc c-blue"><div class="sc-top"><div class="sc-icon">💰</div></div><div class="sc-val" id="settle-total">0원</div><div class="sc-label">총 매출</div></div>
+    <div class="sc c-orange"><div class="sc-top"><div class="sc-icon">🏦</div></div><div class="sc-val" id="settle-pg">0원</div><div class="sc-label">PG 수수료</div></div>
+    <div class="sc c-red"><div class="sc-top"><div class="sc-icon">🏪</div></div><div class="sc-val" id="settle-hq">0원</div><div class="sc-label">본사 수익</div></div>
+    <div class="sc c-green"><div class="sc-top"><div class="sc-icon">💵</div></div><div class="sc-val" id="settle-dealer">0원</div><div class="sc-label">대리점 수령액</div></div>
+  </div>
+  <div class="card">
+    <div class="card-hd"><div class="card-title">💰 대리점별 정산 내역</div></div>
+    <div class="tw" id="settle-tw"><div style="padding:30px;text-align:center;color:#aaa;">월을 선택하고 조회 버튼을 누르세요</div></div>
+  </div>
+</div>
     <!-- ⑦ 리뷰 -->
     <div id="page-reviews" class="page">
       <div class="ph">
