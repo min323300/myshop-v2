@@ -402,7 +402,549 @@
         </div>
       </div>
     </div>
+<!-- ===== 라이브 관리 페이지 ===== -->
+<div id="page-live-mgmt" class="page">
+  <div class="ph">
+    <div>
+      <div class="ph-title">📺 라이브 방송 관리</div>
+      <div class="ph-sub">방송 등록, 상태 변경, 특가 상품 설정</div>
+    </div>
+    <button class="btn-primary" onclick="openLiveModal()">+ 새 방송 등록</button>
+  </div>
 
+  <!-- 방송 목록 -->
+  <div class="card">
+    <div class="card-hd">
+      <div class="card-title">방송 목록</div>
+      <div class="stabs">
+        <div class="stab active" onclick="filterLive('전체',this)">전체</div>
+        <div class="stab" onclick="filterLive('예정',this)">⏳ 예정</div>
+        <div class="stab" onclick="filterLive('진행중',this)">🔴 진행중</div>
+        <div class="stab" onclick="filterLive('종료',this)">✅ 종료</div>
+      </div>
+    </div>
+    <div id="live-list">
+      <div class="loading"><div class="lspin">⏳</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 알림 신청자 페이지 ===== -->
+<div id="page-live-alarm" class="page">
+  <div class="ph">
+    <div>
+      <div class="ph-title">🔔 알림 신청자</div>
+      <div class="ph-sub">방송별 알림 신청자 목록</div>
+    </div>
+    <button class="btn-primary" onclick="sendAlarmEmail()">📧 이메일 일괄 발송</button>
+  </div>
+  <div class="card">
+    <div class="card-hd">
+      <div class="card-title">신청자 목록</div>
+      <select id="alarm-broadcast-filter" onchange="loadAlarmList()" style="padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;">
+        <option value="">전체 방송</option>
+      </select>
+    </div>
+    <div id="alarm-list">
+      <div class="loading"><div class="lspin">⏳</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 쿠폰 발급 내역 페이지 ===== -->
+<div id="page-live-coupon" class="page">
+  <div class="ph">
+    <div>
+      <div class="ph-title">🎁 쿠폰 발급 내역</div>
+      <div class="ph-sub">라이브 전용 쿠폰 발급 현황</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-hd">
+      <div class="card-title">발급 내역</div>
+    </div>
+    <div id="coupon-list">
+      <div class="loading"><div class="lspin">⏳</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 라이브 등록/수정 모달 ===== -->
+<div class="modal-overlay" id="live-modal-overlay" style="display:none;">
+  <div class="modal-box" style="width:520px;max-width:95vw;max-height:90vh;overflow-y:auto;">
+    <div class="modal-hd">
+      <div class="modal-title" id="live-modal-title">📺 새 방송 등록</div>
+      <button class="modal-close" onclick="closeLiveModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="live-no">
+      <div class="fg">
+        <label class="fl">방송 제목 <span style="color:var(--red)">*</span></label>
+        <input class="fi" id="live-title" placeholder="예: 담누리마켓 오픈 특가 방송">
+      </div>
+      <div class="fg">
+        <label class="fl">방송 설명</label>
+        <input class="fi" id="live-desc" placeholder="방송 설명을 입력하세요">
+      </div>
+      <div class="fg">
+        <label class="fl">유튜브 URL <span style="color:var(--red)">*</span></label>
+        <input class="fi" id="live-youtube" placeholder="https://youtube.com/live/xxxxx">
+      </div>
+      <div class="fg">
+        <label class="fl">썸네일 이미지 URL</label>
+        <input class="fi" id="live-thumb" placeholder="https://...">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="fg">
+          <label class="fl">시작 일시 <span style="color:var(--red)">*</span></label>
+          <input class="fi" type="datetime-local" id="live-start">
+        </div>
+        <div class="fg">
+          <label class="fl">종료 일시</label>
+          <input class="fi" type="datetime-local" id="live-end">
+        </div>
+      </div>
+      <div class="fg">
+        <label class="fl">특가 상품 번호</label>
+        <input class="fi" id="live-products" placeholder="예: 1,2,3 (쉼표로 구분)">
+      </div>
+      <div class="fg">
+        <label class="fl">특가 정보</label>
+        <input class="fi" id="live-sale" placeholder="예: 1:22000,2:17000 (상품번호:특가)">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+        <div class="fg">
+          <label class="fl">쿠폰 코드</label>
+          <input class="fi" id="live-coupon-code" placeholder="예: LIVE10">
+        </div>
+        <div class="fg">
+          <label class="fl">할인율 (%)</label>
+          <input class="fi" type="number" id="live-coupon-rate" placeholder="10">
+        </div>
+        <div class="fg">
+          <label class="fl">유효시간 (h)</label>
+          <input class="fi" type="number" id="live-coupon-hour" placeholder="2">
+        </div>
+      </div>
+      <div class="fg">
+        <label class="fl">상태</label>
+        <select class="fi" id="live-status">
+          <option value="예정">⏳ 예정</option>
+          <option value="진행중">🔴 진행중</option>
+          <option value="종료">✅ 종료</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label class="fl">사용여부</label>
+        <select class="fi" id="live-active">
+          <option value="TRUE">사용</option>
+          <option value="FALSE">미사용</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn-secondary" onclick="closeLiveModal()">취소</button>
+      <button class="btn-primary" onclick="saveLive()">저장</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// 라이브 관리 JS
+// ============================================================
+
+let allLiveData    = [];
+let allAlarmData   = [];
+let allCouponData  = [];
+
+// ---- 라이브 목록 로드 ----
+async function loadLiveData() {
+  try {
+    const url = CONFIG.SHEETS['라이브방송'] + '&t=' + Date.now();
+    const res = await fetch(url);
+    const csv = await res.text();
+    allLiveData = parseAdminCSV(csv);
+    renderLiveList(allLiveData);
+    updateAlarmFilter();
+  } catch(e) {
+    document.getElementById('live-list').innerHTML =
+      '<div style="padding:20px;text-align:center;color:#aaa;">데이터 로드 실패</div>';
+  }
+}
+
+// ---- 라이브 목록 렌더링 ----
+function renderLiveList(data) {
+  const el = document.getElementById('live-list');
+  if (!data.length) {
+    el.innerHTML = '<div style="padding:30px;text-align:center;color:#aaa;font-size:14px;">등록된 방송이 없습니다</div>';
+    return;
+  }
+  el.innerHTML = `
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead>
+        <tr style="background:#f8f8f8;border-bottom:1px solid #eee;">
+          <th style="padding:10px;text-align:left;">방송제목</th>
+          <th style="padding:10px;text-align:center;">시작일시</th>
+          <th style="padding:10px;text-align:center;">상태</th>
+          <th style="padding:10px;text-align:center;">알림신청</th>
+          <th style="padding:10px;text-align:center;">쿠폰</th>
+          <th style="padding:10px;text-align:center;">관리</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${data.map(b => {
+          const statusColor = b['상태'] === '진행중' ? '#e8342b' : b['상태'] === '예정' ? '#1a73e8' : '#888';
+          return `<tr style="border-bottom:1px solid #f5f5f5;">
+            <td style="padding:10px;">
+              <div style="font-weight:500;color:#222;">${b['방송제목'] || '-'}</div>
+              <div style="font-size:11px;color:#aaa;">${b['대리점ID'] || '본사'}</div>
+            </td>
+            <td style="padding:10px;text-align:center;color:#666;">${formatLiveDate(b['시작일시'])}</td>
+            <td style="padding:10px;text-align:center;">
+              <span style="background:${statusColor}20;color:${statusColor};padding:3px 10px;border-radius:10px;font-size:11px;font-weight:600;">
+                ${b['상태'] === '진행중' ? '🔴 LIVE' : b['상태'] === '예정' ? '⏳ 예정' : '✅ 종료'}
+              </span>
+            </td>
+            <td style="padding:10px;text-align:center;color:#e85a2b;font-weight:600;">${b['알림신청수'] || 0}명</td>
+            <td style="padding:10px;text-align:center;">${b['쿠폰코드'] ? `<span style="background:#fff8f6;color:#e85a2b;padding:2px 8px;border-radius:4px;font-size:11px;">${b['쿠폰코드']}</span>` : '-'}</td>
+            <td style="padding:10px;text-align:center;">
+              <div style="display:flex;gap:6px;justify-content:center;">
+                <button onclick="editLive(${JSON.stringify(b).replace(/"/g,'&quot;')})"
+                  style="padding:4px 10px;background:#f0f0f0;border:none;border-radius:4px;font-size:12px;cursor:pointer;">수정</button>
+                ${b['상태'] === '예정'
+                  ? `<button onclick="changeLiveStatus('${b['번호']}','진행중')"
+                      style="padding:4px 10px;background:#e85a2b;color:#fff;border:none;border-radius:4px;font-size:12px;cursor:pointer;">▶ 시작</button>`
+                  : b['상태'] === '진행중'
+                  ? `<button onclick="changeLiveStatus('${b['번호']}','종료')"
+                      style="padding:4px 10px;background:#333;color:#fff;border:none;border-radius:4px;font-size:12px;cursor:pointer;">■ 종료</button>`
+                  : ''}
+              </div>
+            </td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
+}
+
+// ---- 상태 빠른 변경 ----
+async function changeLiveStatus(no, status) {
+  if (!confirm(`상태를 "${status}"로 변경하시겠습니까?`)) return;
+  try {
+    const res = await fetch(CONFIG.APPS_SCRIPT_URL, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'saveLiveBroadcast', data: { 번호: no, 상태: status } })
+    });
+    const result = await res.json();
+    if (result.status === 'ok') {
+      showAdminToast(status === '진행중' ? '🔴 방송이 시작되었습니다!' : '✅ 방송이 종료되었습니다!');
+      loadLiveData();
+    }
+  } catch(e) { showAdminToast('오류가 발생했습니다'); }
+}
+
+// ---- 필터 ----
+function filterLive(status, btn) {
+  document.querySelectorAll('#page-live-mgmt .stab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const filtered = status === '전체' ? allLiveData : allLiveData.filter(b => b['상태'] === status);
+  renderLiveList(filtered);
+}
+
+// ---- 모달 ----
+function openLiveModal() {
+  document.getElementById('live-no').value = '';
+  document.getElementById('live-title').value = '';
+  document.getElementById('live-desc').value = '';
+  document.getElementById('live-youtube').value = '';
+  document.getElementById('live-thumb').value = '';
+  document.getElementById('live-start').value = '';
+  document.getElementById('live-end').value = '';
+  document.getElementById('live-products').value = '';
+  document.getElementById('live-sale').value = '';
+  document.getElementById('live-coupon-code').value = '';
+  document.getElementById('live-coupon-rate').value = '';
+  document.getElementById('live-coupon-hour').value = '';
+  document.getElementById('live-status').value = '예정';
+  document.getElementById('live-active').value = 'TRUE';
+  document.getElementById('live-modal-title').textContent = '📺 새 방송 등록';
+  document.getElementById('live-modal-overlay').style.display = 'flex';
+}
+
+function editLive(b) {
+  document.getElementById('live-no').value          = b['번호'] || '';
+  document.getElementById('live-title').value        = b['방송제목'] || '';
+  document.getElementById('live-desc').value         = b['방송설명'] || '';
+  document.getElementById('live-youtube').value      = b['유튜브URL'] || '';
+  document.getElementById('live-thumb').value        = b['썸네일이미지'] || '';
+  document.getElementById('live-start').value        = (b['시작일시'] || '').replace(' ', 'T').substring(0,16);
+  document.getElementById('live-end').value          = (b['종료일시'] || '').replace(' ', 'T').substring(0,16);
+  document.getElementById('live-products').value     = b['특가상품번호'] || '';
+  document.getElementById('live-sale').value         = b['특가정보'] || '';
+  document.getElementById('live-coupon-code').value  = b['쿠폰코드'] || '';
+  document.getElementById('live-coupon-rate').value  = b['쿠폰할인율'] || '';
+  document.getElementById('live-coupon-hour').value  = b['쿠폰유효시간'] || '';
+  document.getElementById('live-status').value       = b['상태'] || '예정';
+  document.getElementById('live-active').value       = b['사용여부'] || 'TRUE';
+  document.getElementById('live-modal-title').textContent = '📺 방송 수정';
+  document.getElementById('live-modal-overlay').style.display = 'flex';
+}
+
+function closeLiveModal() {
+  document.getElementById('live-modal-overlay').style.display = 'none';
+}
+
+async function saveLive() {
+  const title = document.getElementById('live-title').value.trim();
+  const youtube = document.getElementById('live-youtube').value.trim();
+  const start = document.getElementById('live-start').value;
+  if (!title) { showAdminToast('방송 제목을 입력하세요'); return; }
+  if (!youtube) { showAdminToast('유튜브 URL을 입력하세요'); return; }
+  if (!start) { showAdminToast('시작 일시를 입력하세요'); return; }
+
+  const data = {
+    번호:         document.getElementById('live-no').value || '',
+    방송제목:     title,
+    방송설명:     document.getElementById('live-desc').value,
+    유튜브URL:    youtube,
+    썸네일이미지: document.getElementById('live-thumb').value,
+    시작일시:     start.replace('T', ' '),
+    종료일시:     document.getElementById('live-end').value.replace('T', ' '),
+    특가상품번호: document.getElementById('live-products').value,
+    특가정보:     document.getElementById('live-sale').value,
+    쿠폰코드:     document.getElementById('live-coupon-code').value,
+    쿠폰할인율:   document.getElementById('live-coupon-rate').value,
+    쿠폰유효시간: document.getElementById('live-coupon-hour').value,
+    상태:         document.getElementById('live-status').value,
+    사용여부:     document.getElementById('live-active').value,
+    대리점ID:     '본사',
+    알림신청수:   '0'
+  };
+
+  try {
+    const res = await fetch(CONFIG.APPS_SCRIPT_URL, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'saveLiveBroadcast', data })
+    });
+    const result = await res.json();
+    if (result.status === 'ok') {
+      showAdminToast('✅ 방송이 저장되었습니다!');
+      closeLiveModal();
+      loadLiveData();
+    } else { showAdminToast('저장 실패: ' + (result.message || '')); }
+  } catch(e) { showAdminToast('네트워크 오류'); }
+}
+
+// ---- 알림 신청자 ----
+async function loadAlarmData() {
+  try {
+    const url = CONFIG.SHEETS['라이브알림'] + '&t=' + Date.now();
+    const res = await fetch(url);
+    const csv = await res.text();
+    allAlarmData = parseAdminCSV(csv);
+    renderAlarmList(allAlarmData);
+  } catch(e) {
+    document.getElementById('alarm-list').innerHTML =
+      '<div style="padding:20px;text-align:center;color:#aaa;">데이터 없음 (첫 신청 후 자동 생성)</div>';
+  }
+}
+
+function updateAlarmFilter() {
+  const sel = document.getElementById('alarm-broadcast-filter');
+  if (!sel) return;
+  const titles = {};
+  allLiveData.forEach(b => { titles[b['번호']] = b['방송제목']; });
+  sel.innerHTML = '<option value="">전체 방송</option>' +
+    Object.entries(titles).map(([no, title]) =>
+      `<option value="${no}">${title}</option>`).join('');
+}
+
+function loadAlarmList() {
+  const no = document.getElementById('alarm-broadcast-filter').value;
+  const filtered = no ? allAlarmData.filter(a => a['방송번호'] === no) : allAlarmData;
+  renderAlarmList(filtered);
+}
+
+function renderAlarmList(data) {
+  const el = document.getElementById('alarm-list');
+  if (!data.length) {
+    el.innerHTML = '<div style="padding:30px;text-align:center;color:#aaa;">알림 신청자가 없습니다</div>';
+    return;
+  }
+  el.innerHTML = `
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead>
+        <tr style="background:#f8f8f8;border-bottom:1px solid #eee;">
+          <th style="padding:10px;text-align:left;">이름</th>
+          <th style="padding:10px;text-align:center;">연락처</th>
+          <th style="padding:10px;text-align:center;">이메일</th>
+          <th style="padding:10px;text-align:center;">방송번호</th>
+          <th style="padding:10px;text-align:center;">신청일시</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${data.map(a => `
+          <tr style="border-bottom:1px solid #f5f5f5;">
+            <td style="padding:10px;font-weight:500;">${a['이름'] || '-'}</td>
+            <td style="padding:10px;text-align:center;">${a['연락처'] || '-'}</td>
+            <td style="padding:10px;text-align:center;">${a['이메일'] || '-'}</td>
+            <td style="padding:10px;text-align:center;">${a['방송번호'] || '-'}</td>
+            <td style="padding:10px;text-align:center;color:#aaa;">${a['신청일시'] || '-'}</td>
+          </tr>`).join('')}
+      </tbody>
+    </table>
+    <div style="padding:10px 14px;font-size:12px;color:#888;border-top:1px solid #f0f0f0;">
+      총 ${data.length}명
+    </div>`;
+}
+
+// ---- 이메일 일괄 발송 (구글 시트 메뉴 안내) ----
+function sendAlarmEmail() {
+  alert('이메일 발송 방법:\n\n구글 시트 → [📺 라이브 관리] 메뉴\n→ [🔔 알림 이메일 발송] 클릭\n→ 방송 번호 입력\n→ 전체 발송 완료!');
+}
+
+// ---- 쿠폰 내역 ----
+async function loadCouponData() {
+  try {
+    const url = CONFIG.SHEETS['라이브쿠폰'] + '&t=' + Date.now();
+    const res = await fetch(url);
+    const csv = await res.text();
+    allCouponData = parseAdminCSV(csv);
+    renderCouponList(allCouponData);
+  } catch(e) {
+    document.getElementById('coupon-list').innerHTML =
+      '<div style="padding:20px;text-align:center;color:#aaa;">데이터 없음 (첫 쿠폰 발급 후 자동 생성)</div>';
+  }
+}
+
+function renderCouponList(data) {
+  const el = document.getElementById('coupon-list');
+  if (!data.length) {
+    el.innerHTML = '<div style="padding:30px;text-align:center;color:#aaa;">발급된 쿠폰이 없습니다</div>';
+    return;
+  }
+  el.innerHTML = `
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead>
+        <tr style="background:#f8f8f8;border-bottom:1px solid #eee;">
+          <th style="padding:10px;text-align:left;">이름</th>
+          <th style="padding:10px;text-align:center;">연락처</th>
+          <th style="padding:10px;text-align:center;">쿠폰코드</th>
+          <th style="padding:10px;text-align:center;">할인율</th>
+          <th style="padding:10px;text-align:center;">발급일시</th>
+          <th style="padding:10px;text-align:center;">사용여부</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${data.map(c => `
+          <tr style="border-bottom:1px solid #f5f5f5;">
+            <td style="padding:10px;font-weight:500;">${c['이름'] || '-'}</td>
+            <td style="padding:10px;text-align:center;">${c['연락처'] || '-'}</td>
+            <td style="padding:10px;text-align:center;">
+              <span style="background:#fff8f6;color:#e85a2b;padding:2px 8px;border-radius:4px;font-weight:600;">${c['쿠폰코드'] || '-'}</span>
+            </td>
+            <td style="padding:10px;text-align:center;">${c['할인율'] || 0}%</td>
+            <td style="padding:10px;text-align:center;color:#aaa;">${c['발급일시'] || '-'}</td>
+            <td style="padding:10px;text-align:center;">
+              <span style="color:${c['사용여부']==='TRUE'?'#e85a2b':'#888'}">${c['사용여부']==='TRUE'?'✅ 사용':'미사용'}</span>
+            </td>
+          </tr>`).join('')}
+      </tbody>
+    </table>
+    <div style="padding:10px 14px;font-size:12px;color:#888;border-top:1px solid #f0f0f0;">
+      총 ${data.length}건
+    </div>`;
+}
+
+// ---- config.js에 라이브알림/쿠폰 시트 추가 ----
+// (이미 config.js에 없으면 직접 URL 생성)
+function getLiveSheetUrl(sheetName) {
+  return `https://docs.google.com/spreadsheets/d/${CONFIG.SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}&t=${Date.now()}`;
+}
+
+// CONFIG.SHEETS에 라이브알림/쿠폰 없으면 직접 로드
+if (!CONFIG.SHEETS['라이브알림']) {
+  CONFIG.SHEETS['라이브알림'] = getLiveSheetUrl('라이브알림').replace('&t=' + Date.now(), '');
+}
+if (!CONFIG.SHEETS['라이브쿠폰']) {
+  CONFIG.SHEETS['라이브쿠폰'] = getLiveSheetUrl('라이브쿠폰').replace('&t=' + Date.now(), '');
+}
+
+// ---- CSV 파싱 (admin용) ----
+function parseAdminCSV(csv) {
+  const lines = csv.trim().split('\n');
+  if (lines.length < 2) return [];
+  const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+  return lines.slice(1).map(line => {
+    const vals = []; let cur = '', inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') { inQ = !inQ; }
+      else if (ch === ',' && !inQ) { vals.push(cur.trim()); cur = ''; }
+      else { cur += ch; }
+    }
+    vals.push(cur.trim());
+    const obj = {};
+    headers.forEach((h, i) => { obj[h] = (vals[i] || '').replace(/"/g, '').trim(); });
+    return obj;
+  }).filter(r => Object.values(r).some(v => v));
+}
+
+// ---- 날짜 포맷 ----
+function formatLiveDate(str) {
+  if (!str) return '-';
+  const d = new Date(str);
+  if (isNaN(d)) return str;
+  const days = ['일','월','화','수','목','금','토'];
+  return `${d.getMonth()+1}/${d.getDate()}(${days[d.getDay()]}) ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
+// ---- 토스트 ----
+function showAdminToast(msg) {
+  let t = document.getElementById('admin-toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'admin-toast';
+    t.style.cssText = 'position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:12px 24px;border-radius:24px;font-size:14px;z-index:9999;opacity:0;transition:opacity 0.3s;pointer-events:none;white-space:nowrap;';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.opacity = '1';
+  setTimeout(() => { t.style.opacity = '0'; }, 3000);
+}
+
+// ---- go() 함수 확장 (기존 go() 함수에 추가) ----
+const _origGo = typeof go === 'function' ? go : null;
+function go(pageId, el) {
+  // 라이브 관련 페이지 처리
+  if (pageId === 'live-mgmt') {
+    showPage('live-mgmt', el);
+    loadLiveData();
+    return;
+  }
+  if (pageId === 'live-alarm') {
+    showPage('live-alarm', el);
+    loadLiveData();
+    loadAlarmData();
+    return;
+  }
+  if (pageId === 'live-coupon') {
+    showPage('live-coupon', el);
+    loadCouponData();
+    return;
+  }
+  // 기존 go() 함수 호출
+  if (_origGo) _origGo(pageId, el);
+}
+
+function showPage(pageId, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const pg = document.getElementById('page-' + pageId);
+  if (pg) pg.classList.add('active');
+  document.querySelectorAll('.sb-item').forEach(i => i.classList.remove('active'));
+  if (el) el.classList.add('active');
+}
+</script>
   </main>
 </div>
 
