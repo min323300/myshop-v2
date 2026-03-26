@@ -6,7 +6,7 @@ const CONFIG = {
   SHEET_ID: '1gjnczt_Db959Nc6aAF6CIPIj1SBY4XvoIXuEAAIJOZE',
 
   // ✅ Apps Script URL (기존과 동일 — 새 배포 후 변경 예정)
-  APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbzWpT2On47R7_LTRiznH7qcPBYTPUV3i4UiywI8lkHUYt6KGzDevap7RfQHACwD7oxDzg/exec',
+  APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbzQ-Ce8Zbj5mO-iMF6IJQhNtbsHl7DGo9ER4bsBoJRoz1JnvIdkp3M3qb1efEcSlwoB/exec',
 
   // ✅ 이미지 기본 URL (myshop-v2 저장소)
   IMAGE_BASE: 'https://min323300.github.io/myshop-v2/images/',
