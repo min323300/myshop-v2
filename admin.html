@@ -460,7 +460,33 @@
         <div id="coupon-list"><div class="loading"><div class="lspin">⏳</div></div></div>
       </div>
     </div>
-
+<!-- 위탁판매 승인 페이지 -->
+<div id="page-consignment-mgmt" class="page">
+  <div class="ph">
+    <div><div class="ph-title">🤝 위탁판매 승인 관리</div><div class="ph-sub">대리점이 신청한 위탁판매를 승인/거절합니다</div></div>
+    <div class="ph-acts"><button class="btn btn-outline" onclick="loadConsignmentMgmt()">🔄 새로고침</button></div>
+  </div>
+  <div class="stat-grid">
+    <div class="sc c-orange"><div class="sc-top"><div class="sc-icon">⏳</div></div><div class="sc-val" id="cm-pending">-</div><div class="sc-label">승인 대기</div></div>
+    <div class="sc c-green"><div class="sc-top"><div class="sc-icon">✅</div></div><div class="sc-val" id="cm-approved">-</div><div class="sc-label">승인 완료</div></div>
+    <div class="sc c-red"><div class="sc-top"><div class="sc-icon">❌</div></div><div class="sc-val" id="cm-rejected">-</div><div class="sc-label">거절</div></div>
+    <div class="sc c-blue"><div class="sc-top"><div class="sc-icon">📦</div></div><div class="sc-val" id="cm-total">-</div><div class="sc-label">전체</div></div>
+  </div>
+  <div class="card">
+    <div class="card-hd">
+      <div class="card-title">위탁판매 신청 목록</div>
+      <div class="card-acts">
+        <select id="cm-filter" onchange="filterConsignment()" style="padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;">
+          <option value="all">전체</option>
+          <option value="pending">⏳ 대기중</option>
+          <option value="approved">✅ 승인</option>
+          <option value="rejected">❌ 거절</option>
+        </select>
+      </div>
+    </div>
+    <div class="tw" id="cm-tw"><div class="loading"><div class="lspin">⏳</div></div></div>
+  </div>
+</div>
   </main>
 </div>
 
