@@ -458,7 +458,26 @@
         <div class="tw" id="reviews-tw"><div class="loading"><div class="lspin">⏳</div></div></div>
       </div>
     </div>
-
+    <!-- 위탁판매 페이지 -->
+    <div id="page-consignment" class="page">
+      <div class="ph">
+        <div><div class="ph-title">🤝 위탁판매 신청</div><div class="ph-sub">내 상품을 본사 쇼핑몰에 위탁판매로 노출 신청합니다</div></div>
+        <div class="ph-acts"><button class="btn btn-outline" onclick="loadConsignment()">🔄 새로고침</button></div>
+      </div>
+      <div style="background:#e8f4fd;border:1px solid #bbdefb;border-radius:10px;padding:14px 18px;margin-bottom:16px;font-size:13px;color:#1565c0;">
+        💡 <strong>위탁판매란?</strong> 내 상품을 본사 쇼핑몰에도 노출시켜 더 많은 고객에게 판매하는 기능입니다. 신청 후 본사 승인 완료 시 자동 노출됩니다.
+      </div>
+      <div class="stat-grid">
+        <div class="sc c-blue"><div class="sc-top"><div class="sc-icon">📦</div></div><div class="sc-val" id="cs-total">-</div><div class="sc-label">전체 상품</div></div>
+        <div class="sc c-orange"><div class="sc-top"><div class="sc-icon">⏳</div></div><div class="sc-val" id="cs-pending">-</div><div class="sc-label">승인 대기</div></div>
+        <div class="sc c-green"><div class="sc-top"><div class="sc-icon">✅</div></div><div class="sc-val" id="cs-approved">-</div><div class="sc-label">승인 완료</div></div>
+        <div class="sc c-red"><div class="sc-top"><div class="sc-icon">❌</div></div><div class="sc-val" id="cs-rejected">-</div><div class="sc-label">미신청/거절</div></div>
+      </div>
+      <div class="card">
+        <div class="card-hd"><div class="card-title">내 상품 위탁판매 현황</div></div>
+        <div class="tw" id="consignment-tw"><div class="loading"><div class="lspin">⏳</div></div></div>
+      </div>
+    </div>
     <!-- ⑦ 공지사항 -->
     <div id="page-notice" class="page">
       <div class="ph">
