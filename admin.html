@@ -1180,6 +1180,84 @@ function showLivePage(pageId, el) {
   document.querySelectorAll('.sb-item').forEach(function(i){ i.classList.remove('active'); });
   if (el) el.classList.add('active');
 }
+// ---- 위탁판매 승인 관리 ----
+var allConsignData = [];
+
+async function loadConsignmentMgmt() {
+  document.getElementById('cm-tw').innerHTML = '<div class="loading"><div class="lspin">⏳</div></div>';
+  try {
+    var url = 'https://docs.google.com/spreadsheets/d/' + CONFIG.SHEET_ID
+      + '/gviz/tq?tqx=out:csv&sheet=' + encodeURIComponent('대리점상품') + '&t=' + Date.now();
+    var res = await fetch(url);
+    var csv = await res.text();
+    var all = parseAdminCSV(csv);
+    allConsignData = all.filter(function(p){ return p['위탁여부'] === 'TRUE'; });
+    var pending  = allConsignData.filter(function(p){ return p['본사승인'] !== 'TRUE' && p['본사승인'] !== 'FALSE'; }).length;
+    var approved = allConsignData.filter(function(p){ return p['본사승인'] === 'TRUE'; }).length;
+    var rejected = allConsignData.filter(function(p){ return p['본사승인'] === 'FALSE'; }).length;
+    document.getElementById('cm-pending').textContent  = pending;
+    document.getElementById('cm-approved').textContent = approved;
+    document.getElementById('cm-rejected').textContent = rejected;
+    document.getElementById('cm-total').textContent    = allConsignData.length;
+    renderConsignList(allConsignData);
+  } catch(e) {
+    document.getElementById('cm-tw').innerHTML = '<div style="padding:20px;text-align:center;color:#aaa;">데이터 로드 실패</div>';
+  }
+}
+
+function filterConsignment() {
+  var f = document.getElementById('cm-filter').value;
+  var filtered = allConsignData;
+  if (f === 'pending')  filtered = allConsignData.filter(function(p){ return p['본사승인'] !== 'TRUE' && p['본사승인'] !== 'FALSE'; });
+  if (f === 'approved') filtered = allConsignData.filter(function(p){ return p['본사승인'] === 'TRUE'; });
+  if (f === 'rejected') filtered = allConsignData.filter(function(p){ return p['본사승인'] === 'FALSE'; });
+  renderConsignList(filtered);
+}
+
+function renderConsignList(data) {
+  var el = document.getElementById('cm-tw');
+  if (!data.length) { el.innerHTML = '<div style="padding:30px;text-align:center;color:#aaa;">신청 내역이 없습니다</div>'; return; }
+  el.innerHTML = '<table style="width:100%;border-collapse:collapse;font-size:13px;">'
+    + '<thead><tr style="background:#f8f8f8;border-bottom:1px solid #eee;">'
+    + '<th style="padding:10px;text-align:left;">이미지</th>'
+    + '<th style="padding:10px;text-align:left;">상품명</th>'
+    + '<th style="padding:10px;text-align:center;">대리점</th>'
+    + '<th style="padding:10px;text-align:center;">가격</th>'
+    + '<th style="padding:10px;text-align:center;">승인상태</th>'
+    + '<th style="padding:10px;text-align:center;">관리</th>'
+    + '</tr></thead><tbody>'
+    + data.map(function(p) {
+        var apr = p['본사승인'];
+        var statusHtml = apr === 'TRUE'
+          ? '<span style="background:#e8f5e9;color:#2e7d32;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;">✅ 승인완료</span>'
+          : apr === 'FALSE'
+          ? '<span style="background:#fce4ec;color:#c62828;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;">❌ 거절</span>'
+          : '<span style="background:#fff8e1;color:#f57f17;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;">⏳ 대기중</span>';
+        return '<tr style="border-bottom:1px solid #f5f5f5;">'
+          + '<td style="padding:10px;"><img src="' + (p['이미지']||'https://picsum.photos/46') + '" style="width:46px;height:46px;object-fit:cover;border-radius:8px;border:1px solid #eee;" onerror="this.src=\'https://picsum.photos/46\'"></td>'
+          + '<td style="padding:10px;font-weight:600;">' + (p['상품명']||'-') + '</td>'
+          + '<td style="padding:10px;text-align:center;color:#666;">' + (p['대리점ID']||'-') + '</td>'
+          + '<td style="padding:10px;text-align:center;color:#e85a2b;font-weight:600;">' + parseInt(p['가격']||0).toLocaleString() + '원</td>'
+          + '<td style="padding:10px;text-align:center;">' + statusHtml + '</td>'
+          + '<td style="padding:10px;text-align:center;"><div style="display:flex;gap:6px;justify-content:center;">'
+          + (apr !== 'TRUE' ? '<button onclick="approveConsignment(\'' + p['번호'] + '\',\'' + p['대리점ID'] + '\',\'TRUE\')" style="padding:4px 10px;background:#2e7d32;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;">✅ 승인</button>' : '')
+          + (apr !== 'FALSE' ? '<button onclick="approveConsignment(\'' + p['번호'] + '\',\'' + p['대리점ID'] + '\',\'FALSE\')" style="padding:4px 10px;background:#c62828;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;">❌ 거절</button>' : '')
+          + '</div></td></tr>';
+      }).join('')
+    + '</tbody></table>';
+}
+
+async function approveConsignment(no, dealerId, value) {
+  if (!confirm(value === 'TRUE' ? '승인하시겠습니까?' : '거절하시겠습니까?')) return;
+  try {
+    await fetch(CONFIG.APPS_SCRIPT_URL, {
+      method: 'POST', mode: 'no-cors',
+      body: JSON.stringify({ action: 'approveConsignment', data: { 번호: no, 대리점ID: dealerId, 본사승인: value } })
+    });
+    showAdminToast(value === 'TRUE' ? '✅ 승인 완료!' : '❌ 거절 처리됐습니다');
+    setTimeout(loadConsignmentMgmt, 1500);
+  } catch(e) { showAdminToast('오류가 발생했습니다'); }
+}
 </script>
 
 <!-- ✅ admin.js 맨 마지막 로드 -->
