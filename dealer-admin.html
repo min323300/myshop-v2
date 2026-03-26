@@ -1612,23 +1612,36 @@ function loadSettlement() {
   if(!DEALER) return;
   document.getElementById('settlement-tw').innerHTML = '<div class="loading"><div class="lspin">⏳</div></div>';
   fetch(sheetUrl('정산')).then(function(r){return r.text();}).then(function(csv){
-    var rows = parseCSV(csv).filter(function(r){ return r['대리점ID']===DEALER.id || r['대리점ID']===DEALER.id; });
-    var totalSales=0,totalPg=0,totalHq=0,totalMine=0;
-    rows.forEach(function(r){ totalSales+=parseInt(r['총매출'])||0; totalPg+=parseInt(r['PG수수료'])||0; totalHq+=parseInt(r['본사마진'])||0; totalMine+=parseInt(r['대리점수령액'])||0; });
-    document.getElementById('settle-total').textContent = totalSales.toLocaleString()+'원';
-    document.getElementById('settle-pg').textContent = totalPg.toLocaleString()+'원';
-    document.getElementById('settle-hq').textContent = totalHq.toLocaleString()+'원';
-    document.getElementById('settle-mine').textContent = totalMine.toLocaleString()+'원';
+    var rows = parseCSV(csv).filter(function(r){
+      return (r['대리점ID']||'').toString().trim() === (DEALER.id||'').toString().trim();
+    });
+    var totalSales=0, totalPg=0, totalHq=0, totalMine=0;
+    rows.forEach(function(r){
+      totalSales += parseFloat(r['총매출'])    || 0;
+      totalPg    += parseFloat(r['PG수수료'])  || 0;
+      totalHq    += parseFloat(r['본사수수료']) || 0;
+      totalMine  += parseFloat(r['대리점수령액']) || 0;
+    });
+    document.getElementById('settle-total').textContent = totalSales.toLocaleString() + '원';
+    document.getElementById('settle-pg').textContent    = totalPg.toLocaleString()    + '원';
+    document.getElementById('settle-hq').textContent    = totalHq.toLocaleString()    + '원';
+    document.getElementById('settle-mine').textContent  = totalMine.toLocaleString()  + '원';
+
     document.getElementById('settlement-tw').innerHTML = rows.length
-      ? '<table>'+TH(['정산번호','기간','총매출','PG수수료','본사마진','수령액','상태'])+'<tbody>'
-        +rows.map(function(r){
-          return '<tr><td>'+(r['정산번호']||'-')+'</td><td>'+(r['정산기간']||'-')+'</td>'
-            +'<td>'+fmt(r['총매출'])+'</td><td style="color:#e53935;">-'+fmt(r['PG수수료'])+'</td>'
-            +'<td style="color:#e53935;">-'+fmt(r['본사마진'])+'</td>'
-            +'<td style="font-weight:700;color:var(--green);">'+fmt(r['대리점수령액'])+'</td>'
-            +'<td><span class="bdg bdg-new">'+(r['상태']||'정산완료')+'</span></td></tr>';
-        }).join('')+'</tbody></table>'
-      : EMPTY('💰','정산 내역 없음','매출 발생 후 본사에서 등록됩니다');
+      ? '<table>' + TH(['정산월','총매출','PG요율','PG수수료','본사마진율','본사수수료','내 수령액','상태']) + '<tbody>'
+        + rows.sort(function(a,b){ return b['정산월']>a['정산월']?1:-1; }).map(function(r){
+            return '<tr>'
+              + '<td style="font-weight:600;">' + (r['정산월']||'-') + '</td>'
+              + '<td>' + fmt(r['총매출']) + '</td>'
+              + '<td style="text-align:center;">' + (r['PG요율']||0) + '%</td>'
+              + '<td style="color:#e53935;">-' + fmt(r['PG수수료']) + '</td>'
+              + '<td style="text-align:center;">' + (r['본사마진율']||0) + '%</td>'
+              + '<td style="color:#e53935;">-' + fmt(r['본사수수료']) + '</td>'
+              + '<td style="font-weight:700;color:var(--green);">' + fmt(r['대리점수령액']) + '</td>'
+              + '<td><span class="bdg bdg-new">' + (r['상태']||'정산완료') + '</span></td>'
+              + '</tr>';
+          }).join('') + '</tbody></table>'
+      : EMPTY('💰','정산 내역 없음','매출 발생 후 본사에서 정산 계산 시 표시됩니다');
   }).catch(function(){
     document.getElementById('settlement-tw').innerHTML = EMPTY('💰','정산 내역 없음');
   });
