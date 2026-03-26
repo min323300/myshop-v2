@@ -302,6 +302,18 @@
 
   <div id="header-placeholder"></div>
 
+  <!-- 상단 홈 네비게이션 -->
+  <div style="background:#fff;border-bottom:1px solid #eee;padding:10px 16px;display:flex;align-items:center;gap:12px;">
+    <a href="index.html" style="display:flex;align-items:center;gap:6px;text-decoration:none;color:#222;font-size:14px;font-weight:600;">
+      ← 🏪 담누리마켓 홈
+    </a>
+    <span style="color:#ddd;">|</span>
+    <a href="products.html" style="text-decoration:none;color:#888;font-size:13px;">상품목록</a>
+    <span style="color:#ddd;">|</span>
+    <a href="cart.html" style="text-decoration:none;color:#888;font-size:13px;">🛒 장바구니</a>
+    <span style="margin-left:auto;font-size:13px;font-weight:700;color:#e85a2b;">📺 라이브쇼핑</span>
+  </div>
+
   <!-- 탭 네비게이션 -->
   <div class="live-nav">
     <button class="live-nav-btn active" onclick="switchTab('on-air', this)">🔴 방송중</button>
@@ -1078,7 +1090,7 @@
   function extractYoutubeId(url) {
     if (!url) return null;
     const patterns = [
-      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/live\/|youtube\.com\/shorts\/)([^&\n?#]+)/,
+      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/live\/)([^&\n?#]+)/,
       /youtube\.com\/embed\/([^&\n?#]+)/
     ];
     for (const p of patterns) { const m = url.match(p); if (m) return m[1]; }
