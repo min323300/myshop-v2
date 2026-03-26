@@ -18,12 +18,25 @@
     .live-container { max-width: 1200px; margin: 0 auto; padding: 16px; }
 
     /* 상태바 */
-    .live-status-bar { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #fff; border-radius: 10px; margin-bottom: 14px; border: 1px solid #eee; }
+    .live-status-bar { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #fff; border-radius: 10px; margin-bottom: 14px; border: 1px solid #eee; flex-wrap: wrap; }
     .live-dot { width: 10px; height: 10px; border-radius: 50%; background: #e8342b; animation: blink 1.2s infinite; flex-shrink: 0; }
     @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
-    .live-status-text { font-size: 13px; font-weight: 600; color: #e8342b; }
+    .live-status-text { font-size: 13px; font-weight: 600; color: #e8342b; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .live-status-sub { font-size: 12px; color: #888; margin-left: auto; }
     .live-status-none { font-size: 13px; color: #aaa; }
+
+    /* 통계 뱃지 */
+    .live-stats { display: flex; gap: 8px; align-items: center; margin-left: auto; flex-shrink: 0; }
+    .stat-badge {
+      display: flex; align-items: center; gap: 4px;
+      padding: 4px 10px; border-radius: 20px;
+      font-size: 12px; font-weight: 600;
+    }
+    .viewer-badge { background: #fff0ec; color: #e85a2b; border: 1px solid #ffd0be; }
+    .alarm-badge  { background: #e8f4fd; color: #1565c0; border: 1px solid #bbdefb; }
+    .stat-icon  { font-size: 12px; }
+    .stat-num   { font-size: 14px; font-weight: 800; letter-spacing: -0.3px; }
+    .stat-label { font-size: 11px; opacity: 0.8; }
 
     /* ─── ON AIR 메인 레이아웃 ───
        왼쪽: 영상 / 오른쪽: 채팅(상단) + 상품(하단) */
@@ -35,6 +48,10 @@
     }
     @media (max-width: 900px) {
       .live-main-layout { grid-template-columns: 1fr; display: flex; flex-direction: column; }
+      /* 영상 영역 전체 너비 */
+      .live-left { width: 100%; }
+      /* 컨테이너 패딩 모바일 최소화 */
+      .live-container { padding: 8px; }
     }
 
     /* 왼쪽 열 */
@@ -64,18 +81,15 @@
 
     /* 오른쪽 열: 채팅 + 상품 */
     .live-right { display: flex; flex-direction: column; gap: 12px; }
-    @media (max-width: 900px) { .live-right { order: 2; } .live-left { order: 1; } }
+    @media (max-width: 900px) { .live-right { order: 2; width: 100%; } .live-left { order: 1; } }
 
-    /* ══ 모바일 탭 전환 (영상/채팅) ══ */
+    /* ══ 모바일 탭 전환 (상품/채팅) ══ */
     .mobile-view-tabs {
       display: none;
       background: #fff;
-      border-bottom: 1px solid #eee;
-      position: sticky;
-      top: 0;
-      z-index: 50;
+      border-bottom: 2px solid #eee;
     }
-    @media (max-width: 900px) { .mobile-view-tabs { display: flex; } }
+    @media (max-width: 900px) { .mobile-view-tabs { display: flex; margin: 8px 0 0 0; } }
     .mvt-btn {
       flex: 1; padding: 12px 0; font-size: 14px; font-weight: 600;
       border: none; background: none; cursor: pointer; color: #aaa;
@@ -88,16 +102,20 @@
     @media (max-width: 900px) {
       /* 채팅 패널: 기본 숨김 → 활성화 시 표시 */
       .live-right { display: none; }
-      .live-right.mobile-active { display: flex; }
+      .live-right.mobile-active { display: flex; flex-direction: column; }
       /* 상품 패널: 기본 표시 → 채팅 활성화 시 숨김 */
       .mobile-products-panel { display: block; }
       .mobile-products-panel.mobile-hidden { display: none; }
+      /* 모바일에서 채팅 카드 타이틀 숨김 (탭이 대신함) */
+      .chat-card-title { display: none; }
+      /* 모바일에서 데스크톱 상품 사이드바 숨김 */
+      #sidebar-product-wrap { display: none; }
     }
 
     /* ★ 채팅 카드 */
     .chat-card { background: #fff; border-radius: 10px; border: 1px solid #eee; overflow: hidden; display: flex; flex-direction: column; height: 500px; }
     @media (max-width: 900px) {
-      .chat-card { height: calc(100vh - 220px); min-height: 380px; border-radius: 0; border-left: none; border-right: none; }
+      .chat-card { height: calc(100vh - 280px); min-height: 400px; border-radius: 0; border-left: none; border-right: none; border-top: none; }
     }
     .chat-card-title { padding: 11px 14px; font-size: 13px; font-weight: 600; color: #333; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; gap: 6px; background: #fafafa; flex-shrink: 0; }
     .badge-live { font-size: 10px; background: #e8342b; color: #fff; padding: 2px 7px; border-radius: 10px; font-weight: 600; }
@@ -249,11 +267,23 @@
         <button class="btn-get-coupon" id="btn-get-coupon" onclick="openCouponModal()">쿠폰 받기</button>
       </div>
 
-      <!-- 상태바 -->
+      <!-- 상태바 + 통계 -->
       <div class="live-status-bar">
         <div class="live-dot" id="live-dot" style="display:none;"></div>
         <span id="live-status-text" class="live-status-none">방송 정보를 불러오는 중...</span>
-        <span class="live-status-sub" id="live-viewer-count"></span>
+        <!-- 통계 뱃지들 -->
+        <div class="live-stats" id="live-stats" style="display:none;">
+          <div class="stat-badge viewer-badge" id="stat-viewers" style="display:none;">
+            <span class="stat-icon">👁</span>
+            <span class="stat-num" id="viewer-count-num">-</span>
+            <span class="stat-label">시청중</span>
+          </div>
+          <div class="stat-badge alarm-badge" id="stat-alarms" style="display:none;">
+            <span class="stat-icon">🔔</span>
+            <span class="stat-num" id="alarm-count-num">0</span>
+            <span class="stat-label">알림신청</span>
+          </div>
+        </div>
       </div>
 
       <!-- ★ 모바일 탭 전환 바 (영상 아래 고정) -->
@@ -529,6 +559,19 @@
         '💬 실시간 채팅 <span class="badge-live">LIVE</span>';
     }
 
+    // ★ 통계 표시
+    document.getElementById('live-stats').style.display = 'flex';
+
+    // 알림 신청 인원 (시트에서 즉시)
+    const alarmCount = parseInt(live['알림신청수']) || 0;
+    if (alarmCount > 0) {
+      document.getElementById('stat-alarms').style.display = 'flex';
+      document.getElementById('alarm-count-num').textContent = alarmCount.toLocaleString();
+    }
+
+    // 동시접속자 (YouTube Data API - CONFIG에 키 있을 때만)
+    if (vid) fetchYoutubeViewers(vid);
+
     // 타임딜 카운트다운
     if (live['종료일시']) {
       document.getElementById('timedeal-bar').style.display = 'flex';
@@ -562,7 +605,36 @@
       '<div style="padding:30px;text-align:center;color:#aaa;font-size:13px;">방송 중 상품이 없습니다</div>';
   }
 
-  // ── ★ 채팅 마운트 공통 함수 ──────────────────────────────
+  // ── ★ YouTube 동시접속자 조회 ────────────────────────────
+  // config.js에 YOUTUBE_API_KEY 설정 시 자동 활성화
+  let viewerPollInterval = null;
+
+  async function fetchYoutubeViewers(videoId) {
+    // CONFIG.YOUTUBE_API_KEY 가 없으면 패스
+    if (!CONFIG.YOUTUBE_API_KEY) return;
+    try {
+      const url = `https://www.googleapis.com/youtube/v3/videos?part=liveStreamingDetails&id=${videoId}&key=${CONFIG.YOUTUBE_API_KEY}`;
+      const res  = await fetch(url);
+      const data = await res.json();
+      const item = data.items && data.items[0];
+      const count = item && item.liveStreamingDetails && item.liveStreamingDetails.concurrentViewers;
+      if (count !== undefined) {
+        document.getElementById('stat-viewers').style.display = 'flex';
+        document.getElementById('viewer-count-num').textContent = parseInt(count).toLocaleString();
+      }
+    } catch(e) { /* API 키 없거나 오류 시 조용히 무시 */ }
+
+    // 30초마다 갱신
+    if (!viewerPollInterval) {
+      viewerPollInterval = setInterval(() => fetchYoutubeViewers(videoId), 30000);
+    }
+  }
+
+  // ── ★ 알림신청수 실시간 갱신 (알림 신청 시) ──────────────
+  function updateAlarmCountUI(newCount) {
+    document.getElementById('stat-alarms').style.display = 'flex';
+    document.getElementById('alarm-count-num').textContent = newCount.toLocaleString();
+  }
   // 라이브 중: 실시간 채팅 / 방송 종료 후: 채팅 다시보기 (유튜브가 자동 전환)
   function mountChat(iframeId, unavailableId, videoId) {
     const iframe  = document.getElementById(iframeId);
@@ -839,6 +911,9 @@
       localStorage.setItem('alarm_' + currentAlarmNo, '1');
       closeAlarmModal();
       showToast('🔔 알림 신청이 완료되었습니다!');
+      // ★ 알림 신청수 즉시 +1 갱신
+      const curNum = parseInt(document.getElementById('alarm-count-num').textContent.replace(/,/g,'')) || 0;
+      updateAlarmCountUI(curNum + 1);
       renderSchedule();
     } catch(e) { showToast('네트워크 오류가 발생했습니다'); }
   }
