@@ -1190,6 +1190,7 @@ function go(pageId, el) {
   if (pageId === 'live-alarm')  { showLivePage('live-alarm', el); loadLiveData(); loadAlarmData(); return; }
   if (pageId === 'live-coupon') { showLivePage('live-coupon', el); loadCouponData(); return; }
   if (pageId === 'consignment-mgmt') { showLivePage('consignment-mgmt', el); loadConsignmentMgmt(); return; }
+  if (pageId === 'settlement') { showLivePage('settlement', el); initSettlement(); return; }
   if (_origGo) _origGo(pageId, el);
 }
 
