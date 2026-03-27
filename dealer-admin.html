@@ -1339,14 +1339,14 @@ function saveMyProduct(){
     뱃지: document.getElementById('mpm-badge').value, 추천여부: document.getElementById('mpm-featured').value,
     사용여부: document.getElementById('mpm-active').value, 대리점ID: DEALER.id
   };
-  fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'saveDealerProduct',data:data})})
+  fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',body:JSON.stringify({action:'saveDealerProduct',data:data})})
     .then(function(){ showToast('상품이 저장됐습니다!','ok'); closeMyProdModal(); setTimeout(loadMyProducts,1500); });
 }
 
 function deleteMyProduct(btn){
   var id = btn.getAttribute('data-id'); var name = btn.getAttribute('data-name');
   if(!confirm('['+name+'] 상품을 삭제하시겠습니까?')) return;
-  fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'deleteDealerProduct',data:{번호:id,대리점ID:DEALER.id}})})
+  fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',body:JSON.stringify({action:'deleteDealerProduct',data:{번호:id,대리점ID:DEALER.id}})})
     .then(function(){ showToast('삭제됐습니다','ok'); setTimeout(loadMyProducts,1500); });
 }
 
@@ -1503,7 +1503,7 @@ function saveDTracking(orderId) {
   var carrier  = document.getElementById('dt-carrier').value;
   var tracking = document.getElementById('dt-tracking').value.trim();
   if(!carrier || !tracking) { alert('택배사와 송장번호를 모두 입력해주세요.'); return; }
-  fetch(SCRIPT_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'},
+  fetch(SCRIPT_URL, { method:'POST', mode:'no-cors',
     body: JSON.stringify({ action: 'updateOrderStatus', data: { 주문번호: orderId, 주문상태: '배송중', 송장번호: tracking, 택배사: carrier, 대리점ID: DEALER.id } })
   }).then(function(){
     var order = allOrders.find(function(o){ return o['주문번호']===orderId; });
@@ -1734,7 +1734,7 @@ function saveReply(){
   var content = document.getElementById('reply-content').value.trim();
   if(!content){ showToast('답글 내용을 입력하세요','warn'); return; }
   var now = new Date().toISOString().split('T')[0];
-  fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'saveReviewReply',data:{번호:id,답글내용:content,답글작성자:DEALER.name,답글작성일:now}})})
+  fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',body:JSON.stringify({action:'saveReviewReply',data:{번호:id,답글내용:content,답글작성자:DEALER.name,답글작성일:now}})})
     .then(function(){ showToast('답글이 저장됐습니다','ok'); closeReplyModal(); setTimeout(loadReviews,1500); });
 }
 
