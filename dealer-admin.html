@@ -1759,5 +1759,20 @@ function loadManual() {
   }).catch(function(){ el.innerHTML=EMPTY('📖','운영매뉴얼 없음'); });
 }
 </script>
+
+<script>
+function toggleSidebar() {
+  var sb = document.querySelector('.sb');
+  var ov = document.getElementById('sb-overlay');
+  var isOpen = sb.classList.contains('open');
+  sb.classList.toggle('open', !isOpen);
+  ov.classList.toggle('open', !isOpen);
+}
+document.addEventListener('click', function(e) {
+  if (e.target.closest('.sb-item') && window.innerWidth <= 768) {
+    setTimeout(toggleSidebar, 150);
+  }
+});
+</script>
 </body>
 </html>
