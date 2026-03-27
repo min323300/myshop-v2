@@ -223,6 +223,33 @@
       .stat-grid { grid-template-columns: 1fr 1fr; }
       .two-col { grid-template-columns: 1fr; }
     }
+    /* ===== 모바일 사이드바 ===== */
+.sb-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 199;
+}
+.hd-hamburger {
+  display: none;
+  background: none; border: none;
+  font-size: 22px; cursor: pointer;
+  padding: 4px 8px; color: #fff;
+}
+@media (max-width: 768px) {
+  .hd-hamburger { display: block; }
+  .hd-nav { display: none; }
+  .hd-right .hd-date { display: none; }
+  .sb {
+    position: fixed; left: -220px; top: var(--hd-h);
+    height: calc(100vh - var(--hd-h)); z-index: 200;
+    transition: left 0.25s ease;
+    box-shadow: 2px 0 12px rgba(0,0,0,0.3);
+  }
+  .sb.open { left: 0; }
+  .sb-overlay.open { display: block; }
+  .main { margin-left: 0 !important; }
+}
   </style>
 </head>
 <body>
