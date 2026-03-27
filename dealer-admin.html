@@ -884,7 +884,7 @@
 // ============================================================
 // 설정
 // ============================================================
-var SHEET_ID = '1gjnczt_Db959Nc6aAF6CIPIj1SBY4XvoIXuEAAIJOZE';
+var SHEET_ID = '1t804fRO8HfQtmOzpDAz2IZfzRDQ7t8LYllFGZr3ftUI';
 var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw_rbhRHPQhNYHttEbAyKiLDB32r1TQlhPBO6V3kIQq0AW1mNoz0yb3gjlaiQtB1uyn/exec';
 var DEALER = null;
 var CLOUDINARY_CLOUD = 'dmefdyags';
@@ -1503,7 +1503,7 @@ function saveDTracking(orderId) {
   var carrier  = document.getElementById('dt-carrier').value;
   var tracking = document.getElementById('dt-tracking').value.trim();
   if(!carrier || !tracking) { alert('택배사와 송장번호를 모두 입력해주세요.'); return; }
-  fetch(SCRIPT_URL, { method:'POST', mode:'no-cors',
+  fetch(SCRIPT_URL, { method:'POST', mode:'no-cors', 
     body: JSON.stringify({ action: 'updateOrderStatus', data: { 주문번호: orderId, 주문상태: '배송중', 송장번호: tracking, 택배사: carrier, 대리점ID: DEALER.id } })
   }).then(function(){
     var order = allOrders.find(function(o){ return o['주문번호']===orderId; });
@@ -1518,7 +1518,7 @@ function quickStatusChange(sel, orderId) {
   var newStatus = sel.value;
   if(!newStatus) return;
   if(!confirm('['+orderId+'] 주문을 "'+newStatus+'"으로 변경하시겠습니까?')) { sel.value = ''; return; }
-  fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', headers: {'Content-Type':'application/json'},
+  fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', 
     body: JSON.stringify({ action: 'updateOrderStatus', data: { 주문번호: orderId, 주문상태: newStatus, 대리점ID: DEALER.id } })
   }).then(function(){
     showToast('주문번호 '+orderId+' → ['+newStatus+'] 변경됐습니다', 'ok');
@@ -1584,7 +1584,7 @@ function saveOrderStatus() {
   var memo     = document.getElementById('modal-memo').value.trim();
   var btn = document.getElementById('order-save-btn');
   btn.textContent = '⏳ 저장 중...'; btn.disabled = true;
-  fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', headers: {'Content-Type':'application/json'},
+  fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', 
     body: JSON.stringify({ action: 'updateOrderStatus', data: { 주문번호: curOrderId, 주문상태: curSelectedStatus, 송장번호: tracking, 택배사: carrier, 처리메모: memo, 대리점ID: DEALER.id, 처리자: DEALER.name, 처리일시: new Date().toISOString() } })
   }).then(function(){
     showToast('주문번호 '+curOrderId+' → ['+curSelectedStatus+'] 저장됐습니다', 'ok');
