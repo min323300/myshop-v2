@@ -1426,6 +1426,20 @@ async function saveHqMargin() {
 
 <!-- ✅ admin.js 맨 마지막 로드 -->
 <script src="js/admin.js"></script>
+<script>
+function toggleSidebar() {
+  var sb  = document.querySelector('.sb');
+  var ov  = document.getElementById('sb-overlay');
+  var isOpen = sb.classList.contains('open');
+  sb.classList.toggle('open', !isOpen);
+  ov.classList.toggle('open', !isOpen);
+}
+document.querySelectorAll('.sb-item').forEach(function(el) {
+  el.addEventListener('click', function() {
+    if (window.innerWidth <= 768) toggleSidebar();
+  });
+});
+</script>  
 
 </body>
 </html>
