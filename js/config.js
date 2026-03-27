@@ -6,7 +6,7 @@ const CONFIG = {
   SHEET_ID: '1gjnczt_Db959Nc6aAF6CIPIj1SBY4XvoIXuEAAIJOZE',
 
   // ✅ Apps Script URL (기존과 동일 — 새 배포 후 변경 예정)
-  APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbzQ-Ce8Zbj5mO-iMF6IJQhNtbsHl7DGo9ER4bsBoJRoz1JnvIdkp3M3qb1efEcSlwoB/exec',
+  APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbw_rbhRHPQhNYHttEbAyKiLDB32r1TQlhPBO6V3kIQq0AW1mNoz0yb3gjlaiQtB1uyn/exec',
   
   // ✅ YouTube 동시접속자 API 키
   YOUTUBE_API_KEY: 'AIzaSyCbIR9GlemCUaHvcbGOy8AdrXEsd5EZlhE',
