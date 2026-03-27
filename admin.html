@@ -7,6 +7,35 @@
   <title>담누리마켓 관리자 패널</title>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/admin.css">
+  <style>
+/* ===== 모바일 사이드바 ===== */
+.sb-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 199;
+}
+.hd-hamburger {
+  display: none;
+  background: none; border: none;
+  font-size: 22px; cursor: pointer;
+  padding: 4px 8px; color: #333;
+}
+@media (max-width: 768px) {
+  .hd-hamburger { display: block; }
+  .hd-nav { display: none; }
+  .hd-right .hd-date { display: none; }
+  .sb {
+    position: fixed; left: -260px; top: 0;
+    height: 100vh; z-index: 200;
+    transition: left 0.25s ease;
+    box-shadow: 2px 0 12px rgba(0,0,0,0.15);
+  }
+  .sb.open { left: 0; }
+  .sb-overlay.open { display: block; }
+  .main { margin-left: 0 !important; }
+}
+</style>
   <script src="js/config.js"></script>
   <script src="js/sheets.js"></script>
 </head>
