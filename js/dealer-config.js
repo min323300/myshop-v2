@@ -76,31 +76,50 @@ function updateDate() {
 setInterval(updateDate, 1000);
 updateDate();
 
-// ── 쇼핑몰 URL 생성 ──────────────────────────────────────────
-// 도메인 컬럼 값이 어떤 형태여도 안전하게 처리
+// ── 쇼핑몰 URL 생성 (도메인 중복 방지) ───────────────────────
 function buildShopUrl(dealerId) {
   var did     = dealerId || '';
   var baseUrl = window.location.origin
     + window.location.pathname.replace('dealer-admin.html','');
   var domain  = (DEALER && DEALER.domain) ? DEALER.domain.trim() : '';
 
-  // 도메인 비어있으면 현재 URL 기준으로 생성
   if (!domain) {
     return baseUrl + 'index.html?dealer=' + did;
   }
 
-  // 기존 ?dealer= 파라미터 제거 후 재조합 (중복 방지)
+  // 기존 ?dealer= 파라미터 제거 후 재조합
   domain = domain
-    .replace(/[?&]dealer=[^&]*/g, '')  // dealer 파라미터 제거
-    .replace(/[?&]+$/, '')              // 끝 ? 또는 & 제거
-    .replace(/\/$/, '');                // 끝 / 제거
+    .replace(/[?&]dealer=[^&]*/g, '')
+    .replace(/[?&]+$/, '')
+    .replace(/\/$/, '');
 
-  // http 없으면 추가
   if (!domain.startsWith('http')) {
     domain = 'https://' + domain;
   }
 
   return domain + '?dealer=' + did;
+}
+
+// ── 헤더/대시보드 링크 업데이트 ──────────────────────────────
+function updateLinks() {
+  if (!DEALER) return;
+  var did         = DEALER.id || '';
+  var baseUrl     = window.location.origin
+    + window.location.pathname.replace('dealer-admin.html','');
+  var fullShopUrl = buildShopUrl(did);
+  var fullProdUrl = baseUrl + 'products.html?dealer=' + did;
+
+  // 대시보드 쇼핑몰 링크 박스
+  var urlEl  = document.getElementById('my-shop-url');
+  var openEl = document.getElementById('my-shop-open');
+  if(urlEl)  urlEl.textContent = fullShopUrl;
+  if(openEl) openEl.href       = fullShopUrl;
+
+  // 헤더 상단 "쇼핑몰" / "상품목록" 링크
+  var shopLink  = document.getElementById('shop-link');
+  var prodsLink = document.getElementById('products-link');
+  if(shopLink)  shopLink.href  = fullShopUrl;
+  if(prodsLink) prodsLink.href = fullProdUrl;
 }
 
 // ── 로그인 ───────────────────────────────────────────────────
@@ -154,13 +173,12 @@ function doLogout() {
   document.getElementById('lpw').value='';
 }
 
-// 자동 로그인 복원
+// ✅ 자동 로그인 복원 — DOM 준비 후 실행
 (function(){
   var saved = sessionStorage.getItem('dealer');
   if(saved){
     try{
       DEALER = JSON.parse(saved);
-      // ✅ DOM 준비 후 실행
       if(document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', startApp);
       } else {
@@ -178,23 +196,10 @@ function startApp() {
   document.getElementById('hd-dealer-info').textContent = '🏬 ' + DEALER.name;
   document.getElementById('sb-dealer-name').textContent = DEALER.name + ' (' + DEALER.id + ')';
 
-  var did         = DEALER.id || '';
-  var baseUrl     = window.location.origin
-    + window.location.pathname.replace('dealer-admin.html','');
-  var fullShopUrl = buildShopUrl(did);                          // ✅ 안전한 URL 생성
-  var fullProdUrl = baseUrl + 'products.html?dealer=' + did;
-
-  // 대시보드 쇼핑몰 링크 박스
-  var urlEl  = document.getElementById('my-shop-url');
-  var openEl = document.getElementById('my-shop-open');
-  if(urlEl)  urlEl.textContent = fullShopUrl;
-  if(openEl) openEl.href       = fullShopUrl;
-
-  // ✅ 헤더 상단 "쇼핑몰" / "상품목록" 링크 → 대리점 URL로 교체
-  var shopLink  = document.getElementById('shop-link');
-  var prodsLink = document.getElementById('products-link');
-  if(shopLink)  shopLink.href  = fullShopUrl;
-  if(prodsLink) prodsLink.href = fullProdUrl;
+  // ✅ 링크 즉시 업데이트 + DOM 완전 로드 후 한 번 더
+  updateLinks();
+  setTimeout(updateLinks, 200);
+  setTimeout(updateLinks, 800);
 
   go('dashboard', document.querySelector('.sb-item.active'));
 }
