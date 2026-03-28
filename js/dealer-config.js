@@ -2,8 +2,8 @@
 // dealer-config.js — 설정 · 유틸 · 로그인
 // ============================================================
 
-var SHEET_ID        = '1gjnczt_Db959Nc6aAF6CIPIj1SBY4XvoIXuEAAIJOZE';
-var SCRIPT_URL      = 'https://script.google.com/macros/s/AKfycbzQ-Ce8Zbj5mO-iMF6IJQhNtbsHl7DGo9ER4bsBoJRoz1JnvIdkp3M3qb1efEcSlwoB/exec';
+var SHEET_ID   = '1t804fRO8HfQtmOzpDAz2IZfzRDQ7t8LYllFGZr3ftUI';
+var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw_rbhRHPQhNYHttEbAyKiLDB32r1TQlhPBO6V3kIQq0AW1mNoz0yb3gjlaiQtB1uyn/exec';
 var CLOUDINARY_CLOUD  = 'dmefdyags';
 var CLOUDINARY_PRESET = 'damnuri_upload';
 
