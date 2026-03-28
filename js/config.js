@@ -14,7 +14,7 @@ const CONFIG = {
   // ✅ 이미지 기본 URL
   IMAGE_BASE: 'https://min323300.github.io/myshop/images/',
 
-  // ✅ 시트별 URL — getter 대신 함수로 변경 (값 추가 가능하도록)
+  // ✅ 시트별 URL
   get SHEETS() {
     const base = `https://docs.google.com/spreadsheets/d/${this.SHEET_ID}/gviz/tq?tqx=out:csv&sheet=`;
     return {
@@ -33,9 +33,9 @@ const CONFIG = {
       사업자정보: base + encodeURIComponent('사업자정보'),
       공지사항:   base + encodeURIComponent('공지사항'),
       라이브방송: base + encodeURIComponent('라이브방송'),
-      라이브알림: base + encodeURIComponent('라이브알림'),  // ✅ 추가
-      라이브쿠폰: base + encodeURIComponent('라이브쿠폰'),  // ✅ 추가
-      위탁정산:   base + encodeURIComponent('위탁정산'),    // ✅ 추가
+      라이브알림: base + encodeURIComponent('라이브알림'),
+      라이브쿠폰: base + encodeURIComponent('라이브쿠폰'),
+      위탁정산:   base + encodeURIComponent('위탁정산'),
     };
   },
 
@@ -55,7 +55,7 @@ const CONFIG = {
     }
   },
 
-  // ✅ 대리점 설정
+  // ✅ 대리점 설정 (URL 파라미터로 자동 감지됨)
   IS_DEALER:   false,
   DEALER_ID:   '',
   DEALER_NAME: '',
@@ -74,7 +74,21 @@ const CONFIG = {
 };
 
 // ============================================================
-// ✅ 구글시트에서 스토어 정보 자동 로드
+// ✅ STEP 1: URL 파라미터에서 대리점 ID 자동 감지
+//    ⚠️ 반드시 loadStoreInfoFromSheet() 보다 먼저 실행!
+// ============================================================
+(function detectDealerFromURL() {
+  var params   = new URLSearchParams(window.location.search);
+  var dealerId = params.get('dealer') || params.get('store') || '';
+  if (dealerId) {
+    CONFIG.IS_DEALER   = true;
+    CONFIG.DEALER_ID   = dealerId;
+    CONFIG.DEALER_NAME = dealerId;
+  }
+})();
+
+// ============================================================
+// ✅ STEP 2: 구글시트에서 스토어 정보 자동 로드
 // ============================================================
 (function loadStoreInfoFromSheet() {
   var SHEET_ID = CONFIG.SHEET_ID;
@@ -96,65 +110,6 @@ const CONFIG = {
       headers.forEach(function(h, i){ obj[h] = (vals[i]||'').replace(/"/g,'').trim(); });
       return obj;
     }).filter(function(r){ return Object.values(r).some(function(v){ return v; }); });
-  }
-
-  var bizUrl = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID
-    + '/gviz/tq?tqx=out:csv&sheet=' + encodeURIComponent('사업자정보')
-    + '&t=' + Date.now();
-
-  fetch(bizUrl)
-    .then(function(r){ return r.text(); })
-    .then(function(csv) {
-      var rows = parseCSV(csv);
-      if (!rows.length) return;
-      var myId = CONFIG.DEALER_ID || '본사';
-      var row = rows.find(function(r){
-        return (r['대리점ID'] || '본사') === myId;
-      }) || rows.find(function(r){
-        return !r['대리점ID'] || r['대리점ID'] === '' || r['대리점ID'] === '본사';
-      }) || rows[0];
-      if (!row) return;
-      if (row['브랜드명'] || row['상호명'])  CONFIG.STORE.BRAND   = row['브랜드명'] || row['상호명'] || CONFIG.STORE.BRAND;
-      if (row['상호'])                        CONFIG.STORE.NAME    = row['상호']    || CONFIG.STORE.NAME;
-      if (row['전화'])                        CONFIG.STORE.PHONE   = row['전화']    || CONFIG.STORE.PHONE;
-      if (row['이메일'])                      CONFIG.STORE.EMAIL   = row['이메일']  || CONFIG.STORE.EMAIL;
-      if (row['주소'])                        CONFIG.STORE.ADDRESS = row['주소']    || CONFIG.STORE.ADDRESS;
-      if (row['태그라인'] || row['슬로건'])   CONFIG.STORE.TAGLINE = row['태그라인'] || row['슬로건'] || CONFIG.STORE.TAGLINE;
-      if (row['인스타그램'])                  CONFIG.STORE.SNS.INSTAGRAM = row['인스타그램'];
-      if (row['카카오'])                      CONFIG.STORE.SNS.KAKAO     = row['카카오'];
-      if (row['유튜브'])                      CONFIG.STORE.SNS.YOUTUBE   = row['유튜브'];
-      applyStoreInfo();
-    })
-    .catch(function(e){ console.log('사업자정보 로드 실패:', e); });
-
-  if (CONFIG.IS_DEALER && CONFIG.DEALER_ID) {
-    var dealerUrl = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID
-      + '/gviz/tq?tqx=out:csv&sheet=' + encodeURIComponent('대리점')
-      + '&t=' + Date.now();
-    fetch(dealerUrl)
-      .then(function(r){ return r.text(); })
-      .then(function(csv) {
-        var rows = parseCSV(csv);
-        var myRow = rows.find(function(r){
-          return (r['대리점ID'] || '') === CONFIG.DEALER_ID;
-        });
-        if (!myRow) return;
-        var dealerName = myRow['대리점명'] || '';
-        if (dealerName) {
-          CONFIG.DEALER_NAME = dealerName;
-          CONFIG.STORE.BRAND = dealerName;
-          CONFIG.STORE.NAME  = dealerName;
-        }
-        if (myRow['테마색상']) {
-          CONFIG.DEFAULT_THEME_COLOR = myRow['테마색상'];
-          document.documentElement.style.setProperty('--accent', myRow['테마색상']);
-        }
-        if (myRow['연락처']) CONFIG.STORE.PHONE   = myRow['연락처'];
-        if (myRow['이메일']) CONFIG.STORE.EMAIL   = myRow['이메일'];
-        if (myRow['주소'])   CONFIG.STORE.ADDRESS = myRow['주소'];
-        applyStoreInfo();
-      })
-      .catch(function(e){ console.log('대리점 정보 로드 실패:', e); });
   }
 
   function applyStoreInfo() {
@@ -183,4 +138,63 @@ const CONFIG = {
     var hdTitle = document.querySelector('.hd-title');
     if (hdTitle) hdTitle.textContent = name;
   }
+
+  // ── 대리점 쇼핑몰: 대리점 시트에서 정보 로드 ─────────────────
+  if (CONFIG.IS_DEALER && CONFIG.DEALER_ID) {
+    var dealerUrl = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID
+      + '/gviz/tq?tqx=out:csv&sheet=' + encodeURIComponent('대리점')
+      + '&t=' + Date.now();
+    fetch(dealerUrl)
+      .then(function(r){ return r.text(); })
+      .then(function(csv) {
+        var rows  = parseCSV(csv);
+        var myRow = rows.find(function(r){
+          return (r['대리점ID'] || '') === CONFIG.DEALER_ID;
+        });
+        if (!myRow) return;
+        var dealerName = myRow['대리점명'] || '';
+        if (dealerName) {
+          CONFIG.DEALER_NAME = dealerName;
+          CONFIG.STORE.BRAND = dealerName;
+          CONFIG.STORE.NAME  = dealerName;
+        }
+        if (myRow['테마색상']) {
+          CONFIG.DEFAULT_THEME_COLOR = myRow['테마색상'];
+          document.documentElement.style.setProperty('--accent', myRow['테마색상']);
+        }
+        if (myRow['연락처']) CONFIG.STORE.PHONE   = myRow['연락처'];
+        if (myRow['이메일']) CONFIG.STORE.EMAIL   = myRow['이메일'];
+        if (myRow['주소'])   CONFIG.STORE.ADDRESS = myRow['주소'];
+        applyStoreInfo();
+      })
+      .catch(function(e){ console.log('대리점 정보 로드 실패:', e); });
+    return; // 대리점이면 사업자정보 로드 불필요
+  }
+
+  // ── 본사 쇼핑몰: 사업자정보 시트에서 정보 로드 ───────────────
+  var bizUrl = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID
+    + '/gviz/tq?tqx=out:csv&sheet=' + encodeURIComponent('사업자정보')
+    + '&t=' + Date.now();
+
+  fetch(bizUrl)
+    .then(function(r){ return r.text(); })
+    .then(function(csv) {
+      var rows = parseCSV(csv);
+      if (!rows.length) return;
+      var row = rows.find(function(r){
+        return !r['대리점ID'] || r['대리점ID'] === '' || r['대리점ID'] === '본사';
+      }) || rows[0];
+      if (!row) return;
+      if (row['브랜드명'] || row['상호명'])  CONFIG.STORE.BRAND   = row['브랜드명'] || row['상호명'] || CONFIG.STORE.BRAND;
+      if (row['상호'])                        CONFIG.STORE.NAME    = row['상호']    || CONFIG.STORE.NAME;
+      if (row['전화'])                        CONFIG.STORE.PHONE   = row['전화']    || CONFIG.STORE.PHONE;
+      if (row['이메일'])                      CONFIG.STORE.EMAIL   = row['이메일']  || CONFIG.STORE.EMAIL;
+      if (row['주소'])                        CONFIG.STORE.ADDRESS = row['주소']    || CONFIG.STORE.ADDRESS;
+      if (row['태그라인'] || row['슬로건'])   CONFIG.STORE.TAGLINE = row['태그라인'] || row['슬로건'] || CONFIG.STORE.TAGLINE;
+      if (row['인스타그램'])                  CONFIG.STORE.SNS.INSTAGRAM = row['인스타그램'];
+      if (row['카카오'])                      CONFIG.STORE.SNS.KAKAO     = row['카카오'];
+      if (row['유튜브'])                      CONFIG.STORE.SNS.YOUTUBE   = row['유튜브'];
+      applyStoreInfo();
+    })
+    .catch(function(e){ console.log('사업자정보 로드 실패:', e); });
 })();
