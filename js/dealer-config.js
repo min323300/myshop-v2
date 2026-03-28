@@ -2,12 +2,12 @@
 // dealer-config.js — 설정 · 유틸 · 로그인
 // ============================================================
 
-var SHEET_ID   = '1t804fRO8HfQtmOzpDAz2IZfzRDQ7t8LYllFGZr3ftUI';
-var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw_rbhRHPQhNYHttEbAyKiLDB32r1TQlhPBO6V3kIQq0AW1mNoz0yb3gjlaiQtB1uyn/exec';
+var SHEET_ID          = '1t804fRO8HfQtmOzpDAz2IZfzRDQ7t8LYllFGZr3ftUI';
+var SCRIPT_URL        = 'https://script.google.com/macros/s/AKfycbw_rbhRHPQhNYHttEbAyKiLDB32r1TQlhPBO6V3kIQq0AW1mNoz0yb3gjlaiQtB1uyn/exec';
 var CLOUDINARY_CLOUD  = 'dmefdyags';
 var CLOUDINARY_PRESET = 'damnuri_upload';
 
-var DEALER = null;
+var DEALER  = null;
 var curPage = 'dashboard';
 
 // ── CSV 유틸 ─────────────────────────────────────────────────
@@ -17,7 +17,7 @@ function sheetUrl(sheetName) {
 }
 
 function parseCSV(csv) {
-  var lines = csv.trim().split('\n');
+  var lines   = csv.trim().split('\n');
   var headers = lines[0].split(',').map(function(h){ return h.trim().replace(/"/g,''); });
   return lines.slice(1).map(function(line){
     var vals=[], cur='', inQ=false;
@@ -37,7 +37,8 @@ function parseCSV(csv) {
 // ── UI 유틸 ──────────────────────────────────────────────────
 function showToast(msg, type) {
   var t = document.getElementById('toast');
-  t.textContent = msg; t.className = 'toast' + (type ? ' '+type : '');
+  t.textContent = msg;
+  t.className = 'toast' + (type ? ' '+type : '');
   t.classList.add('show');
   setTimeout(function(){ t.classList.remove('show'); }, 3500);
 }
@@ -84,15 +85,15 @@ function doLogin() {
   document.getElementById('lerr').style.display='none';
 
   fetch(sheetUrl('대리점')).then(function(r){return r.text();}).then(function(csv){
-    var rows = parseCSV(csv);
+    var rows  = parseCSV(csv);
     var found = rows.find(function(r){
-      var rowId    = String(r['번호']||'').trim();
-      var customId = (r['아이디']||r['대리점ID']||'').trim();
-      var idMatch  = rowId===id || customId===id;
-      var phone    = String(r['연락처']||'').replace(/[^0-9]/g,'');
+      var rowId      = String(r['번호']||'').trim();
+      var customId   = (r['아이디']||r['대리점ID']||'').trim();
+      var idMatch    = rowId===id || customId===id;
+      var phone      = String(r['연락처']||'').replace(/[^0-9]/g,'');
       var phoneLast4 = phone.slice(-4);
-      var storedPw = String(r['비밀번호']||'').trim();
-      var pwMatch  = (storedPw && pw===storedPw) || pw===phoneLast4;
+      var storedPw   = String(r['비밀번호']||'').trim();
+      var pwMatch    = (storedPw && pw===storedPw) || pw===phoneLast4;
       return idMatch && pwMatch && r['상태']!=='해지';
     });
     document.getElementById('lloading').style.display='none';
@@ -132,21 +133,40 @@ function doLogout() {
   if(saved){ try{ DEALER=JSON.parse(saved); startApp(); }catch(e){} }
 })();
 
+// ── 앱 시작 ──────────────────────────────────────────────────
 function startApp() {
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app').style.display='block';
-  document.getElementById('hd-brand-name').textContent = DEALER.name || '담누리마켓';
+  document.getElementById('hd-brand-name').textContent  = DEALER.name || '담누리마켓';
   document.getElementById('hd-dealer-info').textContent = '🏬 ' + DEALER.name;
   document.getElementById('sb-dealer-name').textContent = DEALER.name + ' (' + DEALER.id + ')';
 
-  var did = DEALER.id || '';
-  var baseUrl = window.location.origin + window.location.pathname.replace('dealer-admin.html','');
-  var fullShopUrl = baseUrl + 'index.html?dealer=' + did;
+  var did     = DEALER.id || '';
+  var baseUrl = window.location.origin
+    + window.location.pathname.replace('dealer-admin.html','');
 
+  // 기본 쇼핑몰 URL (index.html?dealer=ID)
+  var fullShopUrl = baseUrl + 'index.html?dealer=' + did;
+  var fullProdUrl = baseUrl + 'products.html?dealer=' + did;
+
+  // ✅ 대리점 전용 도메인이 있으면 도메인 기반으로 변경
+  if(DEALER.domain) {
+    var domain = DEALER.domain.startsWith('http')
+      ? DEALER.domain : 'https://' + DEALER.domain;
+    fullShopUrl = domain + '?dealer=' + did;
+  }
+
+  // 대시보드 쇼핑몰 링크 박스
   var urlEl  = document.getElementById('my-shop-url');
   var openEl = document.getElementById('my-shop-open');
   if(urlEl)  urlEl.textContent = fullShopUrl;
-  if(openEl) openEl.href = fullShopUrl;
+  if(openEl) openEl.href       = fullShopUrl;
+
+  // ✅ 헤더 상단 "쇼핑몰" / "상품목록" 링크 → 대리점 URL로 교체
+  var shopLink  = document.getElementById('shop-link');
+  var prodsLink = document.getElementById('products-link');
+  if(shopLink)  shopLink.href  = fullShopUrl;
+  if(prodsLink) prodsLink.href = fullProdUrl;
 
   go('dashboard', document.querySelector('.sb-item.active'));
 }
@@ -179,8 +199,8 @@ function go(pid, el) {
 
 // ── 사이드바 토글 (모바일) ────────────────────────────────────
 function toggleSidebar() {
-  var sb = document.querySelector('.sb');
-  var ov = document.getElementById('sb-overlay');
+  var sb     = document.querySelector('.sb');
+  var ov     = document.getElementById('sb-overlay');
   var isOpen = sb.classList.contains('open');
   sb.classList.toggle('open', !isOpen);
   ov.classList.toggle('open', !isOpen);
