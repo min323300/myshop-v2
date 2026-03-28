@@ -331,6 +331,7 @@ const CategoryAPI = {
     '전자':'📱','식품':'🍕','스포츠':'🏃','도서':'📚',
     '가방':'👜','액세서리':'💍','반려동물':'🐾','유아':'🍼',
     '가전':'🖥️','주방':'🍳','침구':'🛏️','욕실':'🚿',
+    '라이브':'📺',
   },
   async getAll() {
     const rows = await SheetAPI.fetchCached(CONFIG.SHEETS.카테고리);
