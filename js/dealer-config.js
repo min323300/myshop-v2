@@ -160,7 +160,12 @@ function doLogout() {
   if(saved){
     try{
       DEALER = JSON.parse(saved);
-      startApp();
+      // ✅ DOM 준비 후 실행
+      if(document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', startApp);
+      } else {
+        startApp();
+      }
     }catch(e){}
   }
 })();
