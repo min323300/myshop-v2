@@ -76,6 +76,33 @@ function updateDate() {
 setInterval(updateDate, 1000);
 updateDate();
 
+// ── 쇼핑몰 URL 생성 ──────────────────────────────────────────
+// 도메인 컬럼 값이 어떤 형태여도 안전하게 처리
+function buildShopUrl(dealerId) {
+  var did     = dealerId || '';
+  var baseUrl = window.location.origin
+    + window.location.pathname.replace('dealer-admin.html','');
+  var domain  = (DEALER && DEALER.domain) ? DEALER.domain.trim() : '';
+
+  // 도메인 비어있으면 현재 URL 기준으로 생성
+  if (!domain) {
+    return baseUrl + 'index.html?dealer=' + did;
+  }
+
+  // 기존 ?dealer= 파라미터 제거 후 재조합 (중복 방지)
+  domain = domain
+    .replace(/[?&]dealer=[^&]*/g, '')  // dealer 파라미터 제거
+    .replace(/[?&]+$/, '')              // 끝 ? 또는 & 제거
+    .replace(/\/$/, '');                // 끝 / 제거
+
+  // http 없으면 추가
+  if (!domain.startsWith('http')) {
+    domain = 'https://' + domain;
+  }
+
+  return domain + '?dealer=' + did;
+}
+
 // ── 로그인 ───────────────────────────────────────────────────
 function doLogin() {
   var id = document.getElementById('lid').value.trim();
@@ -130,7 +157,12 @@ function doLogout() {
 // 자동 로그인 복원
 (function(){
   var saved = sessionStorage.getItem('dealer');
-  if(saved){ try{ DEALER=JSON.parse(saved); startApp(); }catch(e){} }
+  if(saved){
+    try{
+      DEALER = JSON.parse(saved);
+      startApp();
+    }catch(e){}
+  }
 })();
 
 // ── 앱 시작 ──────────────────────────────────────────────────
@@ -141,20 +173,11 @@ function startApp() {
   document.getElementById('hd-dealer-info').textContent = '🏬 ' + DEALER.name;
   document.getElementById('sb-dealer-name').textContent = DEALER.name + ' (' + DEALER.id + ')';
 
-  var did     = DEALER.id || '';
-  var baseUrl = window.location.origin
+  var did         = DEALER.id || '';
+  var baseUrl     = window.location.origin
     + window.location.pathname.replace('dealer-admin.html','');
-
-  // 기본 쇼핑몰 URL (index.html?dealer=ID)
-  var fullShopUrl = baseUrl + 'index.html?dealer=' + did;
+  var fullShopUrl = buildShopUrl(did);                          // ✅ 안전한 URL 생성
   var fullProdUrl = baseUrl + 'products.html?dealer=' + did;
-
-  // ✅ 대리점 전용 도메인이 있으면 도메인 기반으로 변경
-  if(DEALER.domain) {
-    var domain = DEALER.domain.startsWith('http')
-      ? DEALER.domain : 'https://' + DEALER.domain;
-    fullShopUrl = domain + '?dealer=' + did;
-  }
 
   // 대시보드 쇼핑몰 링크 박스
   var urlEl  = document.getElementById('my-shop-url');
