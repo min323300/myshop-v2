@@ -6,246 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>담누리마켓 대리점 관리</title>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --accent: #FF5733; --accent-dark: #d94420; --accent-light: #fff0ec;
-      --sb-bg: #1a2744; --sb-hover: #253460; --sb-active-bg: rgba(255,87,51,0.15);
-      --sb-text: #8b93b5; --sb-text-active: #ffffff;
-      --bg: #f0f2f5; --white: #ffffff; --border: #e4e8ef;
-      --gray: #8a93b0; --gray-dark: #2d3557;
-      --radius: 10px; --shadow: 0 2px 12px rgba(0,0,0,0.06);
-      --font: 'Noto Sans KR', sans-serif; --sb-w: 210px; --hd-h: 58px;
-      --green: #00c471; --blue: #3b82f6; --orange: #f59e0b; --red: #ef4444;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: var(--font); background: var(--bg); color: var(--gray-dark); font-size: 14px; line-height: 1.5; }
-    a { text-decoration: none; }
-
-    /* ── 로그인 ── */
-    #login-screen {
-      position: fixed; inset: 0;
-      background: linear-gradient(145deg, #0d1829 0%, #1a2744 50%, #0d1829 100%);
-      display: flex; align-items: center; justify-content: center; z-index: 9999;
-    }
-    .lbox { width: 380px; padding: 50px 42px; text-align: center; background: rgba(255,255,255,0.05); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; }
-    .lbox-logo { font-size: 44px; margin-bottom: 6px; }
-    .lbox-brand { color: #fff; font-size: 22px; font-weight: 900; letter-spacing: -0.5px; }
-    .lbox-sub { color: rgba(255,255,255,0.38); font-size: 12px; margin: 4px 0 32px; }
-    .lbox input { display: block; width: 100%; margin-bottom: 12px; padding: 13px 16px; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.13); border-radius: 10px; color: #fff; font-size: 14px; font-family: var(--font); outline: none; }
-    .lbox input::placeholder { color: rgba(255,255,255,0.32); }
-    .lbox input:focus { border-color: var(--accent); }
-    .lbox-btn { width: 100%; padding: 13px; margin-top: 4px; background: var(--accent); border: none; border-radius: 10px; color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; font-family: var(--font); transition: .2s; }
-    .lbox-btn:hover { background: var(--accent-dark); }
-    .lbox-err { color: #ff7070; font-size: 12px; margin-top: 10px; display: none; }
-    .lbox-loading { color: rgba(255,255,255,0.5); font-size: 12px; margin-top: 10px; display: none; }
-
-    /* ── 레이아웃 ── */
-    #app { display: none; min-height: 100vh; }
-
-    .hd { position: fixed; top: 0; left: 0; right: 0; height: var(--hd-h); background: var(--sb-bg); z-index: 200; display: flex; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05); }
-    .hd-brand { width: var(--sb-w); display: flex; align-items: center; gap: 10px; padding: 0 18px; height: 100%; flex-shrink: 0; border-right: 1px solid rgba(255,255,255,0.06); }
-    .hd-logo { font-size: 22px; }
-    .hd-title { color: #fff; font-weight: 800; font-size: 15px; line-height: 1.2; }
-    .hd-panel { color: rgba(255,255,255,0.4); font-size: 10px; }
-    .hd-nav { display: flex; align-items: center; gap: 2px; padding: 0 14px; }
-    .hd-nav a { color: rgba(255,255,255,0.45); font-size: 13px; padding: 6px 12px; border-radius: 7px; transition: .15s; }
-    .hd-nav a:hover { color: #fff; background: rgba(255,255,255,0.08); }
-    .hd-right { margin-left: auto; display: flex; align-items: center; gap: 10px; padding-right: 16px; }
-    .hd-date { color: rgba(255,255,255,0.38); font-size: 12px; }
-    .hd-dealer-info { color: rgba(255,255,255,0.7); font-size: 12px; background: rgba(255,255,255,0.08); padding: 5px 12px; border-radius: 7px; }
-    .hd-logout { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.6); border: 1px solid rgba(255,255,255,0.1); padding: 6px 14px; border-radius: 7px; cursor: pointer; font-size: 12px; font-family: var(--font); }
-
-    .sb { position: fixed; top: var(--hd-h); left: 0; bottom: 0; width: var(--sb-w); background: var(--sb-bg); overflow-y: auto; border-right: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; }
-    .sb::-webkit-scrollbar { width: 3px; }
-    .sb::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); }
-    .sb-inner { flex: 1; padding: 10px 0; }
-    .sb-sec { margin-bottom: 2px; }
-    .sb-label { font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.22); text-transform: uppercase; letter-spacing: 1.2px; padding: 10px 18px 4px; }
-    .sb-item { display: flex; align-items: center; gap: 9px; padding: 9px 18px; cursor: pointer; color: var(--sb-text); font-size: 13px; transition: all .15s; position: relative; user-select: none; }
-    .sb-item:hover { color: #dde; background: var(--sb-hover); }
-    .sb-item.active { color: var(--sb-text-active); background: var(--sb-active-bg); font-weight: 600; }
-    .sb-item.active::before { content: ''; position: absolute; left: 0; top: 4px; bottom: 4px; width: 3px; background: var(--accent); border-radius: 0 3px 3px 0; }
-    .sb-item .si { font-size: 15px; width: 20px; text-align: center; flex-shrink: 0; }
-    .sb-item .sbadge { margin-left: auto; background: var(--red); color: #fff; font-size: 9px; padding: 2px 6px; border-radius: 10px; font-weight: 700; }
-    .sb-hr { height: 1px; background: rgba(255,255,255,0.05); margin: 6px 14px; }
-
-    .main { margin-left: var(--sb-w); margin-top: var(--hd-h); padding: 22px; min-height: calc(100vh - var(--hd-h)); }
-    .page { display: none; }
-    .page.active { display: block; }
-
-    .ph { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 18px; }
-    .ph-title { font-size: 20px; font-weight: 700; }
-    .ph-sub { font-size: 12px; color: var(--gray); margin-top: 3px; }
-    .ph-acts { display: flex; gap: 8px; align-items: center; }
-    .btn { padding: 9px 18px; border-radius: 8px; border: none; cursor: pointer; font-size: 13px; font-weight: 600; font-family: var(--font); transition: all .15s; display: inline-flex; align-items: center; gap: 5px; }
-    .btn-primary { background: var(--accent); color: #fff; }
-    .btn-primary:hover { background: var(--accent-dark); }
-    .btn-outline { background: var(--white); color: var(--gray-dark); border: 1px solid var(--border); }
-    .btn-outline:hover { background: var(--bg); }
-    .btn-green { background: var(--green); color: #fff; }
-    .btn-excel { background: #217346; color: #fff; }
-    .btn-excel:hover { background: #1a5c38; }
-    .btn-sm { padding: 6px 12px; font-size: 12px; }
-    .stat-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 20px; }
-    .sc { background: var(--white); border-radius: var(--radius); padding: 20px 22px; box-shadow: var(--shadow); border-top: 3px solid var(--border); }
-    .sc.c-blue { border-top-color: var(--blue); }
-    .sc.c-green { border-top-color: var(--green); }
-    .sc.c-orange { border-top-color: var(--orange); }
-    .sc.c-red { border-top-color: var(--accent); }
-    .sc-top { display: flex; justify-content: space-between; }
-    .sc-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
-    .c-blue .sc-icon { background: #eff6ff; }
-    .c-green .sc-icon { background: #f0fdf4; }
-    .c-orange .sc-icon { background: #fffbeb; }
-    .c-red .sc-icon { background: #fff0ec; }
-    .sc-val { font-size: 26px; font-weight: 900; margin-top: 12px; }
-    .sc-label { font-size: 12px; color: var(--gray); margin-top: 2px; }
-    .card { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; margin-bottom: 16px; }
-    .card-hd { padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-    .card-title { font-size: 14px; font-weight: 700; }
-    .card-acts { margin-left: auto; display: flex; gap: 8px; align-items: center; }
-    .srch { padding: 8px 13px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; font-family: var(--font); outline: none; width: 200px; }
-    .srch:focus { border-color: var(--accent); }
-    .sel { padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; font-family: var(--font); outline: none; background: var(--white); cursor: pointer; }
-    .tw { overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; }
-    th { padding: 10px 14px; text-align: left; font-size: 11px; font-weight: 700; color: var(--gray); background: #f7f8fb; border-bottom: 1px solid var(--border); white-space: nowrap; }
-    td { padding: 11px 14px; font-size: 13px; border-bottom: 1px solid #f2f3f7; vertical-align: middle; }
-    tr:last-child td { border-bottom: none; }
-    tr:hover td { background: #fafbff; }
-    .thumb { width: 46px; height: 46px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); display: block; }
-    .bdg { display: inline-block; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 700; }
-    .bdg-hq { background: #eff6ff; color: #1d4ed8; }
-    .bdg-dealer { background: #f0fdf4; color: #166534; }
-    .bdg-new { background: #e8f5e9; color: #2e7d32; }
-    .bdg-best { background: #fff3e0; color: #e65100; }
-    .bdg-sale { background: #fce4ec; color: #c62828; }
-
-    /* 상태탭 */
-    .stabs { display: flex; padding: 0 20px; border-bottom: 2px solid var(--border); background: var(--white); }
-    .stab { padding: 11px 16px; font-size: 13px; cursor: pointer; color: var(--gray); border-bottom: 2px solid transparent; margin-bottom: -2px; transition: .15s; white-space: nowrap; }
-    .stab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 700; }
-    .stab .tc { font-size: 11px; background: var(--bg); padding: 1px 6px; border-radius: 10px; margin-left: 4px; }
-    .stab.active .tc { background: var(--accent-light); color: var(--accent); }
-
-    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    .loading { text-align: center; padding: 48px; color: var(--gray); }
-    .lspin { font-size: 28px; animation: spin 1s linear infinite; display: inline-block; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .empty { text-align: center; padding: 52px 20px; color: var(--gray); }
-    .empty-ico { font-size: 44px; margin-bottom: 12px; }
-    .empty-txt { font-size: 14px; }
-    .empty-sub { font-size: 12px; margin-top: 5px; color: #bbb; }
-    .toast { position: fixed; bottom: 24px; right: 24px; background: #2d3557; color: #fff; padding: 13px 20px; border-radius: 10px; font-size: 13px; z-index: 9999; transform: translateY(80px); opacity: 0; transition: all .3s; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
-    .toast.show { transform: translateY(0); opacity: 1; }
-    .toast.ok { background: var(--green); }
-    .toast.warn { background: var(--orange); }
-
-    /* 모달 */
-    .modal-ov { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 1000; display: none; align-items: flex-start; justify-content: center; padding: 20px; overflow-y: auto; }
-    .modal-ov.active { display: flex; }
-    .modal { background: var(--white); border-radius: 16px; width: 100%; max-width: 680px; margin: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
-    .modal-hd { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
-    .modal-hd span { font-size: 17px; font-weight: 700; }
-    .modal-hd button { background: none; border: none; font-size: 22px; cursor: pointer; color: var(--gray); }
-    .modal-body { padding: 24px; max-height: 70vh; overflow-y: auto; }
-    .modal-ft { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; background: #f9fafb; border-radius: 0 0 16px 16px; }
-    .fg { margin-bottom: 14px; }
-    .fl { display: block; font-size: 12px; font-weight: 600; margin-bottom: 5px; color: var(--gray-dark); }
-    .fi { width: 100%; padding: 9px 13px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; font-family: var(--font); outline: none; }
-    .fi:focus { border-color: var(--accent); }
-    .fg-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-
-    .hq-badge { display: inline-block; background: #eff6ff; color: #1565c0; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; margin-left: 4px; }
-    .dealer-badge { display: inline-block; background: #f0fdf4; color: #166534; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; margin-left: 4px; }
-
-    .excel-btn { background: #217346; color: #fff; border: none; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: var(--font); display: inline-flex; align-items: center; gap: 6px; }
-    .excel-btn:hover { background: #1a5c38; }
-
-    .notice-card { padding: 16px; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 12px; }
-    .notice-card.urgent { border-left: 4px solid var(--red); }
-    .notice-card.important { border-left: 4px solid var(--orange); }
-    .notice-title { font-weight: 700; font-size: 14px; margin-bottom: 6px; }
-    .notice-content { font-size: 13px; color: #444; white-space: pre-wrap; line-height: 1.7; }
-    .notice-meta { font-size: 11px; color: var(--gray); margin-top: 8px; }
-
-    .settle-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f2f3f7; font-size: 13px; }
-    .settle-row:last-child { border-bottom: none; }
-    .settle-val { font-weight: 700; color: var(--accent); }
-    .settle-val.green { color: var(--green); }
-
-    .status-change-box { background: #f8f9ff; border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-top: 16px; }
-    .status-change-box .scb-title { font-size: 13px; font-weight: 700; color: var(--gray-dark); margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
-    .status-btns { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
-    .status-btn { padding: 7px 14px; border-radius: 8px; border: 2px solid transparent; font-size: 12px; font-weight: 700; cursor: pointer; font-family: var(--font); transition: all .15s; background: var(--white); }
-    .status-btn:hover { opacity: 0.85; transform: translateY(-1px); }
-    .status-btn.s-wait   { border-color: #93c5fd; color: #1d4ed8; }
-    .status-btn.s-paid   { border-color: #86efac; color: #166534; }
-    .status-btn.s-prep   { border-color: #fcd34d; color: #92400e; }
-    .status-btn.s-ship   { border-color: #fb923c; color: #c2410c; }
-    .status-btn.s-done   { border-color: #34d399; color: #065f46; }
-    .status-btn.s-cancel { border-color: #f87171; color: #991b1b; }
-    .status-btn.selected { color: #fff !important; }
-    .status-btn.s-wait.selected   { background: #3b82f6; border-color: #3b82f6; }
-    .status-btn.s-paid.selected   { background: #22c55e; border-color: #22c55e; }
-    .status-btn.s-prep.selected   { background: #f59e0b; border-color: #f59e0b; }
-    .status-btn.s-ship.selected   { background: #f97316; border-color: #f97316; }
-    .status-btn.s-done.selected   { background: #10b981; border-color: #10b981; }
-    .status-btn.s-cancel.selected { background: #ef4444; border-color: #ef4444; }
-
-    .tracking-row { display: flex; gap: 8px; align-items: center; }
-    .tracking-row input { flex: 1; }
-    .tracking-hint { font-size: 11px; color: var(--gray); margin-top: 5px; }
-
-    .os { padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; display: inline-block; }
-    .os-주문완료,.os-결제대기 { background: #eff6ff; color: #1d4ed8; }
-    .os-결제완료 { background: #f0fdf4; color: #166534; }
-    .os-상품준비 { background: #fffbeb; color: #92400e; }
-    .os-배송중 { background: #fff7ed; color: #c2410c; }
-    .os-배송완료 { background: #ecfdf5; color: #065f46; }
-    .os-취소,.os-반품 { background: #fef2f2; color: #991b1b; }
-
-    .quick-status-sel { padding: 5px 8px; border: 1px solid var(--border); border-radius: 7px; font-size: 11px; font-family: var(--font); outline: none; background: var(--white); cursor: pointer; }
-
-    .prod-section { border: 1px solid var(--border); border-radius: 10px; margin-bottom: 14px; overflow: hidden; }
-    .prod-sec-hd { padding: 12px 16px; background: #f7f8fb; display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
-    .prod-sec-hd-title { font-size: 13px; font-weight: 700; }
-    .prod-sec-toggle { font-size: 12px; color: var(--gray); }
-    .prod-sec-body { padding: 16px; }
-    .req { color: var(--accent); }
-
-    @media (max-width: 900px) {
-      .stat-grid { grid-template-columns: 1fr 1fr; }
-      .two-col { grid-template-columns: 1fr; }
-    }
-    /* ===== 모바일 사이드바 ===== */
-    .sb-overlay {
-      display: none;
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,0.45);
-      z-index: 199;
-    }
-    .hd-hamburger {
-      display: none;
-      background: none; border: none;
-      font-size: 22px; cursor: pointer;
-      padding: 4px 8px; color: #fff;
-    }
-    @media (max-width: 768px) {
-      .hd-hamburger { display: block; }
-      .hd-nav { display: none; }
-      .hd-right .hd-date { display: none; }
-      .sb {
-        position: fixed; left: -220px; top: var(--hd-h);
-        height: calc(100vh - var(--hd-h)); z-index: 200;
-        transition: left 0.25s ease;
-        box-shadow: 2px 0 12px rgba(0,0,0,0.3);
-      }
-      .sb.open { left: 0; }
-      .sb-overlay.open { display: block; }
-      .main { margin-left: 0 !important; }
-    }
-  </style>
+  <link rel="stylesheet" href="css/dealer-admin.css">
 </head>
 <body>
 
@@ -277,8 +38,8 @@
       </div>
     </div>
     <div class="hd-nav">
-      <a id="shop-link" href="index.html" target="_blank" onclick="this.href='index.html?dealer='+(DEALER?DEALER.id:''); return true;">🌐 쇼핑몰</a>
-      <a id="products-link" href="products.html" target="_blank" onclick="this.href='products.html?dealer='+(DEALER?DEALER.id:''); return true;">📦 상품목록</a>
+      <a id="shop-link" href="index.html" target="_blank">🌐 쇼핑몰</a>
+      <a id="products-link" href="products.html" target="_blank">📦 상품목록</a>
     </div>
     <div class="hd-right">
       <div class="hd-date" id="hd-date"></div>
@@ -321,7 +82,6 @@
         <div class="sb-item" onclick="go('consignment',this)"><span class="si">🤝</span> 위탁판매 신청</div>
       </div>
       <div class="sb-hr"></div>
-      <!-- ★ 라이브 방송 메뉴 추가 -->
       <div class="sb-sec">
         <div class="sb-label">라이브 방송</div>
         <div class="sb-item" onclick="go('live-list',this)"><span class="si">📺</span> 방송 목록</div>
@@ -354,7 +114,7 @@
         <div style="font-size:22px;">🌐</div>
         <div style="flex:1;min-width:0;">
           <div style="color:rgba(255,255,255,0.7);font-size:11px;margin-bottom:4px;">내 쇼핑몰 링크 (고객에게 이 주소를 공유하세요)</div>
-          <div id="my-shop-url" style="color:#fff;font-size:13px;font-weight:600;word-break:break-all;letter-spacing:0.3px;">로딩 중...</div>
+          <div id="my-shop-url" style="color:#fff;font-size:13px;font-weight:600;word-break:break-all;">로딩 중...</div>
         </div>
         <div style="display:flex;gap:8px;flex-shrink:0;">
           <button onclick="copyShopLink()" style="padding:8px 16px;background:#fff;color:#1e2336;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">📋 복사</button>
@@ -368,14 +128,8 @@
         <div class="sc c-red"><div class="sc-top"><div class="sc-icon">⭐</div></div><div class="sc-val" id="dash-reviews">0</div><div class="sc-label">신규 리뷰</div></div>
       </div>
       <div class="two-col">
-        <div class="card">
-          <div class="card-hd"><div class="card-title">📋 최근 주문 5건</div></div>
-          <div id="dash-recent-orders" style="padding:16px;"><div class="loading"><div class="lspin">⏳</div></div></div>
-        </div>
-        <div class="card">
-          <div class="card-hd"><div class="card-title">📢 본사 공지</div></div>
-          <div id="dash-notice" style="padding:16px;"><div class="loading"><div class="lspin">⏳</div></div></div>
-        </div>
+        <div class="card"><div class="card-hd"><div class="card-title">📋 최근 주문 5건</div></div><div id="dash-recent-orders" style="padding:16px;"><div class="loading"><div class="lspin">⏳</div></div></div></div>
+        <div class="card"><div class="card-hd"><div class="card-title">📢 본사 공지</div></div><div id="dash-notice" style="padding:16px;"><div class="loading"><div class="lspin">⏳</div></div></div></div>
       </div>
     </div>
 
@@ -392,9 +146,7 @@
         <div class="card-hd">
           <div class="card-title">전체 본사 상품</div>
           <div class="card-acts">
-            <select class="sel" id="hq-cat-filter" onchange="filterHqProducts(document.getElementById('hq-srch').value)">
-              <option value="">전체 카테고리</option>
-            </select>
+            <select class="sel" id="hq-cat-filter" onchange="filterHqProducts(document.getElementById('hq-srch').value)"><option value="">전체 카테고리</option></select>
           </div>
         </div>
         <div class="tw" id="hq-products-tw"><div class="loading"><div class="lspin">⏳</div></div></div>
@@ -410,15 +162,13 @@
           <button class="btn btn-primary" onclick="openMyProdModal()">➕ 상품 등록</button>
         </div>
       </div>
-      <div class="card">
-        <div class="tw" id="my-products-tw"><div class="loading"><div class="lspin">⏳</div></div></div>
-      </div>
+      <div class="card"><div class="tw" id="my-products-tw"><div class="loading"><div class="lspin">⏳</div></div></div></div>
     </div>
 
     <!-- ④ 주문/배송 관리 -->
     <div id="page-orders" class="page">
       <div class="ph">
-        <div><div class="ph-title">🛒 주문/배송 관리</div><div class="ph-sub" id="orders-sub">내 쇼핑몰 주문 내역</div></div>
+        <div><div class="ph-title">🛒 주문/배송 관리</div><div class="ph-sub">내 쇼핑몰 주문 내역</div></div>
         <div class="ph-acts">
           <button class="btn btn-outline" onclick="loadOrders()">🔄 새로고침</button>
           <button class="excel-btn" onclick="downloadExcel()">📥 엑셀 다운로드</button>
@@ -490,14 +240,14 @@
       </div>
     </div>
 
-    <!-- 위탁판매 -->
+    <!-- ⑦ 위탁판매 -->
     <div id="page-consignment" class="page">
       <div class="ph">
-        <div><div class="ph-title">🤝 위탁판매 신청</div><div class="ph-sub">내 상품을 본사 쇼핑몰에 위탁판매로 노출 신청합니다</div></div>
+        <div><div class="ph-title">🤝 위탁판매 신청</div><div class="ph-sub">내 상품을 다른 대리점 쇼핑몰에도 노출 신청합니다</div></div>
         <div class="ph-acts"><button class="btn btn-outline" onclick="loadConsignment()">🔄 새로고침</button></div>
       </div>
       <div style="background:#e8f4fd;border:1px solid #bbdefb;border-radius:10px;padding:14px 18px;margin-bottom:16px;font-size:13px;color:#1565c0;">
-        💡 <strong>위탁판매란?</strong> 내 상품을 본사 쇼핑몰에도 노출시켜 더 많은 고객에게 판매하는 기능입니다. 신청 후 본사 승인 완료 시 자동 노출됩니다.
+        💡 <strong>위탁판매란?</strong> 내 상품을 본사 승인 후 다른 대리점 쇼핑몰에도 노출시켜 더 많은 고객에게 판매하는 기능입니다.
       </div>
       <div class="stat-grid">
         <div class="sc c-blue"><div class="sc-top"><div class="sc-icon">📦</div></div><div class="sc-val" id="cs-total">-</div><div class="sc-label">전체 상품</div></div>
@@ -511,7 +261,7 @@
       </div>
     </div>
 
-    <!-- ★ 라이브 방송 목록 -->
+    <!-- ⑧ 라이브 방송 목록 -->
     <div id="page-live-list" class="page">
       <div class="ph">
         <div><div class="ph-title">📺 라이브 방송</div><div class="ph-sub">방송 목록 및 관리</div></div>
@@ -534,7 +284,7 @@
       </div>
     </div>
 
-    <!-- ★ 알림 신청자 -->
+    <!-- ⑨ 알림 신청자 -->
     <div id="page-live-alarm" class="page">
       <div class="ph">
         <div><div class="ph-title">🔔 알림 신청자</div><div class="ph-sub">방송별 알림 신청자 목록</div></div>
@@ -551,7 +301,7 @@
       </div>
     </div>
 
-    <!-- ★ 쿠폰 발급 내역 -->
+    <!-- ⑩ 쿠폰 발급 내역 -->
     <div id="page-live-coupon" class="page">
       <div class="ph">
         <div><div class="ph-title">🎁 쿠폰 발급 내역</div><div class="ph-sub">라이브 전용 쿠폰 발급 현황</div></div>
@@ -563,7 +313,7 @@
       </div>
     </div>
 
-    <!-- ⑦ 공지사항 -->
+    <!-- ⑪ 공지사항 -->
     <div id="page-notice" class="page">
       <div class="ph">
         <div><div class="ph-title">📢 본사 공지사항</div><div class="ph-sub">본사에서 보낸 공지를 확인하세요</div></div>
@@ -572,7 +322,7 @@
       <div id="notice-list" style="padding:4px 0;"></div>
     </div>
 
-    <!-- ⑧ 운영 매뉴얼 -->
+    <!-- ⑫ 운영 매뉴얼 -->
     <div id="page-manual" class="page">
       <div class="ph">
         <div><div class="ph-title">📖 운영 매뉴얼</div><div class="ph-sub">사이트 운영 가이드</div></div>
@@ -584,73 +334,52 @@
   </main>
 </div>
 
-<!-- 내 상품 등록/수정 모달 -->
+<!-- ── 내 상품 등록/수정 모달 ── -->
 <div class="modal-ov" id="my-prod-modal">
   <div class="modal" style="max-width:760px;">
-    <div class="modal-hd">
-      <span id="mpm-title">📦 상품 등록</span>
-      <button onclick="closeMyProdModal()">✕</button>
-    </div>
+    <div class="modal-hd"><span id="mpm-title">📦 상품 등록</span><button onclick="closeMyProdModal()">✕</button></div>
     <div class="modal-body">
       <input type="hidden" id="mpm-id">
       <div class="prod-section">
-        <div class="prod-sec-hd" onclick="toggleSection(this)">
-          <div class="prod-sec-hd-title">① 기본 정보 <span class="req">●</span></div>
-          <span class="prod-sec-toggle">∧</span>
-        </div>
+        <div class="prod-sec-hd" onclick="toggleSection(this)"><div class="prod-sec-hd-title">① 기본 정보 <span class="req">●</span></div><span class="prod-sec-toggle">∧</span></div>
         <div class="prod-sec-body">
           <div class="fg-row">
             <div class="fg"><label class="fl">카테고리 <span style="color:var(--accent);">*</span></label>
               <select class="fi" id="mpm-category">
                 <option value="">선택하세요</option>
-                <option value="의류">의류</option><option value="뷰티">뷰티</option>
-                <option value="전자">전자</option><option value="식품">식품</option>
-                <option value="생활">생활</option><option value="스포츠">스포츠</option>
-                <option value="신발">신발</option><option value="가방">가방</option>
-                <option value="액세서리">액세서리</option><option value="가전">가전</option>
-                <option value="주방">주방</option><option value="반려동물">반려동물</option>
+                <option value="의류">의류</option><option value="뷰티">뷰티</option><option value="전자">전자</option>
+                <option value="식품">식품</option><option value="생활">생활</option><option value="스포츠">스포츠</option>
+                <option value="신발">신발</option><option value="가방">가방</option><option value="액세서리">액세서리</option>
+                <option value="가전">가전</option><option value="주방">주방</option><option value="반려동물">반려동물</option>
                 <option value="유아">유아</option><option value="도서">도서</option>
               </select>
             </div>
             <div class="fg"><label class="fl">뱃지</label>
-              <select class="fi" id="mpm-badge">
-                <option value="">없음</option>
-                <option value="NEW">🆕 NEW</option>
-                <option value="BEST">🏆 BEST</option>
-                <option value="SALE">🔥 SALE</option>
-              </select>
+              <select class="fi" id="mpm-badge"><option value="">없음</option><option value="NEW">🆕 NEW</option><option value="BEST">🏆 BEST</option><option value="SALE">🔥 SALE</option></select>
             </div>
           </div>
-          <div class="fg"><label class="fl">상품명 <span style="color:var(--accent);">*</span></label>
-            <input class="fi" id="mpm-name" placeholder="상품명을 입력하세요">
-          </div>
+          <div class="fg"><label class="fl">상품명 <span style="color:var(--accent);">*</span></label><input class="fi" id="mpm-name" placeholder="상품명을 입력하세요"></div>
           <div class="fg-row">
-            <div class="fg"><label class="fl">정가 <span style="color:var(--accent);">*</span> (원)</label>
-              <input class="fi" id="mpm-price" type="number" placeholder="29000" oninput="calcDiscount()">
-            </div>
-            <div class="fg"><label class="fl">할인가 (원, 없으면 0)</label>
-              <input class="fi" id="mpm-sale" type="number" placeholder="0" oninput="calcDiscount()">
-            </div>
+            <div class="fg"><label class="fl">정가 <span style="color:var(--accent);">*</span> (원)</label><input class="fi" id="mpm-price" type="number" placeholder="29000" oninput="calcDiscount()"></div>
+            <div class="fg"><label class="fl">할인가 (원, 없으면 0)</label><input class="fi" id="mpm-sale" type="number" placeholder="0" oninput="calcDiscount()"></div>
+          </div>
+          <!-- ✅ v4.6: 원가 필드 추가 -->
+          <div class="fg">
+            <label class="fl">원가 (원) <span style="font-size:11px;color:var(--gray);font-weight:400;">— 위탁판매 정산 기준, 필수</span></label>
+            <input class="fi" id="mpm-cost" type="number" placeholder="15000">
           </div>
           <div id="discount-preview" style="display:none;background:#fff7f5;border:1px solid #fdd;border-radius:8px;padding:10px 14px;font-size:13px;"></div>
         </div>
       </div>
       <div class="prod-section">
-        <div class="prod-sec-hd" onclick="toggleSection(this)">
-          <div class="prod-sec-hd-title">② 상품 이미지</div>
-          <span class="prod-sec-toggle">∧</span>
-        </div>
+        <div class="prod-sec-hd" onclick="toggleSection(this)"><div class="prod-sec-hd-title">② 상품 이미지</div><span class="prod-sec-toggle">∧</span></div>
         <div class="prod-sec-body">
-          <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 14px;font-size:12px;color:#166534;margin-bottom:14px;">
-            ☁️ <strong>Cloudinary 자동 업로드</strong> — 📁 버튼으로 파일 선택 시 자동 저장
-          </div>
+          <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 14px;font-size:12px;color:#166534;margin-bottom:14px;">☁️ <strong>Cloudinary 자동 업로드</strong> — 📁 버튼으로 파일 선택 시 자동 저장</div>
           <div class="fg">
             <label class="fl">대표 이미지 <span style="color:var(--accent);">*</span></label>
             <div style="display:flex;gap:8px;align-items:center;">
               <input class="fi" id="mpm-img" placeholder="URL 자동입력 또는 직접입력" oninput="previewImg('mpm-img','prev-img1')" style="flex:1;">
-              <label style="cursor:pointer;background:#f1f5f9;border:1px solid #cbd5e1;border-radius:8px;padding:8px 12px;font-size:16px;flex-shrink:0;">
-                📁<input type="file" accept="image/*" style="display:none;" onchange="uploadCloudinary(this,'mpm-img','prev-img1','upl-1')">
-              </label>
+              <label style="cursor:pointer;background:#f1f5f9;border:1px solid #cbd5e1;border-radius:8px;padding:8px 12px;font-size:16px;flex-shrink:0;">📁<input type="file" accept="image/*" style="display:none;" onchange="uploadCloudinary(this,'mpm-img','prev-img1','upl-1')"></label>
               <span id="upl-1" style="font-size:11px;color:var(--gray);display:none;">업로드중...</span>
             </div>
             <img id="prev-img1" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--border);margin-top:6px;display:none;">
@@ -659,18 +388,14 @@
             <div class="fg"><label class="fl">상세이미지 1</label>
               <div style="display:flex;gap:8px;align-items:center;">
                 <input class="fi" id="mpm-img2" placeholder="URL" oninput="previewImg('mpm-img2','prev-img2')" style="flex:1;">
-                <label style="cursor:pointer;background:#f1f5f9;border:1px solid #cbd5e1;border-radius:8px;padding:8px 12px;font-size:16px;flex-shrink:0;">
-                  📁<input type="file" accept="image/*" style="display:none;" onchange="uploadCloudinary(this,'mpm-img2','prev-img2','upl-2')">
-                </label>
+                <label style="cursor:pointer;background:#f1f5f9;border:1px solid #cbd5e1;border-radius:8px;padding:8px 12px;font-size:16px;flex-shrink:0;">📁<input type="file" accept="image/*" style="display:none;" onchange="uploadCloudinary(this,'mpm-img2','prev-img2','upl-2')"></label>
               </div>
               <img id="prev-img2" style="width:60px;height:60px;object-fit:cover;border-radius:8px;border:1px solid var(--border);margin-top:4px;display:none;">
             </div>
             <div class="fg"><label class="fl">상세이미지 2</label>
               <div style="display:flex;gap:8px;align-items:center;">
                 <input class="fi" id="mpm-img3" placeholder="URL" oninput="previewImg('mpm-img3','prev-img3')" style="flex:1;">
-                <label style="cursor:pointer;background:#f1f5f9;border:1px solid #cbd5e1;border-radius:8px;padding:8px 12px;font-size:16px;flex-shrink:0;">
-                  📁<input type="file" accept="image/*" style="display:none;" onchange="uploadCloudinary(this,'mpm-img3','prev-img3','upl-3')">
-                </label>
+                <label style="cursor:pointer;background:#f1f5f9;border:1px solid #cbd5e1;border-radius:8px;padding:8px 12px;font-size:16px;flex-shrink:0;">📁<input type="file" accept="image/*" style="display:none;" onchange="uploadCloudinary(this,'mpm-img3','prev-img3','upl-3')"></label>
               </div>
               <img id="prev-img3" style="width:60px;height:60px;object-fit:cover;border-radius:8px;border:1px solid var(--border);margin-top:4px;display:none;">
             </div>
@@ -678,90 +403,48 @@
           <div class="fg"><label class="fl">상세이미지 3</label>
             <div style="display:flex;gap:8px;align-items:center;">
               <input class="fi" id="mpm-img4" placeholder="URL" oninput="previewImg('mpm-img4','prev-img4')" style="flex:1;">
-              <label style="cursor:pointer;background:#f1f5f9;border:1px solid #cbd5e1;border-radius:8px;padding:8px 12px;font-size:16px;flex-shrink:0;">
-                📁<input type="file" accept="image/*" style="display:none;" onchange="uploadCloudinary(this,'mpm-img4','prev-img4','upl-4')">
-              </label>
+              <label style="cursor:pointer;background:#f1f5f9;border:1px solid #cbd5e1;border-radius:8px;padding:8px 12px;font-size:16px;flex-shrink:0;">📁<input type="file" accept="image/*" style="display:none;" onchange="uploadCloudinary(this,'mpm-img4','prev-img4','upl-4')"></label>
             </div>
             <img id="prev-img4" style="width:60px;height:60px;object-fit:cover;border-radius:8px;border:1px solid var(--border);margin-top:4px;display:none;">
           </div>
-          <div class="fg">
-            <label class="fl">상세페이지 이미지 <span style="font-size:10px;color:var(--gray);">(줄바꿈으로 구분)</span></label>
-            <textarea class="fi" id="mpm-detail-imgs" rows="2" style="resize:vertical;" placeholder="https://...&#10;https://..."></textarea>
-          </div>
+          <div class="fg"><label class="fl">상세페이지 이미지 <span style="font-size:10px;color:var(--gray);">(줄바꿈으로 구분)</span></label><textarea class="fi" id="mpm-detail-imgs" rows="2" style="resize:vertical;" placeholder="https://...&#10;https://..."></textarea></div>
         </div>
       </div>
       <div class="prod-section">
-        <div class="prod-sec-hd" onclick="toggleSection(this)">
-          <div class="prod-sec-hd-title">③ 색상 / 사이즈 옵션</div>
-          <span class="prod-sec-toggle">∧</span>
-        </div>
+        <div class="prod-sec-hd" onclick="toggleSection(this)"><div class="prod-sec-hd-title">③ 색상 / 사이즈 옵션</div><span class="prod-sec-toggle">∧</span></div>
         <div class="prod-sec-body">
           <div class="fg-row">
-            <div class="fg"><label class="fl">색상 옵션 <span style="font-size:10px;color:var(--gray);">(| 구분)</span></label>
-              <input class="fi" id="mpm-colors" placeholder="예: 화이트|블랙|네이비">
-            </div>
-            <div class="fg"><label class="fl">사이즈 옵션 <span style="font-size:10px;color:var(--gray);">(| 구분)</span></label>
-              <input class="fi" id="mpm-sizes" placeholder="예: S|M|L|XL">
-            </div>
+            <div class="fg"><label class="fl">색상 옵션 <span style="font-size:10px;color:var(--gray);">(| 구분)</span></label><input class="fi" id="mpm-colors" placeholder="예: 화이트|블랙|네이비"></div>
+            <div class="fg"><label class="fl">사이즈 옵션 <span style="font-size:10px;color:var(--gray);">(| 구분)</span></label><input class="fi" id="mpm-sizes" placeholder="예: S|M|L|XL"></div>
           </div>
           <div id="options-wrap" style="margin-top:8px;"></div>
           <button type="button" onclick="addOption()" style="background:#f1f5f9;border:1px dashed #cbd5e1;border-radius:8px;padding:8px 16px;font-size:12px;cursor:pointer;width:100%;color:var(--gray-dark);font-family:var(--font);margin-top:8px;">+ 추가 옵션</button>
         </div>
       </div>
       <div class="prod-section">
-        <div class="prod-sec-hd" onclick="toggleSection(this)">
-          <div class="prod-sec-hd-title">④ 배송 및 기타</div>
-          <span class="prod-sec-toggle">∧</span>
-        </div>
+        <div class="prod-sec-hd" onclick="toggleSection(this)"><div class="prod-sec-hd-title">④ 배송 및 기타</div><span class="prod-sec-toggle">∧</span></div>
         <div class="prod-sec-body">
           <div class="fg-row">
             <div class="fg"><label class="fl">배송비</label>
-              <select class="fi" id="mpm-delivery-type" onchange="toggleDeliveryFee()">
-                <option value="무료">🚚 무료배송</option>
-                <option value="유료">💳 유료배송</option>
-              </select>
+              <select class="fi" id="mpm-delivery-type" onchange="toggleDeliveryFee()"><option value="무료">🚚 무료배송</option><option value="유료">💳 유료배송</option></select>
             </div>
-            <div class="fg"><label class="fl">배송비 금액</label>
-              <input class="fi" id="mpm-delivery-fee" type="number" placeholder="3000" disabled style="background:#f5f5f5;">
-            </div>
+            <div class="fg"><label class="fl">배송비 금액</label><input class="fi" id="mpm-delivery-fee" type="number" placeholder="3000" disabled style="background:#f5f5f5;"></div>
           </div>
           <div class="fg-row">
             <div class="fg"><label class="fl">배송 예상일</label>
-              <select class="fi" id="mpm-delivery-days">
-                <option value="1~3일">1~3일 이내</option>
-                <option value="3~5일">3~5일 이내</option>
-                <option value="5~7일">5~7일 이내</option>
-                <option value="7일 이상">7일 이상</option>
-              </select>
+              <select class="fi" id="mpm-delivery-days"><option value="1~3일">1~3일 이내</option><option value="3~5일">3~5일 이내</option><option value="5~7일">5~7일 이내</option><option value="7일 이상">7일 이상</option></select>
             </div>
-            <div class="fg"><label class="fl">재고</label>
-              <input class="fi" id="mpm-stock" type="number" placeholder="100">
-            </div>
+            <div class="fg"><label class="fl">재고</label><input class="fi" id="mpm-stock" type="number" placeholder="100"></div>
           </div>
-          <div class="fg"><label class="fl">상품 설명</label>
-            <textarea class="fi" id="mpm-desc" rows="4" style="resize:vertical;" placeholder="상품 특징, 소재, 사이즈 안내 등"></textarea>
-          </div>
+          <div class="fg"><label class="fl">상품 설명</label><textarea class="fi" id="mpm-desc" rows="4" style="resize:vertical;" placeholder="상품 특징, 소재, 사이즈 안내 등"></textarea></div>
         </div>
       </div>
       <div class="prod-section">
-        <div class="prod-sec-hd" onclick="toggleSection(this)">
-          <div class="prod-sec-hd-title">⑤ 판매 설정</div>
-          <span class="prod-sec-toggle">∧</span>
-        </div>
+        <div class="prod-sec-hd" onclick="toggleSection(this)"><div class="prod-sec-hd-title">⑤ 판매 설정</div><span class="prod-sec-toggle">∧</span></div>
         <div class="prod-sec-body">
           <div class="fg-row">
-            <div class="fg"><label class="fl">추천여부</label>
-              <select class="fi" id="mpm-featured">
-                <option value="TRUE">⭐ 추천 (메인 노출)</option>
-                <option value="FALSE">미추천</option>
-              </select>
-            </div>
-            <div class="fg"><label class="fl">사용여부</label>
-              <select class="fi" id="mpm-active">
-                <option value="TRUE">✅ 사용 (판매중)</option>
-                <option value="FALSE">❌ 미사용 (숨김)</option>
-              </select>
-            </div>
+            <div class="fg"><label class="fl">추천여부</label><select class="fi" id="mpm-featured"><option value="TRUE">⭐ 추천 (메인 노출)</option><option value="FALSE">미추천</option></select></div>
+            <div class="fg"><label class="fl">사용여부</label><select class="fi" id="mpm-active"><option value="TRUE">✅ 사용 (판매중)</option><option value="FALSE">❌ 미사용 (숨김)</option></select></div>
           </div>
         </div>
       </div>
@@ -795,13 +478,8 @@
             <input class="fi" id="modal-tracking" placeholder="예: 1234567890123">
             <select class="fi" id="modal-carrier" style="width:140px;flex-shrink:0;">
               <option value="">택배사 선택</option>
-              <option value="CJ대한통운">CJ대한통운</option>
-              <option value="한진택배">한진택배</option>
-              <option value="롯데택배">롯데택배</option>
-              <option value="우체국택배">우체국택배</option>
-              <option value="로젠택배">로젠택배</option>
-              <option value="쿠팡로켓">쿠팡로켓</option>
-              <option value="직접배송">직접배송</option>
+              <option>CJ대한통운</option><option>한진택배</option><option>롯데택배</option>
+              <option>우체국택배</option><option>로젠택배</option><option>쿠팡로켓</option><option>직접배송</option>
             </select>
           </div>
           <div class="tracking-hint">입력하면 고객 주문내역에 송장번호가 표시됩니다</div>
@@ -834,13 +512,10 @@
   </div>
 </div>
 
-<!-- ★ 대리점 라이브 등록/수정 모달 -->
+<!-- 라이브 등록/수정 모달 -->
 <div class="modal-ov" id="dealer-live-modal">
   <div class="modal" style="max-width:540px;">
-    <div class="modal-hd">
-      <span id="dlm-title">📺 방송 등록</span>
-      <button onclick="closeDealerLiveModal()">✕</button>
-    </div>
+    <div class="modal-hd"><span id="dlm-title">📺 방송 등록</span><button onclick="closeDealerLiveModal()">✕</button></div>
     <div class="modal-body">
       <input type="hidden" id="dlm-no">
       <div class="fg"><label class="fl">방송 제목 *</label><input class="fi" id="dlm-title-input" placeholder="예: 특가 라이브 방송"></div>
@@ -857,17 +532,10 @@
       </div>
       <div class="fg-row">
         <div class="fg"><label class="fl">상태</label>
-          <select class="fi" id="dlm-status">
-            <option value="예정">⏳ 예정</option>
-            <option value="진행중">🔴 진행중</option>
-            <option value="종료">✅ 종료</option>
-          </select>
+          <select class="fi" id="dlm-status"><option value="예정">⏳ 예정</option><option value="진행중">🔴 진행중</option><option value="종료">✅ 종료</option></select>
         </div>
         <div class="fg"><label class="fl">사용여부</label>
-          <select class="fi" id="dlm-active">
-            <option value="TRUE">✅ 사용</option>
-            <option value="FALSE">❌ 미사용</option>
-          </select>
+          <select class="fi" id="dlm-active"><option value="TRUE">✅ 사용</option><option value="FALSE">❌ 미사용</option></select>
         </div>
       </div>
     </div>
@@ -880,1084 +548,12 @@
 
 <div class="toast" id="toast"></div>
 
-<script>
-// ============================================================
-// 설정
-// ============================================================
-var SHEET_ID   = '1gjnczt_Db959Nc6aAF6CIPIj1SBY4XvoIXuEAAIJOZE';
-var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzQ-Ce8Zbj5mO-iMF6IJQhNtbsHl7DGo9ER4bsBoJRoz1JnvIdkp3M3qb1efEcSlwoB/exec';
-var DEALER = null;
-var CLOUDINARY_CLOUD = 'dmefdyags';
-var CLOUDINARY_PRESET = 'damnuri_upload';
-var curPage = 'dashboard';
-var allOrders = [];
-var filteredOrders = [];
-var curTab = '';
-var curOrderId = '';
-var curSelectedStatus = '';
-
-function sheetUrl(sheetName) {
-  return 'https://docs.google.com/spreadsheets/d/' + SHEET_ID
-    + '/gviz/tq?tqx=out:csv&sheet=' + encodeURIComponent(sheetName) + '&t=' + Date.now();
-}
-
-function parseCSV(csv) {
-  var lines = csv.trim().split('\n');
-  var headers = lines[0].split(',').map(function(h){ return h.trim().replace(/"/g,''); });
-  return lines.slice(1).map(function(line){
-    var vals=[], cur='', inQ=false;
-    for(var i=0;i<line.length;i++){
-      var ch=line[i];
-      if(ch==='"'){inQ=!inQ;}
-      else if(ch===','&&!inQ){vals.push(cur.trim());cur='';}
-      else cur+=ch;
-    }
-    vals.push(cur.trim());
-    var obj={};
-    headers.forEach(function(h,i){ obj[h]=(vals[i]||'').replace(/"/g,'').trim(); });
-    return obj;
-  }).filter(function(r){ return Object.values(r).some(function(v){return v;}); });
-}
-
-function showToast(msg, type) {
-  var t = document.getElementById('toast');
-  t.textContent = msg; t.className = 'toast' + (type ? ' '+type : '');
-  t.classList.add('show');
-  setTimeout(function(){ t.classList.remove('show'); }, 3500);
-}
-
-function TH(cols) {
-  return '<thead><tr>'+cols.map(function(c){ return '<th>'+c+'</th>'; }).join('')+'</tr></thead>';
-}
-function EMPTY(ico, txt, sub) {
-  return '<div class="empty"><div class="empty-ico">'+ico+'</div><div class="empty-txt">'+txt+'</div>'+(sub?'<div class="empty-sub">'+sub+'</div>':'')+'</div>';
-}
-function fmt(n) { return (parseInt(n)||0).toLocaleString()+'원'; }
-
-function getField(obj, candidates) {
-  for(var i=0;i<candidates.length;i++){
-    var v = obj[candidates[i]];
-    if(v && v.trim && v.trim()) return v.trim();
-  }
-  return '';
-}
-
-function updateDate() {
-  var el = document.getElementById('hd-date');
-  if(!el) return;
-  var now = new Date();
-  el.textContent = now.getFullYear()+'.'+(now.getMonth()+1).toString().padStart(2,'0')+'.'+now.getDate().toString().padStart(2,'0')+' '+now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
-}
-setInterval(updateDate, 1000); updateDate();
-
-// ============================================================
-// 로그인
-// ============================================================
-function doLogin() {
-  var id = document.getElementById('lid').value.trim();
-  var pw = document.getElementById('lpw').value.trim();
-  if(!id||!pw){ document.getElementById('lerr').style.display='block'; return; }
-  document.getElementById('lloading').style.display='block';
-  document.getElementById('lerr').style.display='none';
-  fetch(sheetUrl('대리점')).then(function(r){return r.text();}).then(function(csv){
-    var rows = parseCSV(csv);
-    if(rows.length > 0) console.log('[대리점 시트 컬럼명]', Object.keys(rows[0]));
-    var found = rows.find(function(r){
-      var rowId   = String(r['번호']||'').trim();
-      var customId = (r['아이디']||r['대리점ID']||'').trim();
-      var idMatch = rowId === id || customId === id;
-      var phone = String(r['연락처']||'').replace(/[^0-9]/g,'');
-      var phoneLast4 = phone.slice(-4);
-      var storedPw = String(r['비밀번호']||'').trim();
-      var pwMatch = (storedPw && pw === storedPw) || pw === phoneLast4;
-      return idMatch && pwMatch && r['상태'] !== '해지';
-    });
-    document.getElementById('lloading').style.display='none';
-    if(found) {
-      DEALER = {
-        id:         found['대리점ID'] || found['아이디'] || id,
-        name:       found['대리점명'] || found['상호명'] || id,
-        owner:      found['대표자명'] || '',
-        domain:     found['도메인'] || '',
-        commission: parseFloat(found['수수료율']) || 2,
-        status:     found['상태'] || ''
-      };
-      sessionStorage.setItem('dealer', JSON.stringify(DEALER));
-      startApp();
-    } else {
-      document.getElementById('lerr').style.display='block';
-    }
-  }).catch(function(){
-    document.getElementById('lloading').style.display='none';
-    document.getElementById('lerr').textContent='서버 연결 실패. 잠시 후 다시 시도해주세요.';
-    document.getElementById('lerr').style.display='block';
-  });
-}
-
-function doLogout() {
-  sessionStorage.removeItem('dealer');
-  DEALER = null;
-  document.getElementById('app').style.display='none';
-  document.getElementById('login-screen').style.display='flex';
-  document.getElementById('lid').value='';
-  document.getElementById('lpw').value='';
-}
-
-(function(){
-  var saved = sessionStorage.getItem('dealer');
-  if(saved){ try{ DEALER=JSON.parse(saved); startApp(); }catch(e){} }
-})();
-
-function startApp() {
-  document.getElementById('login-screen').style.display='none';
-  document.getElementById('app').style.display='block';
-  document.getElementById('hd-brand-name').textContent = DEALER.name || '담누리마켓';
-  document.getElementById('hd-dealer-info').textContent = '🏬 ' + DEALER.name;
-  document.getElementById('sb-dealer-name').textContent = DEALER.name + ' (' + DEALER.id + ')';
-  var did = DEALER.id || '';
-  var shopLink = document.getElementById('shop-link');
-  if(shopLink && did) shopLink.href = 'index.html?dealer=' + did;
-  var prodsLink = document.getElementById('products-link');
-  if(prodsLink && did) prodsLink.href = 'products.html?dealer=' + did;
-  var baseUrl = window.location.origin + window.location.pathname.replace('dealer-admin.html','');
-  var fullShopUrl = baseUrl + 'index.html?dealer=' + did;
-  var urlEl = document.getElementById('my-shop-url');
-  var openEl = document.getElementById('my-shop-open');
-  if(urlEl) urlEl.textContent = fullShopUrl;
-  if(openEl) openEl.href = fullShopUrl;
-  go('dashboard', document.querySelector('.sb-item.active'));
-}
-
-// ============================================================
-// 페이지 전환
-// ============================================================
-function go(pid, el) {
-  document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
-  document.querySelectorAll('.sb-item').forEach(function(i){ i.classList.remove('active'); });
-  var pg = document.getElementById('page-'+pid);
-  if(pg) pg.classList.add('active');
-  if(el) el.classList.add('active');
-  curPage = pid;
-  var map = {
-    'dashboard':    loadDashboard,
-    'hq-products':  loadHqProducts,
-    'my-products':  loadMyProducts,
-    'orders':       loadOrders,
-    'settlement':   loadSettlement,
-    'reviews':      loadReviews,
-    'consignment':  loadConsignment,
-    'notice':       loadNotice,
-    'manual':       loadManual,
-    'live-list':    function(){ loadDealerLive(); },
-    'live-alarm':   function(){ loadDealerLive(); loadDealerAlarm(); },
-    'live-coupon':  function(){ loadDealerCoupon(); }
-  };
-  if(map[pid]) map[pid]();
-}
-
-// ============================================================
-// 대시보드
-// ============================================================
-function loadDashboard() {
-  if(!DEALER) return;
-  document.getElementById('dash-sub').textContent = DEALER.name + ' 대리점 대시보드';
-  Promise.all([
-    fetch(sheetUrl('대리점상품')).then(function(r){return r.text();}),
-    fetch(sheetUrl('주문')).then(function(r){return r.text();}),
-    fetch(sheetUrl('리뷰')).then(function(r){return r.text();}),
-    fetch(sheetUrl('공지사항')).then(function(r){return r.text();})
-  ]).then(function(results){
-    var myProds = parseCSV(results[0]).filter(function(p){
-      return (p['대리점ID']||'').toString().trim() === (DEALER.id||'').toString().trim();
-    });
-    var allOrd = parseCSV(results[1]);
-    var myOrders = allOrd.filter(function(o){ return o['대리점ID']===DEALER.id; });
-    var today = new Date().toISOString().split('T')[0];
-    var todayOrders = myOrders.filter(function(o){ return (o['주문일시']||'').startsWith(today); });
-    var thisMonth = new Date().toISOString().substring(0,7);
-    var monthSales = myOrders.filter(function(o){ return (o['주문일시']||'').startsWith(thisMonth); })
-      .reduce(function(s,o){ return s+(parseInt(o['결제금액'])||0); }, 0);
-    var myReviews = parseCSV(results[2]).filter(function(r){ return r['대리점ID']===DEALER.id; });
-
-    document.getElementById('dash-orders').textContent = todayOrders.length;
-    document.getElementById('dash-sales').textContent = monthSales.toLocaleString()+'원';
-    document.getElementById('dash-products').textContent = myProds.length;
-    document.getElementById('dash-reviews').textContent = myReviews.length;
-
-    var recentEl = document.getElementById('dash-recent-orders');
-    var recent = myOrders.sort(function(a,b){ return b['주문일시']>a['주문일시']?1:-1; }).slice(0,5);
-    recentEl.innerHTML = recent.length
-      ? '<table>'+TH(['주문번호','상품','금액','상태'])+'<tbody>'
-        +recent.map(function(o){
-          return '<tr><td style="font-size:11px;">'+(o['주문번호']||'-')+'</td>'
-            +'<td>'+(o['상품명']||o['주문상품명']||'-')+'</td>'
-            +'<td style="font-weight:700;color:var(--accent);">'+fmt(o['결제금액'])+'</td>'
-            +'<td><span class="os os-'+(o['주문상태']||'')+'">'+(o['주문상태']||'-')+'</span></td></tr>';
-        }).join('')+'</tbody></table>'
-      : EMPTY('🛒','주문 없음');
-
-    var notices = parseCSV(results[3]).filter(function(n){ return n['제목']&&n['사용여부']!=='FALSE'&&n['구분']!=='매뉴얼'; }).slice(0,3);
-    document.getElementById('dash-notice').innerHTML = notices.length
-      ? notices.map(function(n){
-          return '<div style="padding:10px 0;border-bottom:1px solid var(--border);">'
-            +'<div style="font-weight:700;font-size:13px;">'+(n['중요도']==='긴급'?'🚨 ':n['중요도']==='중요'?'🔴 ':'')+(n['제목']||'')+'</div>'
-            +'<div style="font-size:11px;color:var(--gray);margin-top:3px;">'+(n['작성일']||'')+'</div></div>';
-        }).join('')
-      : EMPTY('📢','공지 없음');
-  }).catch(function(e){ console.error(e); });
-}
-
-// ============================================================
-// 본사 상품 조회
-// ============================================================
-var hqAllProducts = [];
-
-function loadHqProducts() {
-  document.getElementById('hq-products-tw').innerHTML = '<div class="loading"><div class="lspin">⏳</div></div>';
-  fetch(sheetUrl('상품목록')).then(function(r){return r.text();}).then(function(csv){
-    hqAllProducts = parseCSV(csv).filter(function(p){ return p['사용여부']!=='FALSE'&&p['상품명']; });
-    var cats = [...new Set(hqAllProducts.map(function(p){ return p['카테고리']; }).filter(Boolean))];
-    var catSel = document.getElementById('hq-cat-filter');
-    catSel.innerHTML = '<option value="">전체 카테고리</option>'
-      +cats.map(function(c){ return '<option value="'+c+'">'+c+'</option>'; }).join('');
-    renderHqProducts(hqAllProducts);
-  }).catch(function(){
-    document.getElementById('hq-products-tw').innerHTML = EMPTY('📦','상품 로드 실패');
-  });
-}
-
-function filterHqProducts(q) {
-  var cat = document.getElementById('hq-cat-filter').value;
-  var filtered = hqAllProducts.filter(function(p){
-    return (!q || (p['상품명']||'').includes(q)) && (!cat || p['카테고리']===cat);
-  });
-  renderHqProducts(filtered);
-}
-
-function renderHqProducts(list) {
-  var el = document.getElementById('hq-products-tw');
-  if(!list.length){ el.innerHTML=EMPTY('📦','상품 없음'); return; }
-  el.innerHTML = '<table>'+TH(['#','이미지','상품명','카테고리','정가','할인가','뱃지','상태'])+'<tbody>'
-    +list.map(function(p){
-      var dc = (parseInt(p['가격'])&&parseInt(p['할인가'])) ? Math.round((1-parseInt(p['할인가'])/parseInt(p['가격']))*100) : 0;
-      return '<tr>'
-        +'<td style="color:var(--gray);font-size:12px;">'+p['번호']+'</td>'
-        +'<td><img class="thumb" src="'+(p['이미지']||'https://picsum.photos/80?random='+p['번호'])+'" onerror="this.src=\'https://picsum.photos/80?random='+p['번호']+'\'"></td>'
-        +'<td>'+p['상품명']+'<span class="hq-badge">본사</span></td>'
-        +'<td>'+(p['카테고리']||'-')+'</td>'
-        +'<td>'+fmt(p['가격'])+'</td>'
-        +'<td style="color:var(--accent);font-weight:700;">'+(parseInt(p['할인가'])>0?fmt(p['할인가'])+(dc?' <span style="font-size:10px;color:#e53935;">-'+dc+'%</span>':''):'-')+'</td>'
-        +'<td>'+(p['뱃지']?'<span class="bdg bdg-'+p['뱃지'].toLowerCase()+'">'+p['뱃지']+'</span>':'-')+'</td>'
-        +'<td><span class="bdg '+(p['사용여부']!=='FALSE'?'bdg-new':'bdg-sale')+'">'+(p['사용여부']!=='FALSE'?'판매중':'숨김')+'</span></td>'
-        +'</tr>';
-    }).join('')+'</tbody></table>';
-}
-
-// ============================================================
-// 내 상품 관리
-// ============================================================
-var myProducts = [];
-
-function loadMyProducts() {
-  if(!DEALER) return;
-  document.getElementById('my-products-tw').innerHTML = '<div class="loading"><div class="lspin">⏳</div></div>';
-  fetch(sheetUrl('대리점상품')).then(function(r){return r.text();}).then(function(csv){
-    var allProds = parseCSV(csv);
-    myProducts = allProds.filter(function(p){
-      return (p['대리점ID']||'').toString().trim() === (DEALER.id||'').toString().trim();
-    });
-    renderMyProducts();
-  }).catch(function(){
-    document.getElementById('my-products-tw').innerHTML = EMPTY('📦','상품 없음','상품 등록 버튼으로 추가하세요');
-  });
-}
-
-function renderMyProducts() {
-  var el = document.getElementById('my-products-tw');
-  if(!myProducts.length){ el.innerHTML=EMPTY('📦','등록된 상품 없음','➕ 상품 등록 버튼으로 추가하세요'); return; }
-  el.innerHTML = '<table>'+TH(['#','이미지','상품명','카테고리','정가','할인가','뱃지','상태','위탁판매','관리'])+'<tbody>'
-    +myProducts.map(function(p){
-      return '<tr>'
-        +'<td style="color:var(--gray);font-size:12px;">'+p['번호']+'</td>'
-        +'<td><img class="thumb" src="'+(p['이미지']||'https://picsum.photos/80?random='+p['번호'])+'" onerror="this.src=\'https://picsum.photos/80?random='+p['번호']+'\'"></td>'
-        +'<td>'+p['상품명']+'<span class="dealer-badge">내상품</span></td>'
-        +'<td>'+(p['카테고리']||'-')+'</td>'
-        +'<td>'+fmt(p['가격'])+'</td>'
-        +'<td style="color:var(--accent);font-weight:700;">'+(parseInt(p['할인가'])>0?fmt(p['할인가']):'-')+'</td>'
-        +'<td>'+(p['뱃지']?'<span class="bdg bdg-'+p['뱃지'].toLowerCase()+'">'+p['뱃지']+'</span>':'-')+'</td>'
-        +'<td><span class="bdg '+(p['사용여부']!=='FALSE'?'bdg-new':'bdg-sale')+'">'+(p['사용여부']!=='FALSE'?'판매중':'숨김')+'</span></td>'
-        +'<td><button onclick="toggleConsignment(\''+p['번호']+'\',\''+(p['위탁여부']==='TRUE'?'FALSE':'TRUE')+'\')" style="padding:4px 10px;font-size:11px;border:1px solid var(--border);border-radius:6px;background:'+(p['위탁여부']==='TRUE'?'#fce4ec':'#e3f2fd')+';color:'+(p['위탁여부']==='TRUE'?'#c62828':'#1565c0')+';cursor:pointer;font-weight:600;">'+(p['위탁여부']==='TRUE'?(p['본사승인']==='TRUE'?'✅승인':'⏳대기'):'🤝위탁신청')+'</button></td>'
-        +'<td><div style="display:flex;gap:6px;">'
-          +'<button class="btn btn-outline btn-sm" onclick="editMyProduct(this)" data-id="'+p['번호']+'">✏️</button>'
-          +'<button class="btn btn-sm" style="background:#fee;color:#c0392b;border:1px solid #fcc;" onclick="deleteMyProduct(this)" data-id="'+p['번호']+'" data-name="'+p['상품명'].replace(/"/g,'')+'">🗑️</button>'
-        +'</div></td>'
-        +'</tr>';
-    }).join('')+'</tbody></table>';
-}
-
-function openMyProdModal(){ clearMyProdForm(); document.getElementById('mpm-title').textContent='📦 상품 등록'; document.getElementById('my-prod-modal').classList.add('active'); }
-function closeMyProdModal(){ document.getElementById('my-prod-modal').classList.remove('active'); }
-function clearMyProdForm(){
-  ['mpm-id','mpm-name','mpm-price','mpm-sale','mpm-img','mpm-img2','mpm-img3','mpm-img4','mpm-detail-imgs','mpm-colors','mpm-sizes','mpm-desc','mpm-stock','mpm-delivery-fee'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
-  document.getElementById('mpm-category').value=''; document.getElementById('mpm-badge').value=''; document.getElementById('mpm-featured').value='TRUE'; document.getElementById('mpm-active').value='TRUE'; document.getElementById('mpm-delivery-type').value='무료'; document.getElementById('mpm-delivery-days').value='1~3일';
-  document.getElementById('discount-preview').style.display='none'; document.getElementById('options-wrap').innerHTML=''; optionCount=0;
-  ['prev-img1','prev-img2','prev-img3','prev-img4'].forEach(function(id){ var el=document.getElementById(id); if(el) el.style.display='none'; });
-}
-
-function editMyProduct(btn){
-  var id = btn.getAttribute('data-id');
-  var p = myProducts.find(function(x){ return x['번호']===id; });
-  if(!p) return;
-  document.getElementById('mpm-title').textContent='📦 상품 수정';
-  document.getElementById('mpm-id').value = p['번호']||'';
-  document.getElementById('mpm-name').value = p['상품명']||'';
-  document.getElementById('mpm-category').value = p['카테고리']||'';
-  document.getElementById('mpm-price').value = p['가격']||'';
-  document.getElementById('mpm-sale').value = p['할인가']||'';
-  document.getElementById('mpm-img').value = p['이미지']||'';
-  document.getElementById('mpm-desc').value = p['상품설명']||'';
-  document.getElementById('mpm-stock').value = p['재고']||'';
-  document.getElementById('mpm-badge').value = p['뱃지']||'';
-  document.getElementById('mpm-featured').value = p['추천여부']||'TRUE';
-  document.getElementById('mpm-active').value = p['사용여부']==='FALSE'?'FALSE':'TRUE';
-  document.getElementById('mpm-img2').value = p['이미지2']||'';
-  document.getElementById('mpm-img3').value = p['이미지3']||'';
-  document.getElementById('mpm-img4').value = p['이미지4']||'';
-  document.getElementById('mpm-detail-imgs').value = p['상세이미지']||'';
-  document.getElementById('mpm-delivery-days').value = p['배송일']||'1~3일';
-  var deliveryFee = p['배송비']||'무료';
-  document.getElementById('mpm-delivery-type').value = deliveryFee==='무료'?'무료':'유료';
-  if(deliveryFee!=='무료'){ document.getElementById('mpm-delivery-fee').value=deliveryFee.replace('원',''); document.getElementById('mpm-delivery-fee').disabled=false; }
-  document.getElementById('mpm-colors').value = p['색상']||'';
-  document.getElementById('mpm-sizes').value = p['사이즈']||'';
-  previewImg('mpm-img','prev-img1');
-  calcDiscount();
-  document.getElementById('my-prod-modal').classList.add('active');
-}
-
-function uploadCloudinary(input, targetId, previewId, spinnerId) {
-  var file = input.files[0];
-  if (!file) return;
-  var spinner = document.getElementById(spinnerId);
-  if (spinner) spinner.style.display = 'inline';
-  var fd = new FormData();
-  fd.append('file', file);
-  fd.append('upload_preset', CLOUDINARY_PRESET);
-  fetch('https://api.cloudinary.com/v1_1/' + CLOUDINARY_CLOUD + '/image/upload', {
-    method: 'POST', body: fd
-  }).then(function(r){ return r.json(); }).then(function(d){
-    if (d.secure_url) {
-      document.getElementById(targetId).value = d.secure_url;
-      previewImg(targetId, previewId);
-      showToast('이미지 업로드 완료!', 'ok');
-    } else { showToast('업로드 실패', ''); }
-    if (spinner) spinner.style.display = 'none';
-    input.value = '';
-  }).catch(function(){
-    showToast('업로드 오류', '');
-    if (spinner) spinner.style.display = 'none';
-  });
-}
-
-function previewImg(inputId, imgId) {
-  var url = document.getElementById(inputId).value.trim();
-  var img = document.getElementById(imgId);
-  if(url){ img.src=url; img.style.display='block'; img.onerror=function(){ img.style.display='none'; }; }
-  else img.style.display='none';
-}
-
-function calcDiscount() {
-  var price = parseInt(document.getElementById('mpm-price').value)||0;
-  var sale = parseInt(document.getElementById('mpm-sale').value)||0;
-  var el = document.getElementById('discount-preview');
-  if(price>0 && sale>0 && sale<price){
-    var dc = Math.round((1-sale/price)*100);
-    el.innerHTML = '💡 할인율: <strong style="color:var(--accent);">'+dc+'%</strong> · 절감액: <strong>'+(price-sale).toLocaleString()+'원</strong>';
-    el.style.display='block';
-  } else { el.style.display='none'; }
-}
-
-function toggleDeliveryFee() {
-  var type = document.getElementById('mpm-delivery-type').value;
-  var fee = document.getElementById('mpm-delivery-fee');
-  fee.disabled = (type==='무료');
-  fee.style.background = (type==='무료')?'#f5f5f5':'';
-}
-
-var optionCount = 0;
-function addOption() {
-  optionCount++;
-  var wrap = document.getElementById('options-wrap');
-  var div = document.createElement('div');
-  div.id = 'opt-row-'+optionCount;
-  div.style.cssText = 'display:grid;grid-template-columns:1fr 2fr 1fr auto;gap:8px;margin-bottom:8px;align-items:center;';
-  div.innerHTML = '<input class="fi" placeholder="옵션명" id="opt-name-'+optionCount+'">'
-    +'<input class="fi" placeholder="옵션값" id="opt-val-'+optionCount+'">'
-    +'<input class="fi" type="number" placeholder="추가금액" id="opt-price-'+optionCount+'">'
-    +'<button type="button" onclick="removeOption('+optionCount+')" style="background:#fee;border:1px solid #fcc;border-radius:8px;padding:8px 12px;cursor:pointer;font-size:14px;">🗑️</button>';
-  wrap.appendChild(div);
-}
-function removeOption(n){ var el=document.getElementById('opt-row-'+n); if(el) el.remove(); }
-function getOptions() {
-  var opts = [];
-  document.querySelectorAll('[id^="opt-row-"]').forEach(function(row){
-    var n = row.id.replace('opt-row-','');
-    var name = (document.getElementById('opt-name-'+n)||{}).value||'';
-    var val = (document.getElementById('opt-val-'+n)||{}).value||'';
-    var price = (document.getElementById('opt-price-'+n)||{}).value||'0';
-    if(name&&val) opts.push(name+':'+val+(price&&price!=='0'?'(+'+price+'원)':''));
-  });
-  return opts.join(' / ');
-}
-
-function toggleSection(hd) {
-  var body = hd.nextElementSibling;
-  var toggle = hd.querySelector('.prod-sec-toggle');
-  if(body.style.display==='none'){ body.style.display=''; if(toggle) toggle.textContent='∧'; }
-  else { body.style.display='none'; if(toggle) toggle.textContent='∨'; }
-}
-
-function saveMyProduct(){
-  if(!DEALER){ showToast('로그인 필요','warn'); return; }
-  var name = document.getElementById('mpm-name').value.trim();
-  var price = document.getElementById('mpm-price').value.trim();
-  var img = document.getElementById('mpm-img').value.trim();
-  if(!name||!price){ showToast('상품명과 정가는 필수입니다','warn'); return; }
-  if(!img){ showToast('대표 이미지 URL을 입력하세요','warn'); return; }
-  var data = {
-    번호: document.getElementById('mpm-id').value||'',
-    상품명: name, 카테고리: document.getElementById('mpm-category').value,
-    가격: price, 할인가: document.getElementById('mpm-sale').value||0,
-    이미지: img, 이미지2: document.getElementById('mpm-img2').value||'',
-    이미지3: document.getElementById('mpm-img3').value||'', 이미지4: document.getElementById('mpm-img4').value||'',
-    상세이미지: document.getElementById('mpm-detail-imgs').value||'',
-    상품설명: document.getElementById('mpm-desc').value,
-    색상: document.getElementById('mpm-colors').value||'', 사이즈: document.getElementById('mpm-sizes').value||'',
-    옵션: getOptions(),
-    배송비: document.getElementById('mpm-delivery-type').value==='무료' ? '무료' : document.getElementById('mpm-delivery-fee').value+'원',
-    배송일: document.getElementById('mpm-delivery-days').value, 재고: document.getElementById('mpm-stock').value||0,
-    뱃지: document.getElementById('mpm-badge').value, 추천여부: document.getElementById('mpm-featured').value,
-    사용여부: document.getElementById('mpm-active').value, 대리점ID: DEALER.id
-  };
-  fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',body:JSON.stringify({action:'saveDealerProduct',data:data})})
-    .then(function(){ showToast('상품이 저장됐습니다!','ok'); closeMyProdModal(); setTimeout(loadMyProducts,1500); });
-}
-
-function deleteMyProduct(btn){
-  var id = btn.getAttribute('data-id'); var name = btn.getAttribute('data-name');
-  if(!confirm('['+name+'] 상품을 삭제하시겠습니까?')) return;
-  fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',body:JSON.stringify({action:'deleteDealerProduct',data:{번호:id,대리점ID:DEALER.id}})})
-    .then(function(){ showToast('삭제됐습니다','ok'); setTimeout(loadMyProducts,1500); });
-}
-
-// ============================================================
-// 주문/배송 관리
-// ============================================================
-function loadOrders() {
-  if(!DEALER) return;
-  document.getElementById('orders-tw').innerHTML = '<div class="loading"><div class="lspin">⏳</div></div>';
-  fetch(sheetUrl('주문')).then(function(r){return r.text();}).then(function(csv){
-    var all = parseCSV(csv);
-    allOrders = all.filter(function(o){ return o['대리점ID']===DEALER.id; });
-    if(allOrders.length > 0) console.log('[주문 시트 컬럼명]', Object.keys(allOrders[0]));
-    updateTabCounts(allOrders);
-    applyFilter();
-  }).catch(function(){ document.getElementById('orders-tw').innerHTML = EMPTY('🛒','주문 없음'); });
-}
-
-function updateTabCounts(list) {
-  var statuses = ['주문완료','결제완료','상품준비','배송중','배송완료','취소'];
-  document.getElementById('tc-all').textContent = list.length;
-  statuses.forEach(function(s){
-    var el = document.getElementById('tc-'+s);
-    if(el) el.textContent = list.filter(function(o){ return o['주문상태']===s; }).length;
-  });
-}
-
-function setTab(status, el) {
-  curTab = status;
-  document.querySelectorAll('.stab').forEach(function(t){ t.classList.remove('active'); });
-  if(el) el.classList.add('active');
-  applyFilter();
-}
-
-function applyFilter() {
-  var search = (document.getElementById('order-search').value||'').toLowerCase();
-  var from = document.getElementById('order-date-from').value;
-  var to = document.getElementById('order-date-to').value;
-  filteredOrders = allOrders.filter(function(o){
-    var matchTab = !curTab || o['주문상태']===curTab;
-    var matchSearch = !search
-      || (o['주문번호']||'').toLowerCase().includes(search)
-      || getField(o,['받는분','수취인명','주문자명','주문자']).toLowerCase().includes(search)
-      || getField(o,['받는분연락처','연락처','전화번호']).includes(search)
-      || getField(o,['주문상품명','상품명']).toLowerCase().includes(search);
-    var matchFrom = !from || (o['주문일시']||'')>=from;
-    var matchTo = !to || (o['주문일시']||'')<=to+'T99:99';
-    return matchTab && matchSearch && matchFrom && matchTo;
-  });
-  renderOrders(filteredOrders);
-}
-
-function clearOrderFilter() {
-  document.getElementById('order-search').value='';
-  document.getElementById('order-date-from').value='';
-  document.getElementById('order-date-to').value='';
-  curTab='';
-  document.querySelectorAll('.stab').forEach(function(t){ t.classList.remove('active'); });
-  document.querySelector('.stab').classList.add('active');
-  filteredOrders = allOrders;
-  renderOrders(filteredOrders);
-}
-
-function renderOrders(list) {
-  var el = document.getElementById('orders-tw');
-  var cnt = document.getElementById('order-count');
-  if(cnt) cnt.textContent = '총 '+list.length+'건';
-  if(!list.length){ el.innerHTML=EMPTY('🛒','주문 없음','필터를 변경하거나 새로고침 해보세요'); return; }
-  var sorted = list.slice().sort(function(a,b){return b['주문일시']>a['주문일시']?1:-1;});
-  el.innerHTML = '<table>'+TH(['주문번호','주문일시','주문상품','구분','수량','금액','주문자/수취인','연락처','📦 송장번호','주문상태','빠른변경','상세'])+'<tbody>'
-    +sorted.map(function(o){
-      var stat = o['주문상태']||'주문완료';
-      var prodName = getField(o, ['주문상품명','상품명','품명','주문상품','상품','item']) || '-';
-      var receiver = getField(o, ['받는분','수취인명','수취인','주문자명','주문자','성명','이름']) || '-';
-      var phone    = getField(o, ['받는분연락처','연락처','전화번호','휴대폰','수취인연락처']) || '-';
-      var dealerId = getField(o, ['대리점ID','dealerId']);
-      var typeTag  = (dealerId && dealerId === DEALER.id)
-        ? '<span style="background:#e8f4fd;color:#1565c0;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:700;">내상품</span>'
-        : '<span style="background:#fef3e2;color:#e65100;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:700;">본사</span>';
-      var tracking = o['송장번호']||'';
-      var carrier  = o['택배사']||'';
-      var safeNo   = String(o['주문번호']||'').replace(/'/g,"\\'");
-      var trackCell = tracking
-        ? '<div style="font-size:11px;"><span style="color:#888;">'+carrier+'</span><br><strong style="color:var(--accent);">'+tracking+'</strong></div>'
-          +'<button onclick="openDTrackingModal(\''+safeNo+'\')" style="margin-top:3px;padding:2px 6px;font-size:10px;border:1px solid #ddd;border-radius:4px;background:#f5f5f5;cursor:pointer;">✏️ 수정</button>'
-        : '<button onclick="openDTrackingModal(\''+safeNo+'\')" style="padding:3px 9px;font-size:11px;border:none;border-radius:5px;background:#e8f5e9;color:#1b5e20;cursor:pointer;font-weight:600;">📦 입력</button>';
-      return '<tr>'
-        +'<td style="font-size:11px;font-weight:600;">'+(o['주문번호']||'-')+'</td>'
-        +'<td style="font-size:11px;">'+(o['주문일시']||'-').substring(0,16)+'</td>'
-        +'<td><div style="max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+prodName+'">'+prodName+'</div></td>'
-        +'<td>'+typeTag+'</td>'
-        +'<td style="text-align:center;">'+(o['수량']||o['qty']||1)+'</td>'
-        +'<td style="font-weight:700;color:var(--accent);">'+fmt(o['결제금액']||o['payment_amount']||o['금액'])+'</td>'
-        +'<td>'+receiver+'</td>'
-        +'<td style="font-size:12px;">'+phone+'</td>'
-        +'<td style="min-width:100px;">'+trackCell+'</td>'
-        +'<td><span class="os os-'+stat+'">'+stat+'</span></td>'
-        +'<td><select class="quick-status-sel" onchange="quickStatusChange(this,\''+o['주문번호']+'\')">'
-          +'<option value="">변경...</option>'
-          +'<option value="주문완료"'+(stat==='주문완료'?' selected':'')+'>주문완료</option>'
-          +'<option value="결제완료"'+(stat==='결제완료'?' selected':'')+'>결제완료</option>'
-          +'<option value="상품준비"'+(stat==='상품준비'?' selected':'')+'>상품준비</option>'
-          +'<option value="배송중"'+(stat==='배송중'?' selected':'')+'>배송중</option>'
-          +'<option value="배송완료"'+(stat==='배송완료'?' selected':'')+'>배송완료</option>'
-          +'<option value="취소">취소/반품</option>'
-          +'</select></td>'
-        +'<td><button class="btn btn-outline btn-sm" onclick="viewOrder(\''+o['주문번호']+'\')">상세</button></td>'
-        +'</tr>';
-    }).join('')+'</tbody></table>';
-}
-
-function copyShopLink() {
-  var urlEl = document.getElementById('my-shop-url');
-  if(!urlEl) return;
-  var url = urlEl.textContent;
-  if(navigator.clipboard) {
-    navigator.clipboard.writeText(url).then(function(){ showToast('쇼핑몰 링크가 복사됐습니다! 고객에게 공유하세요 😊', 'ok'); });
-  } else {
-    var ta = document.createElement('textarea');
-    ta.value = url; document.body.appendChild(ta); ta.select();
-    document.execCommand('copy'); document.body.removeChild(ta);
-    showToast('쇼핑몰 링크가 복사됐습니다!', 'ok');
-  }
-}
-
-function openDTrackingModal(orderId) {
-  var order = allOrders.find(function(o){ return o['주문번호']===orderId; });
-  if(!order) return;
-  var tracking = order['송장번호']||'';
-  var carrier  = order['택배사']||'';
-  var old = document.getElementById('d-tracking-modal');
-  if(old) old.remove();
-  var carriers = ['CJ대한통운','한진택배','롯데택배','우체국택배','로젠택배','쿠팡로켓','직접배송'];
-  var opts = carriers.map(function(c){ return '<option value="'+c+'"'+(carrier===c?' selected':'')+'>'+c+'</option>'; }).join('');
-  var modal = document.createElement('div');
-  modal.id = 'd-tracking-modal';
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;';
-  modal.innerHTML = '<div style="background:#fff;border-radius:12px;padding:28px;width:360px;box-shadow:0 8px 32px rgba(0,0,0,0.2);">'
-    +'<h3 style="margin:0 0 16px;font-size:16px;">📦 송장번호 입력</h3>'
-    +'<p style="font-size:12px;color:#888;margin:0 0 16px;">주문번호: '+orderId+'</p>'
-    +'<label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;">택배사</label>'
-    +'<select id="dt-carrier" style="width:100%;padding:9px;border:1px solid #ddd;border-radius:7px;font-size:13px;margin-bottom:14px;"><option value="">택배사 선택</option>'+opts+'</select>'
-    +'<label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;">송장번호</label>'
-    +'<input id="dt-tracking" value="'+tracking+'" placeholder="예: 1234567890123" style="width:100%;box-sizing:border-box;padding:9px;border:1px solid #ddd;border-radius:7px;font-size:13px;margin-bottom:20px;">'
-    +'<div style="display:flex;gap:10px;">'
-      +'<button onclick="saveDTracking(\''+orderId+'\')" style="flex:1;padding:10px;background:#1e2336;color:#fff;border:none;border-radius:7px;font-size:14px;font-weight:600;cursor:pointer;">저장</button>'
-      +'<button onclick="document.getElementById(\'d-tracking-modal\').remove()" style="flex:1;padding:10px;background:#f5f5f5;color:#333;border:none;border-radius:7px;font-size:14px;cursor:pointer;">취소</button>'
-    +'</div></div>';
-  document.body.appendChild(modal);
-  document.getElementById('dt-tracking').focus();
-}
-
-function saveDTracking(orderId) {
-  var carrier  = document.getElementById('dt-carrier').value;
-  var tracking = document.getElementById('dt-tracking').value.trim();
-  if(!carrier || !tracking) { alert('택배사와 송장번호를 모두 입력해주세요.'); return; }
-  fetch(SCRIPT_URL, { method:'POST', mode:'no-cors', 
-    body: JSON.stringify({ action: 'updateOrderStatus', data: { 주문번호: orderId, 주문상태: '배송중', 송장번호: tracking, 택배사: carrier, 대리점ID: DEALER.id } })
-  }).then(function(){
-    var order = allOrders.find(function(o){ return o['주문번호']===orderId; });
-    if(order){ order['송장번호']=tracking; order['택배사']=carrier; order['주문상태']='배송중'; }
-    document.getElementById('d-tracking-modal').remove();
-    showToast('송장번호가 저장됐습니다 (배송중 처리)', 'ok');
-    updateTabCounts(allOrders); applyFilter();
-  }).catch(function(){ showToast('저장 중 오류가 발생했습니다',''); });
-}
-
-function quickStatusChange(sel, orderId) {
-  var newStatus = sel.value;
-  if(!newStatus) return;
-  if(!confirm('['+orderId+'] 주문을 "'+newStatus+'"으로 변경하시겠습니까?')) { sel.value = ''; return; }
-  fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', 
-    body: JSON.stringify({ action: 'updateOrderStatus', data: { 주문번호: orderId, 주문상태: newStatus, 대리점ID: DEALER.id } })
-  }).then(function(){
-    showToast('주문번호 '+orderId+' → ['+newStatus+'] 변경됐습니다', 'ok');
-    var order = allOrders.find(function(o){ return o['주문번호']===orderId; });
-    if(order) order['주문상태'] = newStatus;
-    updateTabCounts(allOrders); applyFilter();
-  }).catch(function(){ showToast('저장 중 오류가 발생했습니다', ''); sel.value = ''; });
-}
-
-function viewOrder(orderId) {
-  var o = allOrders.find(function(x){ return x['주문번호']===orderId; });
-  if(!o) return;
-  curOrderId = orderId; curSelectedStatus = '';
-  var body = document.getElementById('order-detail-body');
-  var prodName = getField(o, ['주문상품명','상품명','품명','상품']) || '-';
-  var receiver = getField(o, ['받는분','수취인명','수취인','주문자명','주문자']) || '-';
-  var phone    = getField(o, ['받는분연락처','연락처','전화번호','휴대폰']) || '-';
-  var address  = getField(o, ['배송주소','주소','배송지']) || '-';
-  var zipcode  = getField(o, ['우편번호','zip','postcode']) || '-';
-  var memo     = getField(o, ['메모','배송메모','요청사항']) || '없음';
-  var qty = o['수량']||o['qty']||1;
-  var amount = o['결제금액']||o['payment_amount']||o['금액']||0;
-  var fields = [
-    ['주문번호',o['주문번호']],['주문일시',o['주문일시']||o['작성일시']],
-    ['상품명',prodName],['수량',qty],['결제금액',fmt(amount)],['결제방법',o['결제방법']||'-'],
-    ['주문자명',o['주문자명']||'-'],['연락처(주문자)',o['연락처']||'-'],
-    ['받는분',receiver],['받는분연락처',phone],['배송주소',address],['우편번호',zipcode],
-    ['메모',memo],['현재 주문상태',o['주문상태']||'주문완료'],['기존 송장번호',o['송장번호']||'미입력']
-  ];
-  body.innerHTML = '<div style="background:#f8f9ff;border-radius:10px;padding:4px 14px;margin-bottom:4px;">'
-    + fields.map(function(r){
-        var isStatus = r[0]==='현재 주문상태';
-        return '<div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid #eef;font-size:13px;">'
-          +'<span style="color:var(--gray);font-weight:600;min-width:100px;">'+r[0]+'</span>'
-          +'<span style="font-weight:500;text-align:right;">'+(isStatus?'<span class="os os-'+r[1]+'">'+r[1]+'</span>':r[1])+'</span></div>';
-      }).join('')+'</div>';
-  var stat = o['주문상태']||'주문완료';
-  document.querySelectorAll('.status-btn').forEach(function(btn){
-    btn.classList.remove('selected');
-    if(btn.textContent.trim().replace('/반품','') === stat.replace('/반품','')) btn.classList.add('selected');
-  });
-  curSelectedStatus = stat;
-  document.getElementById('modal-tracking').value = o['송장번호']||'';
-  document.getElementById('modal-carrier').value = o['택배사']||'';
-  document.getElementById('modal-memo').value = '';
-  document.getElementById('order-modal').classList.add('active');
-}
-
-function selectStatus(status, btn) {
-  document.querySelectorAll('.status-btn').forEach(function(b){ b.classList.remove('selected'); });
-  btn.classList.add('selected');
-  curSelectedStatus = status;
-  var hint = document.getElementById('tracking-hint-label');
-  if(status==='배송중') { hint.textContent='(배송중 선택됨 — 송장번호를 입력해주세요)'; hint.style.color='var(--accent)'; document.getElementById('modal-tracking').focus(); }
-  else { hint.textContent='(선택 사항)'; hint.style.color='var(--gray)'; }
-}
-
-function saveOrderStatus() {
-  if(!curOrderId){ showToast('주문 정보 오류','warn'); return; }
-  if(!curSelectedStatus){ showToast('변경할 상태를 선택해주세요','warn'); return; }
-  var tracking = document.getElementById('modal-tracking').value.trim();
-  var carrier  = document.getElementById('modal-carrier').value;
-  var memo     = document.getElementById('modal-memo').value.trim();
-  var btn = document.getElementById('order-save-btn');
-  btn.textContent = '⏳ 저장 중...'; btn.disabled = true;
-  fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', 
-    body: JSON.stringify({ action: 'updateOrderStatus', data: { 주문번호: curOrderId, 주문상태: curSelectedStatus, 송장번호: tracking, 택배사: carrier, 처리메모: memo, 대리점ID: DEALER.id, 처리자: DEALER.name, 처리일시: new Date().toISOString() } })
-  }).then(function(){
-    showToast('주문번호 '+curOrderId+' → ['+curSelectedStatus+'] 저장됐습니다', 'ok');
-    var order = allOrders.find(function(o){ return o['주문번호']===curOrderId; });
-    if(order) { order['주문상태']=curSelectedStatus; if(tracking) order['송장번호']=tracking; if(carrier) order['택배사']=carrier; }
-    updateTabCounts(allOrders); applyFilter(); closeOrderModal();
-  }).catch(function(){ showToast('저장 중 오류가 발생했습니다', '');
-  }).finally(function(){ btn.textContent='💾 상태 저장'; btn.disabled=false; });
-}
-
-function closeOrderModal(){ document.getElementById('order-modal').classList.remove('active'); curOrderId=''; curSelectedStatus=''; }
-
-function downloadExcel(){
-  if(!filteredOrders.length){ showToast('다운로드할 주문이 없습니다','warn'); return; }
-  var headers = ['주문번호','주문일시','상품명','수량','결제금액','수취인명','연락처','배송주소','우편번호','배송메모','주문상태','송장번호','택배사'];
-  var rows = [headers];
-  filteredOrders.forEach(function(o){ rows.push(headers.map(function(h){ return '"'+(o[h]||'').replace(/"/g,'""')+'"'; })); });
-  var csv = '\uFEFF' + rows.map(function(r){ return r.join(','); }).join('\n');
-  var blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
-  var url = URL.createObjectURL(blob);
-  var a = document.createElement('a');
-  a.href = url; a.download = DEALER.name+'_주문내역_'+new Date().toISOString().split('T')[0]+'.csv';
-  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
-  showToast('엑셀 파일 다운로드 완료!','ok');
-}
-
-// ============================================================
-// 위탁판매
-// ============================================================
-function loadConsignment() {
-  if(!DEALER) return;
-  document.getElementById('consignment-tw').innerHTML = '<div class="loading"><div class="lspin">⏳</div></div>';
-  fetch(sheetUrl('대리점상품')).then(function(r){return r.text();}).then(function(csv){
-    var all = parseCSV(csv);
-    var myProds = all.filter(function(p){ return (p['대리점ID']||'').toString().trim() === (DEALER.id||'').toString().trim(); });
-    var pending  = myProds.filter(function(p){ return p['위탁여부']==='TRUE' && p['본사승인']!=='TRUE' && p['본사승인']!=='FALSE'; }).length;
-    var approved = myProds.filter(function(p){ return p['위탁여부']==='TRUE' && p['본사승인']==='TRUE'; }).length;
-    var other    = myProds.filter(function(p){ return !p['위탁여부'] || p['위탁여부']==='FALSE' || p['본사승인']==='FALSE'; }).length;
-    document.getElementById('cs-total').textContent = myProds.length;
-    document.getElementById('cs-pending').textContent = pending;
-    document.getElementById('cs-approved').textContent = approved;
-    document.getElementById('cs-rejected').textContent = other;
-    var el = document.getElementById('consignment-tw');
-    if(!myProds.length){ el.innerHTML='<div style="padding:30px;text-align:center;color:#aaa;">등록된 상품이 없습니다</div>'; return; }
-    el.innerHTML = '<table>'+TH(['#','이미지','상품명','카테고리','정가','위탁신청','본사승인'])+'<tbody>'
-      +myProds.map(function(p){
-        var isC=p['위탁여부']==='TRUE', apr=p['본사승인']==='TRUE', rej=p['본사승인']==='FALSE';
-        var status = isC?(apr?'<span style="background:#e8f5e9;color:#2e7d32;padding:3px 9px;border-radius:12px;font-size:11px;font-weight:700;">✅ 승인완료</span>':rej?'<span style="background:#fce4ec;color:#c62828;padding:3px 9px;border-radius:12px;font-size:11px;font-weight:700;">❌ 거절</span>':'<span style="background:#fff8e1;color:#f57f17;padding:3px 9px;border-radius:12px;font-size:11px;font-weight:700;">⏳ 승인대기</span>'):'<span style="background:#f5f5f5;color:#aaa;padding:3px 9px;border-radius:12px;font-size:11px;">미신청</span>';
-        return '<tr>'
-          +'<td style="color:var(--gray);font-size:12px;">'+p['번호']+'</td>'
-          +'<td><img class="thumb" src="'+(p['이미지']||'https://picsum.photos/80?random='+p['번호'])+'" onerror="this.src=\'https://picsum.photos/80\'"></td>'
-          +'<td style="font-weight:600;">'+p['상품명']+'</td>'
-          +'<td>'+(p['카테고리']||'-')+'</td>'
-          +'<td>'+fmt(p['가격'])+'</td>'
-          +'<td>'+status+'<br><button onclick="toggleConsignment(\''+p['번호']+'\',\''+(isC?'FALSE':'TRUE')+'\')" style="margin-top:4px;padding:3px 10px;font-size:11px;border:1px solid var(--border);border-radius:6px;background:'+(isC?'#fce4ec':'#e3f2fd')+';color:'+(isC?'#c62828':'#1565c0')+';cursor:pointer;font-weight:600;">'+(isC?'❌ 신청취소':'🤝 위탁신청')+'</button></td>'
-          +'<td style="font-size:12px;color:var(--gray);">'+(isC?(apr?'본사 노출중':rej?'본사 거절':'검토중'):'-')+'</td>'
-          +'</tr>';
-      }).join('')+'</tbody></table>';
-  }).catch(function(){ document.getElementById('consignment-tw').innerHTML='<div style="padding:30px;text-align:center;color:#aaa;">데이터 로드 실패</div>'; });
-}
-
-function toggleConsignment(productNo, newValue) {
-  if(!DEALER) return;
-  if(!confirm(newValue==='TRUE'?'위탁판매를 신청하시겠습니까?\n본사 승인 후 본사 쇼핑몰에 노출됩니다.':'위탁판매 신청을 취소하시겠습니까?')) return;
-  fetch(SCRIPT_URL, { method:'POST', mode:'no-cors',
-    body: JSON.stringify({ action:'saveConsignmentProduct', data:{ 번호:productNo, 대리점ID:DEALER.id, 위탁여부:newValue, 본사승인:'' } })
-  }).then(function(){
-    showToast(newValue==='TRUE'?'✅ 위탁판매 신청 완료! 본사 승인을 기다려주세요.':'신청이 취소됐습니다.','ok');
-    setTimeout(function(){ loadConsignment(); loadMyProducts(); }, 1500);
-  }).catch(function(){ showToast('오류가 발생했습니다',''); });
-}
-
-// ============================================================
-// 정산
-// ============================================================
-function loadSettlement() {
-  if(!DEALER) return;
-  document.getElementById('settlement-tw').innerHTML = '<div class="loading"><div class="lspin">⏳</div></div>';
-  fetch(sheetUrl('정산')).then(function(r){return r.text();}).then(function(csv){
-    var rows = parseCSV(csv).filter(function(r){ return (r['대리점ID']||'').toString().trim() === (DEALER.id||'').toString().trim(); });
-    var totalSales=0, totalPg=0, totalHq=0, totalMine=0;
-    rows.forEach(function(r){
-      totalSales += parseFloat(r['총매출'])||0; totalPg += parseFloat(r['PG수수료'])||0;
-      totalHq += parseFloat(r['본사수수료'])||0; totalMine += parseFloat(r['대리점수령액'])||0;
-    });
-    document.getElementById('settle-total').textContent = totalSales.toLocaleString()+'원';
-    document.getElementById('settle-pg').textContent    = totalPg.toLocaleString()+'원';
-    document.getElementById('settle-hq').textContent    = totalHq.toLocaleString()+'원';
-    document.getElementById('settle-mine').textContent  = totalMine.toLocaleString()+'원';
-    document.getElementById('settlement-tw').innerHTML = rows.length
-      ? '<table>'+TH(['정산월','총매출','PG요율','PG수수료','본사마진율','본사수수료','내 수령액','상태'])+'<tbody>'
-        +rows.sort(function(a,b){return b['정산월']>a['정산월']?1:-1;}).map(function(r){
-          return '<tr>'
-            +'<td style="font-weight:600;">'+(r['정산월']||'-')+'</td>'
-            +'<td>'+fmt(r['총매출'])+'</td>'
-            +'<td style="text-align:center;">'+(r['PG요율']||0)+'%</td>'
-            +'<td style="color:#e53935;">-'+fmt(r['PG수수료'])+'</td>'
-            +'<td style="text-align:center;">'+(r['본사마진율']||0)+'%</td>'
-            +'<td style="color:#e53935;">-'+fmt(r['본사수수료'])+'</td>'
-            +'<td style="font-weight:700;color:var(--green);">'+fmt(r['대리점수령액'])+'</td>'
-            +'<td><span class="bdg bdg-new">'+(r['상태']||'정산완료')+'</span></td>'
-            +'</tr>';
-        }).join('')+'</tbody></table>'
-      : EMPTY('💰','정산 내역 없음','매출 발생 후 본사에서 정산 계산 시 표시됩니다');
-  }).catch(function(){ document.getElementById('settlement-tw').innerHTML = EMPTY('💰','정산 내역 없음'); });
-}
-
-// ============================================================
-// 리뷰
-// ============================================================
-var allReviews = [];
-function loadReviews() {
-  if(!DEALER) return;
-  document.getElementById('reviews-tw').innerHTML = '<div class="loading"><div class="lspin">⏳</div></div>';
-  fetch(sheetUrl('리뷰')).then(function(r){return r.text();}).then(function(csv){
-    allReviews = parseCSV(csv).filter(function(r){ return r['대리점ID']===DEALER.id; });
-    renderReviews(allReviews);
-  }).catch(function(){ document.getElementById('reviews-tw').innerHTML = EMPTY('⭐','리뷰 없음'); });
-}
-function filterReviews(){
-  var f = document.getElementById('review-filter').value;
-  renderReviews(f ? allReviews.filter(function(r){ return r['별점']===f; }) : allReviews);
-}
-function renderReviews(list){
-  var el = document.getElementById('reviews-tw');
-  if(!list.length){ el.innerHTML=EMPTY('⭐','리뷰 없음'); return; }
-  el.innerHTML = '<table>'+TH(['번호','상품번호','작성자','별점','내용','답글','작성일','관리'])+'<tbody>'
-    +list.sort(function(a,b){return b['작성일']>a['작성일']?1:-1;}).map(function(r){
-      return '<tr><td>'+r['번호']+'</td><td>'+r['상품번호']+'</td>'
-        +'<td style="font-weight:600;">'+(r['작성자']||'-')+'</td>'
-        +'<td>'+'⭐'.repeat(parseInt(r['별점'])||0)+'</td>'
-        +'<td style="max-width:200px;font-size:12px;">'+(r['리뷰내용']||'-')+'</td>'
-        +'<td style="max-width:150px;font-size:11px;color:var(--gray);">'+(r['답글내용']||'<span style="color:#bbb;">미작성</span>')+'</td>'
-        +'<td style="font-size:11px;">'+(r['작성일']||'-')+'</td>'
-        +'<td><button class="btn btn-outline btn-sm" onclick="openReplyModal(this)" data-id="'+r['번호']+'" data-reply="'+encodeURIComponent(r['답글내용']||'')+'">💬 답글</button></td>'
-        +'</tr>';
-    }).join('')+'</tbody></table>';
-}
-function openReplyModal(btn){
-  document.getElementById('reply-review-id').value = btn.getAttribute('data-id');
-  document.getElementById('reply-content').value = decodeURIComponent(btn.getAttribute('data-reply')||'');
-  document.getElementById('reply-modal').classList.add('active');
-}
-function closeReplyModal(){ document.getElementById('reply-modal').classList.remove('active'); }
-function saveReply(){
-  var id = document.getElementById('reply-review-id').value;
-  var content = document.getElementById('reply-content').value.trim();
-  if(!content){ showToast('답글 내용을 입력하세요','warn'); return; }
-  var now = new Date().toISOString().split('T')[0];
-  fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',body:JSON.stringify({action:'saveReviewReply',data:{번호:id,답글내용:content,답글작성자:DEALER.name,답글작성일:now}})})
-    .then(function(){ showToast('답글이 저장됐습니다','ok'); closeReplyModal(); setTimeout(loadReviews,1500); });
-}
-
-// ============================================================
-// 공지/매뉴얼
-// ============================================================
-function loadNotice() {
-  var el = document.getElementById('notice-list');
-  el.innerHTML = '<div class="loading"><div class="lspin">⏳</div></div>';
-  fetch(sheetUrl('공지사항')).then(function(r){return r.text();}).then(function(csv){
-    var notices = parseCSV(csv).filter(function(n){ return n['사용여부']!=='FALSE'&&n['구분']!=='매뉴얼'; });
-    el.innerHTML = notices.length
-      ? notices.sort(function(a,b){return b['작성일']>a['작성일']?1:-1;}).map(function(n){
-          var cls = n['중요도']==='긴급'?'urgent':n['중요도']==='중요'?'important':'';
-          return '<div class="notice-card '+cls+'">'
-            +'<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">'
-            +(n['중요도']==='긴급'?'<span style="background:#fde8e8;color:#c0392b;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;">🚨 긴급</span>':n['중요도']==='중요'?'<span style="background:#fef3e2;color:#e67e22;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;">🔴 중요</span>':'')
-            +'<div class="notice-title">'+n['제목']+'</div></div>'
-            +'<div class="notice-content">'+n['내용']+'</div>'
-            +'<div class="notice-meta">📅 '+n['작성일']+'</div></div>';
-        }).join('')
-      : EMPTY('📢','공지사항 없음','본사에서 공지가 등록되면 여기에 표시됩니다');
-  }).catch(function(){ el.innerHTML=EMPTY('📢','공지사항 없음'); });
-}
-function loadManual() {
-  var el = document.getElementById('manual-list');
-  el.innerHTML = '<div class="loading"><div class="lspin">⏳</div></div>';
-  fetch(sheetUrl('공지사항')).then(function(r){return r.text();}).then(function(csv){
-    var manuals = parseCSV(csv).filter(function(n){ return n['사용여부']!=='FALSE'&&n['구분']==='매뉴얼'; });
-    el.innerHTML = manuals.length
-      ? manuals.map(function(m){
-          return '<details style="border:1px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden;">'
-            +'<summary style="padding:14px 18px;cursor:pointer;font-weight:700;font-size:14px;background:#fafbfc;list-style:none;display:flex;justify-content:space-between;align-items:center;">'
-            +m['제목']+'<span style="font-size:12px;color:var(--gray);font-weight:400;">펼치기 ▼</span></summary>'
-            +'<div style="padding:18px;font-size:13px;color:#444;white-space:pre-wrap;line-height:1.8;border-top:1px solid var(--border);">'+m['내용']+'</div></details>';
-        }).join('')
-      : EMPTY('📖','운영매뉴얼 없음','본사에서 등록되면 여기에 표시됩니다');
-  }).catch(function(){ el.innerHTML=EMPTY('📖','운영매뉴얼 없음'); });
-}
-
-// ============================================================
-// ★ 라이브 방송 관리 (대리점)
-// ============================================================
-var dealerLiveAll = [];
-var dealerAlarmAll = [];
-
-async function loadDealerLive() {
-  document.getElementById('dealer-live-list').innerHTML = '<div class="loading"><div class="lspin">⏳</div></div>';
-  try {
-    var res = await fetch(sheetUrl('라이브방송'));
-    var csv = await res.text();
-    var all = parseCSV(csv);
-    dealerLiveAll = all.filter(function(b){
-      return b['대리점ID'] === DEALER.id || b['대리점ID'] === '본사';
-    });
-    renderDealerLive(dealerLiveAll);
-    updateDealerAlarmFilter();
-  } catch(e) {
-    document.getElementById('dealer-live-list').innerHTML = '<div style="padding:20px;text-align:center;color:#aaa;">데이터 로드 실패</div>';
-  }
-}
-
-function renderDealerLive(data) {
-  var el = document.getElementById('dealer-live-list');
-  if (!data.length) { el.innerHTML = '<div style="padding:30px;text-align:center;color:#aaa;">등록된 방송이 없습니다</div>'; return; }
-  el.innerHTML = '<table>' + TH(['방송제목','시작일시','상태','알림신청','쿠폰','구분','관리']) + '<tbody>'
-    + data.map(function(b) {
-        var sc = b['상태']==='진행중' ? '#e8342b' : b['상태']==='예정' ? '#1a73e8' : '#888';
-        var isOwn = b['대리점ID'] === DEALER.id;
-        var safeB = JSON.stringify(b).replace(/"/g,'&quot;');
-        return '<tr>'
-          + '<td style="font-weight:600;">' + (b['방송제목']||'-') + '</td>'
-          + '<td style="font-size:12px;color:#666;">' + (b['시작일시']||'-').substring(0,16) + '</td>'
-          + '<td><span style="background:' + sc + '20;color:' + sc + ';padding:3px 10px;border-radius:10px;font-size:11px;font-weight:700;">'
-          + (b['상태']==='진행중'?'🔴 LIVE':b['상태']==='예정'?'⏳ 예정':'✅ 종료') + '</span></td>'
-          + '<td style="text-align:center;color:var(--accent);font-weight:700;">' + (b['알림신청수']||0) + '명</td>'
-          + '<td style="text-align:center;">' + (b['쿠폰코드'] ? '<span style="background:#fff8f6;color:#e85a2b;padding:2px 8px;border-radius:4px;font-size:11px;">' + b['쿠폰코드'] + '</span>' : '-') + '</td>'
-          + '<td><span style="background:' + (isOwn?'#f0fdf4':'#eff6ff') + ';color:' + (isOwn?'#166534':'#1d4ed8') + ';padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;">' + (isOwn?'내방송':'본사') + '</span></td>'
-          + '<td>' + (isOwn ? '<button onclick="editDealerLive(' + safeB + ')" style="padding:4px 10px;background:#f0f0f0;border:none;border-radius:4px;font-size:12px;cursor:pointer;">✏️ 수정</button>' : '-') + '</td>'
-          + '</tr>';
-      }).join('') + '</tbody></table>';
-}
-
-function filterDealerLive(status, btn) {
-  document.querySelectorAll('#page-live-list .stab').forEach(function(b){ b.classList.remove('active'); });
-  btn.classList.add('active');
-  var filtered = status === '전체' ? dealerLiveAll : dealerLiveAll.filter(function(b){ return b['상태'] === status; });
-  renderDealerLive(filtered);
-}
-
-function openDealerLiveModal() {
-  ['dlm-no','dlm-title-input','dlm-desc','dlm-youtube','dlm-thumb','dlm-start','dlm-end','dlm-coupon','dlm-rate'].forEach(function(id){ document.getElementById(id).value = ''; });
-  document.getElementById('dlm-status').value = '예정';
-  document.getElementById('dlm-active').value = 'TRUE';
-  document.getElementById('dlm-title').textContent = '📺 방송 등록';
-  document.getElementById('dealer-live-modal').classList.add('active');
-}
-
-function editDealerLive(b) {
-  document.getElementById('dlm-no').value          = b['번호'] || '';
-  document.getElementById('dlm-title-input').value = b['방송제목'] || '';
-  document.getElementById('dlm-desc').value        = b['방송설명'] || '';
-  document.getElementById('dlm-youtube').value     = b['유튜브URL'] || '';
-  document.getElementById('dlm-thumb').value       = b['썸네일이미지'] || '';
-  document.getElementById('dlm-start').value       = (b['시작일시']||'').replace(' ','T').substring(0,16);
-  document.getElementById('dlm-end').value         = (b['종료일시']||'').replace(' ','T').substring(0,16);
-  document.getElementById('dlm-coupon').value      = b['쿠폰코드'] || '';
-  document.getElementById('dlm-rate').value        = b['쿠폰할인율'] || '';
-  document.getElementById('dlm-status').value      = b['상태'] || '예정';
-  document.getElementById('dlm-active').value      = b['사용여부'] || 'TRUE';
-  document.getElementById('dlm-title').textContent = '📺 방송 수정';
-  document.getElementById('dealer-live-modal').classList.add('active');
-}
-
-function closeDealerLiveModal() { document.getElementById('dealer-live-modal').classList.remove('active'); }
-
-async function saveDealerLive() {
-  var title   = document.getElementById('dlm-title-input').value.trim();
-  var youtube = document.getElementById('dlm-youtube').value.trim();
-  var start   = document.getElementById('dlm-start').value;
-  if (!title)   { showToast('방송 제목을 입력하세요','warn'); return; }
-  if (!youtube) { showToast('유튜브 URL을 입력하세요','warn'); return; }
-  if (!start)   { showToast('시작 일시를 입력하세요','warn'); return; }
-  var data = {
-    번호:         document.getElementById('dlm-no').value || '',
-    방송제목:     title,
-    방송설명:     document.getElementById('dlm-desc').value,
-    유튜브URL:    youtube,
-    썸네일이미지: document.getElementById('dlm-thumb').value,
-    시작일시:     start.replace('T',' '),
-    종료일시:     document.getElementById('dlm-end').value.replace('T',' '),
-    쿠폰코드:     document.getElementById('dlm-coupon').value,
-    쿠폰할인율:   document.getElementById('dlm-rate').value,
-    상태:         document.getElementById('dlm-status').value,
-    사용여부:     document.getElementById('dlm-active').value,
-    대리점ID:     DEALER.id,
-    알림신청수:   document.getElementById('dlm-no').value ? undefined : '0'
-  };
-  try {
-    await fetch(SCRIPT_URL, { method:'POST', mode:'no-cors', body: JSON.stringify({ action:'saveLiveBroadcast', data:data }) });
-    showToast('✅ 방송이 저장됐습니다!','ok');
-    closeDealerLiveModal();
-    setTimeout(loadDealerLive, 1500);
-  } catch(e) { showToast('오류: ' + e.message,''); }
-}
-
-// ★ 알림 신청자
-async function loadDealerAlarm() {
-  document.getElementById('dealer-alarm-list').innerHTML = '<div class="loading"><div class="lspin">⏳</div></div>';
-  try {
-    var res = await fetch(sheetUrl('라이브알림'));
-    var csv = await res.text();
-    dealerAlarmAll = parseCSV(csv);
-    filterDealerAlarm();
-  } catch(e) {
-    document.getElementById('dealer-alarm-list').innerHTML = '<div style="padding:20px;text-align:center;color:#aaa;">데이터 없음 (첫 신청 후 자동 생성)</div>';
-  }
-}
-
-function updateDealerAlarmFilter() {
-  var sel = document.getElementById('dealer-alarm-filter');
-  if (!sel) return;
-  var myLives = dealerLiveAll.filter(function(b){ return b['대리점ID'] === DEALER.id; });
-  sel.innerHTML = '<option value="">전체 방송</option>'
-    + myLives.map(function(b){ return '<option value="' + b['번호'] + '">' + b['방송제목'] + '</option>'; }).join('');
-}
-
-function filterDealerAlarm() {
-  var no = document.getElementById('dealer-alarm-filter').value;
-  var filtered = no ? dealerAlarmAll.filter(function(a){ return a['방송번호'] === no; }) : dealerAlarmAll;
-  var el = document.getElementById('dealer-alarm-list');
-  if (!filtered.length) { el.innerHTML = '<div style="padding:30px;text-align:center;color:#aaa;">알림 신청자가 없습니다</div>'; return; }
-  el.innerHTML = '<table>' + TH(['이름','연락처','이메일','방송번호','신청일시']) + '<tbody>'
-    + filtered.map(function(a){
-        return '<tr>'
-          + '<td style="font-weight:600;">' + (a['이름']||'-') + '</td>'
-          + '<td>' + (a['연락처']||'-') + '</td>'
-          + '<td>' + (a['이메일']||'-') + '</td>'
-          + '<td style="text-align:center;">' + (a['방송번호']||'-') + '</td>'
-          + '<td style="font-size:11px;color:#aaa;">' + (a['신청일시']||'-') + '</td></tr>';
-      }).join('') + '</tbody></table>'
-    + '<div style="padding:10px 14px;font-size:12px;color:#888;border-top:1px solid var(--border);">총 ' + filtered.length + '명</div>';
-}
-
-// ★ 쿠폰 발급 내역
-async function loadDealerCoupon() {
-  document.getElementById('dealer-coupon-list').innerHTML = '<div class="loading"><div class="lspin">⏳</div></div>';
-  try {
-    var res = await fetch(sheetUrl('라이브쿠폰'));
-    var csv = await res.text();
-    var data = parseCSV(csv);
-    var el = document.getElementById('dealer-coupon-list');
-    if (!data.length) { el.innerHTML = '<div style="padding:30px;text-align:center;color:#aaa;">발급된 쿠폰이 없습니다</div>'; return; }
-    el.innerHTML = '<table>' + TH(['이름','연락처','쿠폰코드','할인율','발급일시','사용여부']) + '<tbody>'
-      + data.map(function(c){
-          return '<tr>'
-            + '<td style="font-weight:600;">' + (c['이름']||'-') + '</td>'
-            + '<td>' + (c['연락처']||'-') + '</td>'
-            + '<td><span style="background:#fff8f6;color:#e85a2b;padding:2px 8px;border-radius:4px;font-weight:700;">' + (c['쿠폰코드']||'-') + '</span></td>'
-            + '<td style="text-align:center;">' + (c['할인율']||0) + '%</td>'
-            + '<td style="font-size:11px;color:#aaa;">' + (c['발급일시']||'-') + '</td>'
-            + '<td><span style="color:' + (c['사용여부']==='TRUE'?'#e85a2b':'#888') + '">' + (c['사용여부']==='TRUE'?'✅ 사용':'미사용') + '</span></td></tr>';
-        }).join('') + '</tbody></table>'
-      + '<div style="padding:10px 14px;font-size:12px;color:#888;border-top:1px solid var(--border);">총 ' + data.length + '건</div>';
-  } catch(e) {
-    document.getElementById('dealer-coupon-list').innerHTML = '<div style="padding:20px;text-align:center;color:#aaa;">데이터 없음</div>';
-  }
-}
-</script>
-
-<script>
-function toggleSidebar() {
-  var sb = document.querySelector('.sb');
-  var ov = document.getElementById('sb-overlay');
-  var isOpen = sb.classList.contains('open');
-  sb.classList.toggle('open', !isOpen);
-  ov.classList.toggle('open', !isOpen);
-}
-document.addEventListener('click', function(e) {
-  if (e.target.closest('.sb-item') && window.innerWidth <= 768) {
-    setTimeout(toggleSidebar, 150);
-  }
-});
-</script>
+<!-- ── JS 외부 파일 로드 (순서 중요) ── -->
+<script src="js/dealer-config.js"></script>
+<script src="js/dealer-dashboard.js"></script>
+<script src="js/dealer-products.js"></script>
+<script src="js/dealer-orders.js"></script>
+<script src="js/dealer-settlement.js"></script>
+<script src="js/dealer-live.js"></script>
 </body>
 </html>
