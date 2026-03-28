@@ -3,7 +3,7 @@
 // ============================================================
 const CONFIG = {
   // ✅ Google Sheets ID (운영 시트)
-  SHEET_ID: '1t804fRO8HfQtmOzpDAz2IZfzRDQ7t8LYllFGZr3ftUI',
+  SHEET_ID: '1gjnczt_Db959Nc6aAF6CIPIj1SBY4XvoIXuEAAIJOZE',
 
   // ✅ Apps Script URL (v4.6)
   APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbw_rbhRHPQhNYHttEbAyKiLDB32r1TQlhPBO6V3kIQq0AW1mNoz0yb3gjlaiQtB1uyn/exec',
