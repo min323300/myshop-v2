@@ -1,20 +1,20 @@
 // ============================================================
-// ⚙️ 설정 파일 - config.js (담누리마켓 V2)
+// ⚙️ 설정 파일 - config.js (담누리마켓 운영)
 // ============================================================
 const CONFIG = {
-  // ✅ Google Sheets ID (쇼핑몰2버전 시트)
-  SHEET_ID: '1gjnczt_Db959Nc6aAF6CIPIj1SBY4XvoIXuEAAIJOZE',
+  // ✅ Google Sheets ID (운영 시트)
+  SHEET_ID: '1t804fRO8HfQtmOzpDAz2IZfzRDQ7t8LYllFGZr3ftUI',
 
-  // ✅ Apps Script URL (기존과 동일 — 새 배포 후 변경 예정)
+  // ✅ Apps Script URL (v4.6)
   APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbw_rbhRHPQhNYHttEbAyKiLDB32r1TQlhPBO6V3kIQq0AW1mNoz0yb3gjlaiQtB1uyn/exec',
-  
-  // ✅ YouTube 동시접속자 API 키
+
+  // ✅ YouTube API 키
   YOUTUBE_API_KEY: 'AIzaSyCbIR9GlemCUaHvcbGOy8AdrXEsd5EZlhE',
 
-  // ✅ 이미지 기본 URL (myshop-v2 저장소)
-  IMAGE_BASE: 'https://min323300.github.io/myshop-v2/images/',
+  // ✅ 이미지 기본 URL
+  IMAGE_BASE: 'https://min323300.github.io/myshop/images/',
 
-  // 시트별 URL 자동 생성
+  // ✅ 시트별 URL — getter 대신 함수로 변경 (값 추가 가능하도록)
   get SHEETS() {
     const base = `https://docs.google.com/spreadsheets/d/${this.SHEET_ID}/gviz/tq?tqx=out:csv&sheet=`;
     return {
@@ -31,7 +31,11 @@ const CONFIG = {
       배너:       base + encodeURIComponent('배너'),
       배송정책:   base + encodeURIComponent('배송정책'),
       사업자정보: base + encodeURIComponent('사업자정보'),
+      공지사항:   base + encodeURIComponent('공지사항'),
       라이브방송: base + encodeURIComponent('라이브방송'),
+      라이브알림: base + encodeURIComponent('라이브알림'),  // ✅ 추가
+      라이브쿠폰: base + encodeURIComponent('라이브쿠폰'),  // ✅ 추가
+      위탁정산:   base + encodeURIComponent('위탁정산'),    // ✅ 추가
     };
   },
 
@@ -56,10 +60,10 @@ const CONFIG = {
   DEALER_ID:   '',
   DEALER_NAME: '',
 
-  // ✅ PG 설정 (윈글로벌페이) — 심사 통과 후 새 MID 입력
+  // ✅ PG 설정 (윈글로벌페이)
   PG: {
     PROVIDER:      'winglobalpay',
-    MERCHANT_ID:   '',
+    MERCHANT_ID:   'WGA000003',
     API_PROXY_URL: 'https://script.google.com/macros/s/AKfycbzWpT2On47R7_LTRiznH7qcPBYTPUV3i4UiywI8lkHUYt6KGzDevap7RfQHACwD7oxDzg/exec',
   },
 
@@ -115,7 +119,7 @@ const CONFIG = {
       if (row['전화'])                        CONFIG.STORE.PHONE   = row['전화']    || CONFIG.STORE.PHONE;
       if (row['이메일'])                      CONFIG.STORE.EMAIL   = row['이메일']  || CONFIG.STORE.EMAIL;
       if (row['주소'])                        CONFIG.STORE.ADDRESS = row['주소']    || CONFIG.STORE.ADDRESS;
-      if (row['태그라인'] || row['슬로건'])  CONFIG.STORE.TAGLINE = row['태그라인'] || row['슬로건'] || CONFIG.STORE.TAGLINE;
+      if (row['태그라인'] || row['슬로건'])   CONFIG.STORE.TAGLINE = row['태그라인'] || row['슬로건'] || CONFIG.STORE.TAGLINE;
       if (row['인스타그램'])                  CONFIG.STORE.SNS.INSTAGRAM = row['인스타그램'];
       if (row['카카오'])                      CONFIG.STORE.SNS.KAKAO     = row['카카오'];
       if (row['유튜브'])                      CONFIG.STORE.SNS.YOUTUBE   = row['유튜브'];
@@ -137,9 +141,9 @@ const CONFIG = {
         if (!myRow) return;
         var dealerName = myRow['대리점명'] || '';
         if (dealerName) {
-          CONFIG.DEALER_NAME     = dealerName;
-          CONFIG.STORE.BRAND     = dealerName;
-          CONFIG.STORE.NAME      = dealerName;
+          CONFIG.DEALER_NAME = dealerName;
+          CONFIG.STORE.BRAND = dealerName;
+          CONFIG.STORE.NAME  = dealerName;
         }
         if (myRow['테마색상']) {
           CONFIG.DEFAULT_THEME_COLOR = myRow['테마색상'];
