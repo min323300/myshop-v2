@@ -2,10 +2,15 @@
 // CONFIG
 // ============================================================
 var ADMIN_ID = 'admin', ADMIN_PW = 'damnuri2026';
-var SCRIPT_URL = (typeof CONFIG!=='undefined') ? CONFIG.PG.API_PROXY_URL : '';
-var IMG_BASE = (typeof CONFIG!=='undefined') ? CONFIG.IMAGE_BASE : 'https://min323300.github.io/myshop/images/';
+
+// ✅ v4.7 수정: CONFIG.APPS_SCRIPT_URL 사용 (기존: CONFIG.PG.API_PROXY_URL → 잘못된 URL)
+var SCRIPT_URL = (typeof CONFIG !== 'undefined') ? CONFIG.APPS_SCRIPT_URL : '';
+
+var IMG_BASE = (typeof CONFIG !== 'undefined') ? CONFIG.IMAGE_BASE : 'https://min323300.github.io/myshop/images/';
 var SHEET_URL = '';
-var SHEET_ID = '1t804fRO8HfQtmOzpDAz2IZfzRDQ7t8LYllFGZr3ftUI';
+
+// ✅ v4.7 수정: CONFIG.SHEET_ID 사용 (기존: 운영 시트 ID 하드코딩 → 개발/운영 혼용 버그)
+var SHEET_ID = (typeof CONFIG !== 'undefined') ? CONFIG.SHEET_ID : '1gjnczt_Db959Nc6aAF6CIPIj1SBY4XvoIXuEAAIJOZE';
 
 // ============================================================
 // ☁️ Cloudinary 설정
@@ -261,14 +266,13 @@ function loadCats() {
 }
 
 // ============================================================
-// 주문 ★송장번호/택배사 기능 포함★
+// 주문
 // ============================================================
 var orderTabF = 'all';
 
 function loadOrders() {
   document.getElementById('order-tw').innerHTML = '<div class="loading"><div class="lspin">⏳</div></div>';
-  if (typeof CONFIG === 'undefined') return;
-  var url = 'https://docs.google.com/spreadsheets/d/1t804fRO8HfQtmOzpDAz2IZfzRDQ7t8LYllFGZr3ftUI/gviz/tq?tqx=out:csv&sheet=' + encodeURIComponent('주문') + '&t=' + Date.now();
+  var url = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/gviz/tq?tqx=out:csv&sheet=' + encodeURIComponent('주문') + '&t=' + Date.now();
   fetch(url).then(function(r){ return r.text(); }).then(function(csv) {
     allOrders = parseAdminCSV(csv);
     updateOrderTabCounts(allOrders);
@@ -378,11 +382,9 @@ function saveTracking() {
   var tracking = document.getElementById('tm-tracking').value.trim();
   if (!tracking) { alert('송장번호를 입력하세요'); return; }
   if (!carrier)  { alert('택배사를 선택하세요'); return; }
-  var url = (typeof CONFIG !== 'undefined') ? CONFIG.PG.API_PROXY_URL : '';
-  if (!url) { alert('API URL 없음'); return; }
-  fetch(url, {
+  if (!SCRIPT_URL) { alert('API URL 없음'); return; }
+  fetch(SCRIPT_URL, {
     method: 'POST', mode: 'no-cors',
-    headers: { 'Content-Type': 'text/plain' },
     body: JSON.stringify({ action: 'updateOrderStatus', data: { '주문번호': orderNo, '주문상태': '배송중', '송장번호': tracking, '택배사': carrier } })
   }).then(function() {
     closeTrackingModal();
@@ -453,17 +455,15 @@ function changeOrderStatus(sel) {
   var orderNo = sel.getAttribute('data-no');
   var status  = sel.value;
   if (!orderNo) return;
-  var url = (typeof CONFIG !== 'undefined') ? CONFIG.PG.API_PROXY_URL : '';
-  if (!url) { alert('API URL 없음'); return; }
+  if (!SCRIPT_URL) { alert('API URL 없음'); return; }
   if (status === '배송중') {
     var row = allOrders.find(function(o){ return String(o['주문번호']).trim() === orderNo; }) || {};
     openTrackingModal(orderNo, row['택배사']||'', row['송장번호']||'');
     sel.value = (row['주문상태'] || '결제대기');
     return;
   }
-  fetch(url, {
+  fetch(SCRIPT_URL, {
     method: 'POST', mode: 'no-cors',
-    headers: { 'Content-Type': 'text/plain' },
     body: JSON.stringify({ action: 'updateOrderStatus', data: { '주문번호': orderNo, '주문상태': status } })
   }).then(function(){ setTimeout(loadOrders, 800); }).catch(function(e){ console.log(e); });
 }
@@ -557,7 +557,6 @@ var bannerAllData = [];
 var popupAllData  = [];
 
 function loadBanners() {
-  var SHEET_ID = '1t804fRO8HfQtmOzpDAz2IZfzRDQ7t8LYllFGZr3ftUI';
   var bUrl = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/gviz/tq?tqx=out:csv&sheet=' + encodeURIComponent('배너') + '&t=' + Date.now();
   document.getElementById('banner-list-wrap').innerHTML = '<div class="loading"><div class="lspin">⏳</div></div>';
   document.getElementById('popup-list-wrap').innerHTML  = '<div class="loading"><div class="lspin">⏳</div></div>';
@@ -614,7 +613,7 @@ function renderPopupList() {
 
 function openBannerModal(){ clearBannerForm(); document.getElementById('bm-title').textContent='🎨 배너 등록'; document.getElementById('banner-modal').classList.add('open'); }
 function closeBannerModal(){ document.getElementById('banner-modal').classList.remove('open'); }
-function clearBannerForm(){ ['bm-id','bm-title-input','bm-sub','bm-img','bm-link','bm-btn','bm-start','bm-end'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; }); document.getElementById('bm-order').value='1'; document.getElementById('bm-active').value='TRUE'; document.getElementById('bm-bg').value='#FF5733'; document.getElementById('bm-color').value='#ffffff'; var pv=document.getElementById('bm-img-pv'); if(pv) pv.innerHTML=''; var st=document.getElementById('bm-upload-status'); if(st) st.style.display='none'; }
+function clearBannerForm(){ ['bm-id','bm-title-input','bm-sub','bm-img','bm-link','bm-btn','bm-start','bm-end'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; }); document.getElementById('bm-order').value='1'; document.getElementById('bm-active').value='TRUE'; document.getElementById('bm-bg').value='#FF5733'; document.getElementById('bm-color').value='#ffffff'; var pv=document.getElementById('bm-img-pv'); if(pv) pv.innerHTML=''; }
 
 function editBanner(btn) {
   var id = btn.getAttribute('data-id');
@@ -627,9 +626,9 @@ function editBanner(btn) {
 function saveBanner() {
   var title = document.getElementById('bm-title-input').value.trim();
   if (!title) { showToast('제목을 입력하세요','warn'); return; }
-  if (!SCRIPT_URL) { showToast('Apps Script URL이 config.js에 설정되어 있지 않습니다','warn'); return; }
+  if (!SCRIPT_URL) { showToast('Apps Script URL이 설정되어 있지 않습니다','warn'); return; }
   var data = { 번호: document.getElementById('bm-id').value||'', 제목: title, 부제목: document.getElementById('bm-sub').value, 이미지: document.getElementById('bm-img').value, 배경색: document.getElementById('bm-bg').value, 글자색: document.getElementById('bm-color').value, 링크: document.getElementById('bm-link').value, 버튼텍스트: document.getElementById('bm-btn').value, 시작일: document.getElementById('bm-start').value, 종료일: document.getElementById('bm-end').value, 순서: document.getElementById('bm-order').value, 사용여부: document.getElementById('bm-active').value };
-  fetch(SCRIPT_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body:JSON.stringify({action:'saveBanner',data:data}) })
+  fetch(SCRIPT_URL, { method:'POST', mode:'no-cors', body:JSON.stringify({action:'saveBanner',data:data}) })
     .then(function(){ showToast('배너가 저장됐습니다!','ok'); closeBannerModal(); setTimeout(loadBanners,1500); });
 }
 
@@ -637,7 +636,7 @@ function deleteBannerItem(btn) {
   var id = btn.getAttribute('data-id'), title = btn.getAttribute('data-title');
   if (!confirm('[' + title + '] 배너를 삭제하시겠습니까?')) return;
   if (!SCRIPT_URL) { showToast('Apps Script URL 미설정','warn'); return; }
-  fetch(SCRIPT_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body:JSON.stringify({action:'deleteBanner',data:{번호:id}}) })
+  fetch(SCRIPT_URL, { method:'POST', mode:'no-cors', body:JSON.stringify({action:'deleteBanner',data:{번호:id}}) })
     .then(function(){ showToast('삭제됐습니다','ok'); setTimeout(loadBanners,1500); });
 }
 
@@ -656,9 +655,9 @@ function editPopup(btn) {
 function savePopup() {
   var title = document.getElementById('pm-title-input').value.trim();
   if (!title) { showToast('제목을 입력하세요','warn'); return; }
-  if (!SCRIPT_URL) { showToast('Apps Script URL이 config.js에 설정되어 있지 않습니다','warn'); return; }
+  if (!SCRIPT_URL) { showToast('Apps Script URL이 설정되어 있지 않습니다','warn'); return; }
   var data = { 번호: document.getElementById('pm-id').value||'', 제목: title, 내용: document.getElementById('pm-content').value, 이미지: document.getElementById('pm-img').value, 링크: document.getElementById('pm-link').value, 팝업너비: document.getElementById('pm-width').value, 시작일: document.getElementById('pm-start').value, 종료일: document.getElementById('pm-end').value, 사용여부: document.getElementById('pm-active').value };
-  fetch(SCRIPT_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body:JSON.stringify({action:'savePopup',data:data}) })
+  fetch(SCRIPT_URL, { method:'POST', mode:'no-cors', body:JSON.stringify({action:'savePopup',data:data}) })
     .then(function(){ showToast('팝업이 저장됐습니다!','ok'); closePopupModal(); setTimeout(loadBanners,1500); });
 }
 
@@ -666,7 +665,7 @@ function deletePopupItem(btn) {
   var id = btn.getAttribute('data-id'), title = btn.getAttribute('data-title');
   if (!confirm('[' + title + '] 팝업을 삭제하시겠습니까?')) return;
   if (!SCRIPT_URL) { showToast('Apps Script URL 미설정','warn'); return; }
-  fetch(SCRIPT_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body:JSON.stringify({action:'deletePopup',data:{번호:id}}) })
+  fetch(SCRIPT_URL, { method:'POST', mode:'no-cors', body:JSON.stringify({action:'deletePopup',data:{번호:id}}) })
     .then(function(){ showToast('삭제됐습니다','ok'); setTimeout(loadBanners,1500); });
 }
 
@@ -695,7 +694,6 @@ function clearGroupBuyForm(){ ['gbm-id','gbm-pid','gbm-title-input','gbm-price',
 function loadGroupBuy(){
   var tw=document.getElementById('gb-tw');
   if(tw) tw.innerHTML='<div class="loading"><div class="lspin">⏳</div><div style="margin-top:10px">불러오는 중...</div></div>';
-  var SHEET_ID='1t804fRO8HfQtmOzpDAz2IZfzRDQ7t8LYllFGZr3ftUI';
   var gbUrl='https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/gviz/tq?tqx=out:csv&sheet='+encodeURIComponent('공동구매')+'&t='+Date.now();
   var prodUrl='https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/gviz/tq?tqx=out:csv&sheet='+encodeURIComponent('상품목록')+'&t='+Date.now();
   function parseCSV(csv){
@@ -769,7 +767,7 @@ function forceEndGroupBuy(id, title) {
   if (!SCRIPT_URL) { showToast('Apps Script URL 미설정','warn'); return; }
   var now = new Date();
   var nowStr = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0') + ' ' + String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
-  fetch(SCRIPT_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body:JSON.stringify({action:'saveGroupBuy', data:{ 번호: id, 종료일시: nowStr, 사용여부: 'FALSE' }}) })
+  fetch(SCRIPT_URL, { method:'POST', mode:'no-cors', body:JSON.stringify({action:'saveGroupBuy', data:{ 번호: id, 종료일시: nowStr, 사용여부: 'FALSE' }}) })
     .then(function(){ showToast('강제 마감됐습니다!','ok'); setTimeout(loadGroupBuy,1500); });
 }
 
@@ -785,34 +783,36 @@ function editGroupBuyItem(id){
 function saveGroupBuy(){
   var pid=document.getElementById('gbm-pid').value.trim(), price=document.getElementById('gbm-price').value.trim(), endDt=document.getElementById('gbm-end').value;
   if(!pid||!price||!endDt){ showToast('상품번호, 공동구매가, 종료일시는 필수입니다','warn'); return; }
-  if(!SCRIPT_URL){ showToast('Apps Script URL이 config.js에 설정되어 있지 않습니다','warn'); return; }
+  if(!SCRIPT_URL){ showToast('Apps Script URL이 설정되어 있지 않습니다','warn'); return; }
   function fmtDt(v){ if(!v) return ''; return v.replace('T',' ').substring(0,16); }
   var data={ 번호:document.getElementById('gbm-id').value||'', 상품번호:pid, 제목:document.getElementById('gbm-title-input').value, 공동구매가:price, 목표수량:document.getElementById('gbm-target').value, 현재참여:document.getElementById('gbm-current').value, 시작일시:fmtDt(document.getElementById('gbm-start').value), 종료일시:fmtDt(endDt), 배송예정일:document.getElementById('gbm-delivery').value, 설명:document.getElementById('gbm-desc').value, 사용여부:document.getElementById('gbm-active').value };
-  fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'saveGroupBuy',data:data})})
+  fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',body:JSON.stringify({action:'saveGroupBuy',data:data})})
     .then(function(){ showToast('공동구매가 저장됐습니다!','ok'); closeGroupBuyModal(); setTimeout(loadGroupBuy,1500); });
 }
 
 function deleteGroupBuyItem(id,title){
   if(!confirm('['+title+'] 공동구매를 삭제하시겠습니까?')) return;
   if(!SCRIPT_URL){ showToast('Apps Script URL 미설정','warn'); return; }
-  fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'deleteGroupBuy',data:{번호:id}})})
+  fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',body:JSON.stringify({action:'deleteGroupBuy',data:{번호:id}})})
     .then(function(){ showToast('삭제됐습니다','ok'); setTimeout(loadGroupBuy,1500); });
 }
 
 // ============================================================
-// 대리점 CRUD
+// ✅ 대리점 CRUD — v4.7 수정: SCRIPT_URL 올바른 URL 사용
 // ============================================================
 var dealerAllData=[];
 
 function loadDealer(){
-  var SHEET_ID='1t804fRO8HfQtmOzpDAz2IZfzRDQ7t8LYllFGZr3ftUI';
   var url='https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/gviz/tq?tqx=out:csv&sheet='+encodeURIComponent('대리점')+'&t='+Date.now();
   document.getElementById('dealer-tw').innerHTML='<div class="loading"><div class="lspin">⏳</div></div>';
   fetch(url).then(function(r){return r.text();}).then(function(csv){
     dealerAllData=parseAdminCSV(csv);
     var active=0,recruit=0,pause=0;
     dealerAllData.forEach(function(d){ var st=d['상태']||''; if(st==='운영중') active++; else if(st==='모집중') recruit++; else if(st==='일시중지') pause++; });
-    document.getElementById('dealer-active').textContent=active; document.getElementById('dealer-recruit').textContent=recruit; document.getElementById('dealer-pause').textContent=pause; document.getElementById('dealer-total').textContent=dealerAllData.length;
+    document.getElementById('dealer-active').textContent=active;
+    document.getElementById('dealer-recruit').textContent=recruit;
+    document.getElementById('dealer-pause').textContent=pause;
+    document.getElementById('dealer-total').textContent=dealerAllData.length;
     var statusColor={'운영중':'bdg-green','모집중':'bdg-blue','일시중지':'bdg-orange','해지':'bdg-red'};
     document.getElementById('dealer-tw').innerHTML=dealerAllData.length
       ?'<table>'+TH(['ID','대리점명','대표자','연락처','도메인','상태','수수료율','계약기간','관리'])+'<tbody>'+
@@ -825,7 +825,17 @@ function loadDealer(){
 
 function openDealerModal(){ clearDealerForm(); document.getElementById('dm-title').textContent='🏬 대리점 등록'; document.getElementById('dealer-modal').classList.add('open'); }
 function closeDealerModal(){ document.getElementById('dealer-modal').classList.remove('open'); }
-function clearDealerForm(){ ['dm-id','dm-fid','dm-name','dm-owner','dm-phone','dm-email','dm-address','dm-domain','dm-start','dm-end','dm-bank','dm-admin-id','dm-admin-pw'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; }); document.getElementById('dm-commission').value='2'; document.getElementById('dm-status').value='모집중'; document.getElementById('dm-color').value='#FF5733'; }
+function clearDealerForm(){
+  ['dm-id','dm-fid','dm-name','dm-owner','dm-phone','dm-email','dm-address','dm-domain','dm-start','dm-end','dm-bank','dm-admin-id','dm-admin-pw'].forEach(function(id){
+    var el=document.getElementById(id); if(el) el.value='';
+  });
+  document.getElementById('dm-commission').value='2';
+  document.getElementById('dm-status').value='모집중';
+  document.getElementById('dm-color').value='#FF5733';
+  // 로고이미지 필드 초기화
+  var logoEl = document.getElementById('dm-logo'); if(logoEl) logoEl.value='';
+  var logoPv = document.getElementById('dm-logo-pv'); if(logoPv){ logoPv.style.display='none'; logoPv.src=''; }
+}
 
 function editDealer(btn){
   var fid=btn.getAttribute('data-id');
@@ -847,13 +857,24 @@ function editDealer(btn){
   document.getElementById('dm-bank').value=d['정산계좌']||'';
   var adminIdEl = document.getElementById('dm-admin-id'); if(adminIdEl) adminIdEl.value = d['관리자ID'] || d['아이디'] || '';
   var adminPwEl = document.getElementById('dm-admin-pw'); if(adminPwEl) adminPwEl.value = d['관리자PW'] || d['비밀번호'] || '';
+  // ✅ 로고이미지 필드 채우기
+  var logoEl = document.getElementById('dm-logo');
+  if(logoEl){
+    logoEl.value = d['로고이미지'] || '';
+    var logoPv = document.getElementById('dm-logo-pv');
+    if(logoPv && d['로고이미지']){
+      logoPv.src = d['로고이미지'];
+      logoPv.style.display = 'block';
+    }
+  }
   document.getElementById('dealer-modal').classList.add('open');
 }
 
 function saveDealer(){
   var fid=document.getElementById('dm-fid').value.trim(), name=document.getElementById('dm-name').value.trim();
   if(!fid||!name){ showToast('대리점 ID와 대리점명은 필수입니다','warn'); return; }
-  if(!SCRIPT_URL){ showToast('Apps Script URL이 config.js에 설정되어 있지 않습니다','warn'); return; }
+  if(!SCRIPT_URL){ showToast('Apps Script URL이 설정되어 있지 않습니다','warn'); return; }
+  var logoEl = document.getElementById('dm-logo');
   var data={
     대리점ID:   fid,
     대리점명:   name,
@@ -868,10 +889,11 @@ function saveDealer(){
     수수료율:   document.getElementById('dm-commission').value,
     상태:       document.getElementById('dm-status').value,
     정산계좌:   document.getElementById('dm-bank').value,
+    로고이미지: logoEl ? logoEl.value.trim() : '',
     관리자ID:   (document.getElementById('dm-admin-id') ? document.getElementById('dm-admin-id').value.trim() : ''),
     관리자PW:   (document.getElementById('dm-admin-pw') ? document.getElementById('dm-admin-pw').value.trim() : '')
   };
-  fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'saveDealer',data:data})})
+  fetch(SCRIPT_URL, { method:'POST', mode:'no-cors', body:JSON.stringify({action:'saveDealer',data:data}) })
     .then(function(){ showToast('대리점이 저장됐습니다!','ok'); closeDealerModal(); setTimeout(loadDealer,1500); });
 }
 
@@ -881,7 +903,6 @@ function saveDealer(){
 var noticeAllData=[];
 
 function loadNotice(){
-  var SHEET_ID='1t804fRO8HfQtmOzpDAz2IZfzRDQ7t8LYllFGZr3ftUI';
   var url='https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/gviz/tq?tqx=out:csv&sheet='+encodeURIComponent('공지사항')+'&t='+Date.now();
   document.getElementById('notice-list').innerHTML='<div class="loading"><div class="lspin">⏳</div></div>';
   document.getElementById('manual-wrap').innerHTML='<div class="loading"><div class="lspin">⏳</div></div>';
@@ -915,17 +936,17 @@ function editNotice(btn){ var id=btn.getAttribute('data-id');
 function saveNotice(){
   var title=document.getElementById('nm-title-input').value.trim(), content=document.getElementById('nm-content').value.trim();
   if(!title||!content){ showToast('제목과 내용은 필수입니다','warn'); return; }
-  if(!SCRIPT_URL){ showToast('Apps Script URL이 config.js에 설정되어 있지 않습니다','warn'); return; }
+  if(!SCRIPT_URL){ showToast('Apps Script URL이 설정되어 있지 않습니다','warn'); return; }
   var now=new Date(); var dateStr=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
   var data={ 번호:document.getElementById('nm-id').value||'', 제목:title, 내용:content, 구분:document.getElementById('nm-type').value, 중요도:document.getElementById('nm-priority').value, 사용여부:document.getElementById('nm-active').value, 작성일:dateStr };
-  fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'saveNotice',data:data})})
+  fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',body:JSON.stringify({action:'saveNotice',data:data})})
     .then(function(){ showToast('공지가 저장됐습니다!','ok'); closeNoticeModal(); setTimeout(loadNotice,1500); });
 }
 
 function deleteNoticeItem(btn){ var id=btn.getAttribute('data-id'),title=btn.getAttribute('data-title');
   if(!confirm('['+title+'] 공지를 삭제하시겠습니까?')) return;
   if(!SCRIPT_URL){ showToast('Apps Script URL 미설정','warn'); return; }
-  fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'deleteNotice',data:{번호:id}})})
+  fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',body:JSON.stringify({action:'deleteNotice',data:{번호:id}})})
     .then(function(){ showToast('삭제됐습니다','ok'); setTimeout(loadNotice,1500); });
 }
 
@@ -956,11 +977,11 @@ function loadSettings(){
     var pgMidEl  = document.getElementById('pg-mid');      if(pgMidEl)  pgMidEl.value  = hq['MID']  || CONFIG.PG.MERCHANT_ID || '';
     var pgKeyEl  = document.getElementById('pg-apikey');   if(pgKeyEl)  pgKeyEl.value  = hq['API키'] || '';
     var pgSecEl  = document.getElementById('pg-secret');   if(pgSecEl)  pgSecEl.value  = hq['시크릿키'] || '';
-    var pgUrlEl  = document.getElementById('pg-script-url'); if(pgUrlEl) pgUrlEl.value = hq['ScriptURL'] || CONFIG.PG.API_PROXY_URL || '';
+    var pgUrlEl  = document.getElementById('pg-script-url'); if(pgUrlEl) pgUrlEl.value = hq['ScriptURL'] || CONFIG.APPS_SCRIPT_URL || '';
   }).catch(function() {
     var pgProvEl = document.getElementById('pg-provider'); if(pgProvEl) pgProvEl.value = CONFIG.PG.PROVIDER || '';
     var pgMidEl  = document.getElementById('pg-mid');      if(pgMidEl)  pgMidEl.value  = CONFIG.PG.MERCHANT_ID || '';
-    var pgUrlEl  = document.getElementById('pg-script-url'); if(pgUrlEl) pgUrlEl.value = CONFIG.PG.API_PROXY_URL || '';
+    var pgUrlEl  = document.getElementById('pg-script-url'); if(pgUrlEl) pgUrlEl.value = CONFIG.APPS_SCRIPT_URL || '';
   });
 
   document.getElementById('settings-wrap').innerHTML =
@@ -987,8 +1008,8 @@ function savePGSettings(){
   if(!scriptUrl){ showToast('Apps Script URL을 입력하세요','warn'); return; }
   statusEl.innerHTML='<span style="color:var(--gray);">⏳ 저장 중...</span>';
   var data={ '대리점ID':'본사','PG사':provider,'MID':mid,'API키':apikey,'시크릿키':secret,'ScriptURL':scriptUrl };
-  fetch(scriptUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'savePGConfig',data:data})}).then(function(){
-    if(typeof CONFIG!=='undefined'){ CONFIG.PG.PROVIDER=provider; CONFIG.PG.MERCHANT_ID=mid; CONFIG.PG.API_PROXY_URL=scriptUrl; }
+  fetch(scriptUrl,{method:'POST',mode:'no-cors',body:JSON.stringify({action:'savePGConfig',data:data})}).then(function(){
+    if(typeof CONFIG!=='undefined'){ CONFIG.PG.PROVIDER=provider; CONFIG.PG.MERCHANT_ID=mid; CONFIG.APPS_SCRIPT_URL=scriptUrl; }
     SCRIPT_URL = scriptUrl;
     statusEl.innerHTML='<span style="color:var(--green);">✅ 저장 완료! (구글시트 PG설정 시트에 반영됨)</span>';
     showToast('PG 설정이 저장됐습니다!','ok');
@@ -1045,14 +1066,11 @@ function updateDeliveryPreview(){
   var fee  = parseInt(document.getElementById('f-delivery-fee').value) || 0;
   var free = parseInt(document.getElementById('f-delivery-free').value) || 0;
   if(type==='무료배송' || fee===0){
-    preview.textContent='✅ 무료배송';
-    preview.style.color='#1a7f4b';
+    preview.textContent='✅ 무료배송'; preview.style.color='#1a7f4b';
   } else if(free>0){
-    preview.textContent=fee.toLocaleString()+'원 ('+free.toLocaleString()+'원 이상 무료)';
-    preview.style.color='#666';
+    preview.textContent=fee.toLocaleString()+'원 ('+free.toLocaleString()+'원 이상 무료)'; preview.style.color='#666';
   } else {
-    preview.textContent=fee.toLocaleString()+'원';
-    preview.style.color='#666';
+    preview.textContent=fee.toLocaleString()+'원'; preview.style.color='#666';
   }
 }
 
@@ -1062,13 +1080,14 @@ function updateDeliveryPreview(){
 function uploadImg(input,targetId,pvId){
   var file=input.files[0]; if(!file) return;
   var reader=new FileReader();
-  reader.onload=function(e){ var pvEl=document.getElementById(pvId); if(pvEl) pvEl.innerHTML='<img src="'+e.target.result+'" style="max-width:100%;max-height:120px;border-radius:6px;margin-top:6px;">'; };
+  reader.onload=function(e){
+    var pvEl=document.getElementById(pvId);
+    if(pvEl){
+      if(pvEl.tagName==='IMG'){ pvEl.src=e.target.result; pvEl.style.display='block'; }
+      else pvEl.innerHTML='<img src="'+e.target.result+'" style="max-width:100%;max-height:120px;border-radius:6px;margin-top:6px;">';
+    }
+  };
   reader.readAsDataURL(file);
-  var statusId = (pvId && (pvId.startsWith('bm-')||pvId.startsWith('pm-'))) ? 'bm-upload-status' : 'upload-status';
-  var statusEl = document.getElementById(statusId) || document.getElementById('upload-status');
-  if (!statusEl) return;
-  statusEl.style.display='block'; statusEl.style.background='#fffbeb'; statusEl.style.border='1px solid #fde68a'; statusEl.style.color='#92400e';
-  statusEl.innerHTML='<span class="uploading-spinner"></span> Cloudinary 업로드 중... '+file.name;
   var formData=new FormData();
   formData.append('file',file); formData.append('upload_preset',CLOUDINARY_PRESET);
   fetch('https://api.cloudinary.com/v1_1/'+CLOUDINARY_CLOUD+'/image/upload',{method:'POST',body:formData})
@@ -1076,14 +1095,12 @@ function uploadImg(input,targetId,pvId){
   .then(function(res){
     if(res.secure_url){
       document.getElementById(targetId).value=res.secure_url;
-      statusEl.style.background='#f0fdf4'; statusEl.style.border='1px solid #86efac'; statusEl.style.color='#166534';
-      statusEl.innerHTML='✅ 업로드 완료! URL이 자동 입력되었습니다.';
-      setTimeout(function(){ statusEl.style.display='none'; },3000); pvImg();
+      showToast('✅ 이미지 업로드 완료!','ok');
+      pvImg();
     } else {
-      statusEl.style.background='#fef2f2'; statusEl.style.border='1px solid #fca5a5'; statusEl.style.color='#991b1b';
-      statusEl.innerHTML='❌ 업로드 실패: '+(res.error&&res.error.message?res.error.message:JSON.stringify(res));
+      showToast('❌ 업로드 실패: '+(res.error&&res.error.message?res.error.message:'오류'),'err');
     }
-  }).catch(function(err){ statusEl.style.background='#fef2f2'; statusEl.style.border='1px solid #fca5a5'; statusEl.style.color='#991b1b'; statusEl.innerHTML='❌ 오류: '+err.message; });
+  }).catch(function(err){ showToast('❌ 오류: '+err.message,'err'); });
 }
 
 function pvImg(){
@@ -1126,12 +1143,10 @@ function saveProd(){
     상세스펙:document.getElementById('f-specs').value.trim(),
     인증이미지:document.getElementById('f-cert').value.trim(),
     주의사항:document.getElementById('f-caution').value.trim(),
-    배송방법: deliveryType,
-    배송비:   deliveryFee,
-    무료배송조건: deliveryFree
+    배송방법: deliveryType, 배송비: deliveryFee, 무료배송조건: deliveryFree
   };
   if(!SCRIPT_URL){ showToast('Apps Script URL 미설정 - 구글시트에 직접 입력해주세요','warn'); closeProdModal(); return; }
-  fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:editingId?'updateProduct':'saveProduct',data:data})}).then(function(){
+  fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',body:JSON.stringify({action:editingId?'updateProduct':'saveProduct',data:data})}).then(function(){
     showToast((editingId?'상품 수정':'상품 등록')+'됐습니다! 구글시트 확인 후 새로고침하세요.','ok'); closeProdModal(); setTimeout(loadProds,2000);
   }).catch(function(e){ showToast('저장 오류: '+e.message,'err'); });
 }
@@ -1143,7 +1158,7 @@ function editProd(id){
 function toggleProd(id,name,isActive){
   if(!confirm('['+name+'] 상품을 '+(isActive?'숨김':'판매 재개')+' 처리하시겠습니까?')) return;
   if(!SCRIPT_URL){ showToast('구글시트에서 사용여부를 직접 수정하세요','warn'); return; }
-  fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'updateProductStatus',data:{번호:id,사용여부:isActive?'FALSE':'TRUE'}})}).then(function(){ showToast('상태 변경됐습니다. 새로고침하세요.','ok'); setTimeout(loadProds,2000); });
+  fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',body:JSON.stringify({action:'updateProductStatus',data:{번호:id,사용여부:isActive?'FALSE':'TRUE'}})}).then(function(){ showToast('상태 변경됐습니다. 새로고침하세요.','ok'); setTimeout(loadProds,2000); });
 }
 
 // ============================================================
