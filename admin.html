@@ -765,6 +765,7 @@
 <script src="js/admin-live.js"></script>
 <script src="js/admin-consignment.js"></script>
 <script src="js/admin-settlement.js"></script>
+<script src="js/admin-vat.js"></script>  
 
 <script>
 // ── 전역 go() 오버라이드 ─────────────────────────────────────
@@ -774,6 +775,7 @@ function go(pageId, el) {
   if (pageId==='live-alarm')       { showPage('live-alarm', el);        loadLiveData(); loadAlarmData(); return; }
   if (pageId==='live-coupon')      { showPage('live-coupon', el);       loadCouponData();        return; }
   if (pageId==='consignment-mgmt') { showPage('consignment-mgmt', el);  loadConsignmentMgmt();   return; }
+  if (pageId==='vat-mgmt')   { showPage('vat-mgmt', el);   initVatMgmt();   return; }
   if (pageId==='settlement')       { showPage('settlement', el);        initSettlement();        return; }
   if (_origGo) _origGo(pageId, el);
 }
