@@ -818,6 +818,17 @@ function go(pageId, el) {
   if (pageId==='consignment-mgmt') { showPage('consignment-mgmt', el);  loadConsignmentMgmt();   return; }
   if (pageId==='vat-mgmt')   { showPage('vat-mgmt', el);   initVatMgmt();   return; }
   if (pageId==='settlement')       { showPage('settlement', el);        initSettlement();        return; }
+  if (pageId==='dashboard')        { showPage('dashboard', el);         loadDashboard();         return; }
+  if (pageId==='prod-list')        { showPage('prod-list', el);         loadProds();             return; }
+  if (pageId==='photo-box')        { showPage('photo-box', el);         loadPhotoBox();          return; }
+  if (pageId==='cat-mgmt')         { showPage('cat-mgmt', el);          loadCats();              return; }
+  if (pageId==='orders')           { showPage('orders', el);            loadOrders();            return; }
+  if (pageId==='groupbuy')         { showPage('groupbuy', el);          loadGroupBuy();          return; }
+  if (pageId==='reviews')          { showPage('reviews', el);           loadReviews();           return; }
+  if (pageId==='banners')          { showPage('banners', el);           loadBanners();           return; }
+  if (pageId==='dealer')           { showPage('dealer', el);            loadDealer();            return; }
+  if (pageId==='notice')           { showPage('notice', el);            loadNotice();            return; }
+  if (pageId==='settings')         { showPage('settings', el);          loadSettings();          return; }
   if (_origGo) _origGo(pageId, el);
 }
 
