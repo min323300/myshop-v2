@@ -219,6 +219,7 @@ function go(pid, el) {
     'my-products': loadMyProducts,
     'orders':      loadOrders,
     'settlement':  loadSettlement,
+    'vat':         loadDealerVat,
     'reviews':     loadReviews,
     'consignment': loadConsignment,
     'notice':      loadNotice,
