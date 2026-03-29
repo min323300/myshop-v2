@@ -331,7 +331,45 @@
       </div>
       <div id="manual-list" style="padding:4px 0;"></div>
     </div>
-
+<!-- ⑬ 부가세 관리 -->
+    <div id="page-vat" class="page">
+      <div class="ph">
+        <div>
+          <div class="ph-title">🧾 부가세 관리</div>
+          <div class="ph-sub">위탁공급 및 판매 부가세 조회</div>
+        </div>
+        <div class="ph-acts">
+          <input type="month" id="dvat-month" style="padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:var(--font);outline:none;" onchange="loadDealerVatData()">
+          <button class="btn btn-outline" onclick="loadDealerVatData()">🔄 조회</button>
+          <button class="excel-btn" onclick="downloadDealerVatExcel()">📥 엑셀 다운로드</button>
+        </div>
+      </div>
+      <div style="background:#e8f4fd;border:1px solid #bbdefb;border-radius:10px;padding:14px 18px;margin-bottom:16px;font-size:13px;color:#1565c0;">
+        💡 <strong>부가세 안내</strong><br>
+        · <strong>위탁공급</strong>: 내 상품을 다른 대리점에서 판매 시 → 원가 × 10% 부가세 (세금계산서 발행 대상)<br>
+        · <strong>판매 수익</strong>: 내가 판매한 위탁상품 수익금 → 수익 역산 부가세 납부
+      </div>
+      <div class="stat-grid">
+        <div class="sc c-orange"><div class="sc-top"><div class="sc-icon">🏷️</div></div><div class="sc-val" id="dvat-consign-vat">0원</div><div class="sc-label">위탁공급 부가세</div></div>
+        <div class="sc c-blue"><div class="sc-top"><div class="sc-icon">📦</div></div><div class="sc-val" id="dvat-consign-cnt">0건</div><div class="sc-label">위탁공급 건수</div></div>
+        <div class="sc c-green"><div class="sc-top"><div class="sc-icon">💰</div></div><div class="sc-val" id="dvat-sales-vat">0원</div><div class="sc-label">판매수익 부가세</div></div>
+        <div class="sc c-red"><div class="sc-top"><div class="sc-icon">🧾</div></div><div class="sc-val" id="dvat-consign-issued">0건</div><div class="sc-label">세금계산서 발행</div></div>
+      </div>
+      <div class="card" style="margin-bottom:0;border-radius:var(--radius) var(--radius) 0 0;">
+        <div class="stabs">
+          <div class="stab active" onclick="switchDealerVatTab('consign',this)">🏷️ 위탁공급 부가세 <span class="tc" id="dvat-tc-consign">0</span></div>
+          <div class="stab" onclick="switchDealerVatTab('sales',this)">💰 판매수익 부가세 <span class="tc" id="dvat-tc-sales">0</span></div>
+        </div>
+      </div>
+      <div id="dvat-consign-section" class="card" style="border-radius:0 0 var(--radius) var(--radius);margin-top:0;">
+        <div class="card-hd"><div class="card-title">🏷️ 위탁공급 부가세 내역 (세금계산서 발행 대상)</div></div>
+        <div id="dvat-consign-tw"><div class="loading"><div class="lspin">⏳</div></div></div>
+      </div>
+      <div id="dvat-sales-section" class="card" style="border-radius:0 0 var(--radius) var(--radius);margin-top:0;display:none;">
+        <div class="card-hd"><div class="card-title">💰 판매수익 부가세 내역</div></div>
+        <div id="dvat-sales-tw"><div class="loading"><div class="lspin">⏳</div></div></div>
+      </div>
+    </div>
   </main>
 </div>
 
