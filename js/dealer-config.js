@@ -76,7 +76,7 @@ function updateDate() {
 setInterval(updateDate, 1000);
 updateDate();
 
-// ── 쇼핑몰 URL 생성 (도메인 중복 방지) ───────────────────────
+// ── 쇼핑몰 직접 URL 생성 (실제 접속용) ──────────────────────
 function buildShopUrl(dealerId) {
   var did     = dealerId || '';
   var baseUrl = window.location.origin
@@ -100,22 +100,32 @@ function buildShopUrl(dealerId) {
   return domain + '?dealer=' + did;
 }
 
+// ── ✅ 카카오톡 공유용 프록시 URL (대리점 OG 태그 적용) ───────
+// Apps Script가 대리점명/로고/설명으로 OG 태그를 생성한 뒤
+// 실제 쇼핑몰로 자동 리다이렉트합니다.
+function buildKakaoShareUrl(dealerId) {
+  return SCRIPT_URL + '?store=' + (dealerId || '');
+}
+
 // ── 헤더/대시보드 링크 업데이트 ──────────────────────────────
 function updateLinks() {
   if (!DEALER) return;
-  var did         = DEALER.id || '';
-  var baseUrl     = window.location.origin
+  var did           = DEALER.id || '';
+  var baseUrl       = window.location.origin
     + window.location.pathname.replace('dealer-admin.html','');
-  var fullShopUrl = buildShopUrl(did);
-  var fullProdUrl = baseUrl + 'products.html?dealer=' + did;
+  var fullShopUrl   = buildShopUrl(did);
+  var kakaoShareUrl = buildKakaoShareUrl(did);  // 카카오 공유용
+  var fullProdUrl   = baseUrl + 'products.html?dealer=' + did;
 
   // 대시보드 쇼핑몰 링크 박스
+  // 복사 URL → 카카오 공유용 (OG 태그 적용)
+  // 열기 버튼 → 직접 쇼핑몰 URL (빠른 접속)
   var urlEl  = document.getElementById('my-shop-url');
   var openEl = document.getElementById('my-shop-open');
-  if(urlEl)  urlEl.textContent = fullShopUrl;
+  if(urlEl)  urlEl.textContent = kakaoShareUrl;
   if(openEl) openEl.href       = fullShopUrl;
 
-  // 헤더 상단 "쇼핑몰" / "상품목록" 링크
+  // 헤더 상단 "쇼핑몰" / "상품목록" 링크 → 직접 URL 유지
   var shopLink  = document.getElementById('shop-link');
   var prodsLink = document.getElementById('products-link');
   if(shopLink)  shopLink.href  = fullShopUrl;
@@ -252,12 +262,12 @@ function copyShopLink() {
   var url = urlEl.textContent;
   if(navigator.clipboard){
     navigator.clipboard.writeText(url).then(function(){
-      showToast('쇼핑몰 링크가 복사됐습니다! 고객에게 공유하세요 😊','ok');
+      showToast('카카오톡 공유 링크가 복사됐습니다! 고객에게 공유하세요 😊','ok');
     });
   } else {
     var ta = document.createElement('textarea');
     ta.value=url; document.body.appendChild(ta); ta.select();
     document.execCommand('copy'); document.body.removeChild(ta);
-    showToast('쇼핑몰 링크가 복사됐습니다!','ok');
+    showToast('카카오톡 공유 링크가 복사됐습니다!','ok');
   }
 }
