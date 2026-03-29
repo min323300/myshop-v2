@@ -468,7 +468,48 @@
         <div class="tw" id="cs-settle-tw"><div style="padding:30px;text-align:center;color:#aaa;">새로고침 버튼을 누르세요</div></div>
       </div>
     </div>
-
+    <!-- ⑮ 부가세 관리 -->
+    <div id="page-vat-mgmt" class="page">
+      <div class="ph">
+        <div>
+          <div class="ph-title">🧾 부가세 관리</div>
+          <div class="ph-sub" id="vat-month-label">위탁판매 3자별 부가세 내역 및 세금계산서 관리</div>
+        </div>
+        <div class="ph-acts">
+          <input type="month" id="vat-month" style="padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:var(--font);outline:none;">
+          <button class="btn btn-outline" onclick="loadVatMgmt()">🔄 조회</button>
+          <button class="btn btn-primary" onclick="downloadVatExcel()" style="background:#1a7f4b;">📥 엑셀 다운로드</button>
+        </div>
+      </div>
+      <div class="stat-grid">
+        <div class="sc c-orange"><div class="sc-top"><div class="sc-icon">🏷️</div></div><div class="sc-val" id="vat-consign-total">0원</div><div class="sc-label">위탁대리점 부가세</div></div>
+        <div class="sc c-blue"><div class="sc-top"><div class="sc-icon">🏢</div></div><div class="sc-val" id="vat-hq-total">0원</div><div class="sc-label">본사 부가세</div></div>
+        <div class="sc c-green"><div class="sc-top"><div class="sc-icon">🏬</div></div><div class="sc-val" id="vat-dealer-total">0원</div><div class="sc-label">판매대리점 부가세</div></div>
+        <div class="sc c-red"><div class="sc-top"><div class="sc-icon">🧾</div></div><div class="sc-val" id="vat-issued-count">0건</div><div class="sc-label">세금계산서 발행</div></div>
+      </div>
+      <div class="card" style="margin-bottom:0;border-radius:var(--radius) var(--radius) 0 0;padding:14px 20px;">
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          <input type="text" id="vat-dealer-search" placeholder="대리점ID 검색..."
+            oninput="renderVatTable(_vatAllRows, _vatCurFilter)"
+            style="padding:8px 13px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:var(--font);outline:none;width:200px;">
+          <span style="font-size:12px;color:#aaa;">월을 선택하고 🔄 조회 버튼을 누르세요</span>
+        </div>
+        <div class="stabs" style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px;">
+          <div class="stab active" onclick="switchVatTab('all',this)">전체 <span class="tc" id="vat-tc-all">0</span></div>
+          <div class="stab" onclick="switchVatTab('unpaid',this)">⏳ 미발행 <span class="tc" id="vat-tc-unpaid">0</span></div>
+          <div class="stab" onclick="switchVatTab('issued',this)">✅ 발행완료 <span class="tc" id="vat-tc-issued">0</span></div>
+        </div>
+      </div>
+      <div class="card" style="border-radius:0 0 var(--radius) var(--radius);margin-top:0;">
+        <div id="vat-tw">
+          <div style="padding:40px;text-align:center;color:#aaa;">
+            <div style="font-size:32px;margin-bottom:10px;">🧾</div>
+            월을 선택하고 조회 버튼을 누르세요
+          </div>
+        </div>
+      </div>
+    </div>
+  
   </main>
 </div>
 
