@@ -155,6 +155,7 @@ const DealerContext = {
 
     // 7) 내부 링크 dealer 파라미터 유지
     this.keepDealerLinks(dealer['대리점ID']);
+    document.documentElement.style.visibility = 'visible';
   },
 
   // 내부 링크에 dealer 파라미터 자동 추가
