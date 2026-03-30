@@ -2,6 +2,17 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
+    <script>
+    (function() {
+      const store = new URLSearchParams(window.location.search).get('store');
+      if (store) {
+        document.documentElement.style.visibility = 'hidden';
+        setTimeout(function() {
+          document.documentElement.style.visibility = 'visible';
+        }, 2000);
+      }
+    })();
+  </script>
   <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests; script-src 'self' 'unsafe-eval' 'unsafe-inline' https:">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>담누리마켓 - 종합쇼핑몰</title>
