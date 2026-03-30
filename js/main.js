@@ -395,6 +395,7 @@ function applyBizInfo(biz) {
   var fp = document.getElementById('footer-phone'); if (fp) fp.textContent = '📞 '+biz.phone;
   var fe = document.getElementById('footer-email'); if (fe&&biz.email) fe.textContent = '📧 '+biz.email;
     // ✅ 추가 - 대리점 설정 완료 후 화면 표시
-if (!isDealer) {
-  document.documentElement.style.visibility = 'visible';
-}
+ if (!isDealer) {
+   document.documentElement.style.visibility = 'visible';
+ }
+}  
