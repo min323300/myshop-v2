@@ -357,8 +357,9 @@ function loadBizInfo() {
 
 function applyBizInfo(biz) {
   // 대리점 URL 파라미터가 있으면 브랜드명 관련 요소는 건드리지 않음
-  var isDealer = !!(new URLSearchParams(window.location.search).get('dealer'));
-
+  var isDealer = !!(new URLSearchParams(window.location.search).get('dealer') 
+                || new URLSearchParams(window.location.search).get('store'));
+  
   if (!isDealer) {
     var sn = document.getElementById('store-name');
     if (sn) sn.textContent = biz.brand;
@@ -393,4 +394,6 @@ function applyBizInfo(biz) {
   }
   var fp = document.getElementById('footer-phone'); if (fp) fp.textContent = '📞 '+biz.phone;
   var fe = document.getElementById('footer-email'); if (fe&&biz.email) fe.textContent = '📧 '+biz.email;
+    // ✅ 추가 - 대리점 설정 완료 후 화면 표시
+  document.documentElement.style.visibility = 'visible';
 }
