@@ -23,6 +23,7 @@ const CONFIG = {
       대리점상품: base + encodeURIComponent('대리점상품'),
       리뷰:       base + encodeURIComponent('리뷰'),
       대리점:     base + encodeURIComponent('대리점'),
+      딜러:       base + encodeURIComponent('딜러'),       // ✅ 딜러 시트 추가
       주문:       base + encodeURIComponent('주문'),
       정산:       base + encodeURIComponent('정산'),
       수수료:     base + encodeURIComponent('수수료'),
@@ -55,10 +56,19 @@ const CONFIG = {
     }
   },
 
-  // ✅ 대리점 설정 (URL 파라미터로 자동 감지됨)
-  IS_DEALER:   false,
+  // ✅ 대리점/딜러 공통 설정 (URL 파라미터로 자동 감지됨)
+  IS_DEALER:   false,   // 대리점 또는 딜러 여부
   DEALER_ID:   '',
   DEALER_NAME: '',
+  DEALER_TYPE: 'agency', // 'agency'=대리점(기존) / 'dealer'=딜러(신규)
+
+  // ✅ 딜러 슬라이딩 수수료 구조
+  // 매월 1일 기준 리셋
+  DEALER_COMMISSION: {
+    TIER1: { MAX: 10000000,  HQ: 0.6, DEALER: 0.4 }, // ~1,000만: 본사60% / 딜러40%
+    TIER2: { MAX: 30000000,  HQ: 0.5, DEALER: 0.5 }, // ~3,000만: 본사50% / 딜러50%
+    TIER3: { MAX: Infinity,  HQ: 0.4, DEALER: 0.6 }, // 3,000만+: 본사40% / 딜러60%
+  },
 
   // ✅ PG 설정 (윈글로벌페이)
   PG: {
@@ -74,16 +84,27 @@ const CONFIG = {
 };
 
 // ============================================================
-// ✅ STEP 1: URL 파라미터에서 대리점 ID 자동 감지
+// ✅ STEP 1: URL 파라미터에서 대리점/딜러 ID 자동 감지
 //    ⚠️ 반드시 loadStoreInfoFromSheet() 보다 먼저 실행!
+//
+//    구분 기준:
+//    - dealer=dlr_xxx → 딜러 (영업사원, 본사 브랜드 유지)
+//    - dealer=xxx     → 대리점 (쇼핑몰 운영, 자체 브랜드)
 // ============================================================
 (function detectDealerFromURL() {
   var params   = new URLSearchParams(window.location.search);
   var dealerId = params.get('dealer') || params.get('store') || '';
   if (dealerId) {
-    CONFIG.IS_DEALER   = true;
-    CONFIG.DEALER_ID   = dealerId;
+    CONFIG.IS_DEALER = true;
+    CONFIG.DEALER_ID = dealerId;
     CONFIG.DEALER_NAME = dealerId;
+
+    // ✅ dlr_ 접두어로 딜러/대리점 구분
+    if (dealerId.startsWith('dlr_')) {
+      CONFIG.DEALER_TYPE = 'dealer';  // 딜러: 본사 브랜드 유지
+    } else {
+      CONFIG.DEALER_TYPE = 'agency';  // 대리점: 자체 브랜드 적용 (기존 동작)
+    }
   }
 })();
 
@@ -139,8 +160,29 @@ const CONFIG = {
     if (hdTitle) hdTitle.textContent = name;
   }
 
-  // ── 대리점 쇼핑몰: 대리점 시트에서 정보 로드 ─────────────────
-  if (CONFIG.IS_DEALER && CONFIG.DEALER_ID) {
+  // ── 딜러 쇼핑몰: 본사 브랜드 유지, 딜러 이름만 저장 ──────────
+  if (CONFIG.IS_DEALER && CONFIG.DEALER_TYPE === 'dealer') {
+    var dlrUrl = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID
+      + '/gviz/tq?tqx=out:csv&sheet=' + encodeURIComponent('딜러')
+      + '&t=' + Date.now();
+    fetch(dlrUrl)
+      .then(function(r){ return r.text(); })
+      .then(function(csv) {
+        var rows  = parseCSV(csv);
+        var myRow = rows.find(function(r){
+          return (r['딜러ID'] || '') === CONFIG.DEALER_ID;
+        });
+        if (!myRow) return;
+        // 딜러는 브랜드명 변경 없이 딜러명만 내부 저장
+        CONFIG.DEALER_NAME = myRow['딜러명'] || CONFIG.DEALER_ID;
+        // 본사 브랜드 그대로 유지 → applyStoreInfo() 호출 안 함
+      })
+      .catch(function(e){ console.log('딜러 정보 로드 실패:', e); });
+    return; // 딜러는 사업자정보/대리점 시트 로드 불필요
+  }
+
+  // ── 대리점 쇼핑몰: 대리점 시트에서 정보 로드 (기존 동작 그대로) ──
+  if (CONFIG.IS_DEALER && CONFIG.DEALER_TYPE === 'agency') {
     var dealerUrl = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID
       + '/gviz/tq?tqx=out:csv&sheet=' + encodeURIComponent('대리점')
       + '&t=' + Date.now();
@@ -168,10 +210,10 @@ const CONFIG = {
         applyStoreInfo();
       })
       .catch(function(e){ console.log('대리점 정보 로드 실패:', e); });
-    return; // 대리점이면 사업자정보 로드 불필요
+    return;
   }
 
-  // ── 본사 쇼핑몰: 사업자정보 시트에서 정보 로드 ───────────────
+  // ── 본사 쇼핑몰: 사업자정보 시트에서 정보 로드 (기존 동작 그대로) ──
   var bizUrl = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID
     + '/gviz/tq?tqx=out:csv&sheet=' + encodeURIComponent('사업자정보')
     + '&t=' + Date.now();
