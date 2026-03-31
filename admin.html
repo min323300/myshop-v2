@@ -515,7 +515,213 @@
         </div>
       </div>
     </div>
-  
+      <!-- ⑯ 딜러 목록 -->
+    <div id="page-dlr-list" class="page">
+      <div class="ph">
+        <div><div class="ph-title">🧑‍💼 딜러 목록</div><div class="ph-sub">딜러 등록 현황 및 수수료 구간</div></div>
+        <div class="ph-acts">
+          <input type="text" class="srch" id="dlr-srch" placeholder="딜러명/연락처 검색..." oninput="filterDlrList(this.value)">
+          <select class="sel" id="dlr-status-filter" onchange="filterDlrList(document.getElementById('dlr-srch').value)">
+            <option value="">전체 상태</option>
+            <option value="활성">🟢 활성</option>
+            <option value="정지">⏸️ 정지</option>
+            <option value="탈퇴">🔴 탈퇴</option>
+          </select>
+          <button class="btn btn-outline" onclick="loadDlrList()">🔄 새로고침</button>
+          <button class="btn btn-primary" onclick="openDlrModal()">➕ 딜러 등록</button>
+        </div>
+      </div>
+      <div class="stat-grid">
+        <div class="sc c-green"><div class="sc-top"><div class="sc-icon">🟢</div></div><div class="sc-val" id="dlr-active-cnt">-</div><div class="sc-label">활성 딜러</div></div>
+        <div class="sc c-blue"><div class="sc-top"><div class="sc-icon">📊</div></div><div class="sc-val" id="dlr-total-cnt">-</div><div class="sc-label">전체 딜러</div></div>
+        <div class="sc c-orange"><div class="sc-top"><div class="sc-icon">💰</div></div><div class="sc-val" id="dlr-month-sales">-</div><div class="sc-label">이번달 총 매출</div></div>
+        <div class="sc c-red"><div class="sc-top"><div class="sc-icon">🎁</div></div><div class="sc-val" id="dlr-total-point">-</div><div class="sc-label">총 포인트 잔액</div></div>
+      </div>
+      <div class="card">
+        <div class="card-hd"><div class="card-title">딜러 목록</div></div>
+        <div class="tw" id="dlr-list-tw"><div class="loading"><div class="lspin">⏳</div></div></div>
+      </div>
+    </div>
+ 
+    <!-- ⑰ 딜러 수수료 현황 -->
+    <div id="page-dlr-commission" class="page">
+      <div class="ph">
+        <div><div class="ph-title">💰 딜러 수수료 현황</div><div class="ph-sub">월별 슬라이딩 수수료 정산 내역</div></div>
+        <div class="ph-acts">
+          <input type="month" id="dlr-comm-month" class="sel">
+          <button class="btn btn-outline" onclick="loadDlrCommission()">🔄 조회</button>
+          <button class="btn btn-primary" onclick="runDlrCalc()" style="background:#1a7f4b;">⚙️ 수수료 계산</button>
+        </div>
+      </div>
+ 
+      <!-- 구간 안내 -->
+      <div class="card" style="margin-bottom:16px;padding:20px;">
+        <div style="font-size:13px;font-weight:700;margin-bottom:14px;">📊 수수료 구간 기준 (매월 1일 리셋)</div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;">
+          <div style="flex:1;min-width:140px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:16px;text-align:center;">
+            <div style="font-size:11px;color:#3b82f6;font-weight:700;margin-bottom:6px;">1구간</div>
+            <div style="font-size:12px;color:#666;margin-bottom:8px;">~ 1,000만원</div>
+            <div style="font-size:26px;font-weight:900;color:#3b82f6;">40%</div>
+            <div style="font-size:11px;color:#999;margin-top:2px;">딜러 수수료율</div>
+          </div>
+          <div style="flex:1;min-width:140px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:16px;text-align:center;">
+            <div style="font-size:11px;color:#16a34a;font-weight:700;margin-bottom:6px;">2구간</div>
+            <div style="font-size:12px;color:#666;margin-bottom:8px;">1,000만 ~ 3,000만원</div>
+            <div style="font-size:26px;font-weight:900;color:#16a34a;">50%</div>
+            <div style="font-size:11px;color:#999;margin-top:2px;">딜러 수수료율</div>
+          </div>
+          <div style="flex:1;min-width:140px;background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:16px;text-align:center;">
+            <div style="font-size:11px;color:#ea580c;font-weight:700;margin-bottom:6px;">3구간</div>
+            <div style="font-size:12px;color:#666;margin-bottom:8px;">3,000만원 이상</div>
+            <div style="font-size:26px;font-weight:900;color:#ea580c;">60%</div>
+            <div style="font-size:11px;color:#999;margin-top:2px;">딜러 수수료율</div>
+          </div>
+        </div>
+      </div>
+ 
+      <div class="stat-grid">
+        <div class="sc c-blue"><div class="sc-top"><div class="sc-icon">💳</div></div><div class="sc-val" id="dlr-comm-total-sales">0원</div><div class="sc-label">총 매출</div></div>
+        <div class="sc c-green"><div class="sc-top"><div class="sc-icon">💰</div></div><div class="sc-val" id="dlr-comm-total-comm">0원</div><div class="sc-label">딜러 수수료 합계</div></div>
+        <div class="sc c-orange"><div class="sc-top"><div class="sc-icon">🏢</div></div><div class="sc-val" id="dlr-comm-hq">0원</div><div class="sc-label">본사 수익 합계</div></div>
+        <div class="sc c-red"><div class="sc-top"><div class="sc-icon">🧑‍💼</div></div><div class="sc-val" id="dlr-comm-count">0명</div><div class="sc-label">정산 딜러 수</div></div>
+      </div>
+      <div class="card">
+        <div class="card-hd"><div class="card-title">딜러별 수수료 내역</div></div>
+        <div class="tw" id="dlr-comm-tw"><div style="padding:30px;text-align:center;color:#aaa;">월을 선택하고 조회 버튼을 누르세요</div></div>
+      </div>
+    </div>
+ 
+    <!-- ⑱ 포인트 지급 -->
+    <div id="page-dlr-point" class="page">
+      <div class="ph">
+        <div><div class="ph-title">🎁 포인트 지급</div><div class="ph-sub">딜러별 포인트 적립/차감 관리</div></div>
+        <div class="ph-acts">
+          <button class="btn btn-outline" onclick="loadDlrPoints()">🔄 새로고침</button>
+          <button class="btn btn-primary" onclick="openPointModal()">➕ 포인트 지급</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-hd"><div class="card-title">포인트 내역</div></div>
+        <div class="tw" id="dlr-point-tw"><div class="loading"><div class="lspin">⏳</div></div></div>
+      </div>
+    </div>
+ 
+ 
+<!-- ★ 수정 3: go() 함수 라우팅 -->
+<!-- 찾기: if (pageId==='settings') -->
+<!-- 그 위에 아래 3줄 추가 -->
+ 
+  if (pageId==='dlr-list')       { showPage('dlr-list', el);       loadDlrList();       return; }
+  if (pageId==='dlr-commission') { showPage('dlr-commission', el); loadDlrCommission(); return; }
+  if (pageId==='dlr-point')      { showPage('dlr-point', el);      loadDlrPoints();     return; }
+ 
+ 
+<!-- ★ 수정 4: 딜러 등록 모달 -->
+<!-- 찾기: <!-- ── dealer 모달 끝 --> 바로 아래에 추가 -->
+ 
+<!-- ── 딜러 등록/수정 모달 ── -->
+<div class="modal-ov" id="dlr-modal" style="display:none;">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-hd"><span id="dlrm-title">🧑‍💼 딜러 등록</span><button onclick="closeDlrModal()">✕</button></div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="fg">
+          <label class="fl">딜러ID * <span style="font-size:10px;color:#aaa;">(dlr_ 로 시작)</span></label>
+          <input class="fi" id="dlrm-did" placeholder="예: dlr_001">
+        </div>
+        <div class="fg"><label class="fl">딜러명 *</label><input class="fi" id="dlrm-name" placeholder="홍길동"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="fg"><label class="fl">연락처</label><input class="fi" id="dlrm-phone" placeholder="010-0000-0000"></div>
+        <div class="fg"><label class="fl">이메일</label><input class="fi" id="dlrm-email" placeholder="dealer@example.com"></div>
+      </div>
+      <div class="fg"><label class="fl">추천코드 *</label><input class="fi" id="dlrm-refcode" placeholder="예: REF001 (고객이 주문 시 입력하는 코드)"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="fg">
+          <label class="fl">상태</label>
+          <select class="fi" id="dlrm-status">
+            <option value="활성">🟢 활성</option>
+            <option value="정지">⏸️ 정지</option>
+            <option value="탈퇴">🔴 탈퇴</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label class="fl">과세유형</label>
+          <select class="fi" id="dlrm-tax">
+            <option value="일반">일반과세자</option>
+            <option value="간이">간이과세자</option>
+            <option value="면세">면세사업자</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="fg">
+          <label class="fl">입점비 납부</label>
+          <select class="fi" id="dlrm-entry">
+            <option value="FALSE">❌ 미납부</option>
+            <option value="TRUE">✅ 납부완료</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label class="fl">월 사용비(CMS)</label>
+          <select class="fi" id="dlrm-monthly">
+            <option value="FALSE">❌ 미설정</option>
+            <option value="TRUE">✅ 정상</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-top:12px;padding:14px;background:#f0f7ff;border:1px solid #bfdbfe;border-radius:10px;">
+        <div style="font-size:13px;font-weight:700;color:#1e40af;margin-bottom:10px;">🔐 딜러 패널 로그인 계정</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div class="fg"><label class="fl">아이디 *</label><input class="fi" id="dlrm-uid" placeholder="예: dlr001"></div>
+          <div class="fg">
+            <label class="fl">비밀번호 *</label>
+            <div style="display:flex;gap:6px;">
+              <input class="fi" id="dlrm-pw" placeholder="비밀번호" style="flex:1;">
+              <button onclick="genDlrPw()" style="padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:#fff;font-size:14px;cursor:pointer;" title="비밀번호 자동생성">🎲</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-outline" onclick="closeDlrModal()">취소</button>
+      <button class="btn btn-primary" onclick="saveDlr()">💾 저장</button>
+    </div>
+  </div>
+</div>
+ 
+<!-- ── 포인트 지급 모달 ── -->
+<div class="modal-ov" id="point-modal" style="display:none;">
+  <div class="modal" style="max-width:440px;">
+    <div class="modal-hd"><span>🎁 포인트 지급/차감</span><button onclick="closePointModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="fg">
+        <label class="fl">딜러 선택 *</label>
+        <select class="fi" id="pm-dlr-id" style="width:100%;"></select>
+      </div>
+      <div class="fg">
+        <label class="fl">구분 *</label>
+        <select class="fi" id="pm-type">
+          <option value="적립">➕ 적립 (지급)</option>
+          <option value="사용">➖ 차감</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label class="fl">포인트 금액 (P) *</label>
+        <input class="fi" id="pm-amount" type="number" placeholder="예: 10000" min="1" style="width:100%;box-sizing:border-box;">
+      </div>
+      <div class="fg">
+        <label class="fl">사유 *</label>
+        <input class="fi" id="pm-reason" placeholder="예: 우수 딜러 성과 포인트" style="width:100%;box-sizing:border-box;">
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-outline" onclick="closePointModal()">취소</button>
+      <button class="btn btn-primary" onclick="savePoint()">💾 저장</button>
+    </div>
+  </div>
+</div>
   </main>
 </div>
 
