@@ -96,12 +96,13 @@
         <div class="sb-item" onclick="go('vat-mgmt',this)"><span class="si">🧾</span> 부가세 관리</div>
       </div>
       <div class="sb-hr"></div>
-       <div class="sb-sec">
+      <div class="sb-sec">
         <div class="sb-label">딜러</div>
         <div class="sb-item" onclick="go('dlr-list',this)"><span class="si">🧑‍💼</span> 딜러 목록</div>
         <div class="sb-item" onclick="go('dlr-commission',this)"><span class="si">💰</span> 수수료 현황</div>
         <div class="sb-item" onclick="go('dlr-point',this)"><span class="si">🎁</span> 포인트 지급</div>
       </div>
+      <div class="sb-hr"></div>
       <div class="sb-sec">
         <div class="sb-label">스토어</div>
         <div class="sb-item" onclick="go('settings',this)"><span class="si">⚙️</span> 스토어 설정</div>
@@ -425,30 +426,24 @@
       </div>
     </div>
 
-    <!-- ⑭ 위탁판매 승인 관리 (개선) -->
+    <!-- ⑭ 위탁판매 승인 관리 -->
     <div id="page-consignment-mgmt" class="page">
       <div class="ph">
         <div><div class="ph-title">🤝 위탁판매 승인 관리</div><div class="ph-sub">대리점이 신청한 위탁판매를 승인/거절합니다</div></div>
         <div class="ph-acts"><button class="btn btn-outline" onclick="loadConsignmentMgmt()">🔄 새로고침</button></div>
       </div>
-
-      <!-- 요약 카드 -->
       <div class="stat-grid">
         <div class="sc c-orange"><div class="sc-top"><div class="sc-icon">⏳</div></div><div class="sc-val" id="cm-pending">-</div><div class="sc-label">승인 대기</div></div>
         <div class="sc c-green"><div class="sc-top"><div class="sc-icon">✅</div></div><div class="sc-val" id="cm-approved">-</div><div class="sc-label">승인 완료</div></div>
         <div class="sc c-red"><div class="sc-top"><div class="sc-icon">❌</div></div><div class="sc-val" id="cm-rejected">-</div><div class="sc-label">거절</div></div>
         <div class="sc c-blue"><div class="sc-top"><div class="sc-icon">📦</div></div><div class="sc-val" id="cm-total">-</div><div class="sc-label">전체</div></div>
       </div>
-
-      <!-- 신청 목록 탭 + 위탁정산 탭 -->
       <div class="card" style="margin-bottom:0;border-radius:var(--radius) var(--radius) 0 0;">
         <div class="stabs">
           <div class="stab active" onclick="switchCsTab('list',this)">📋 신청 목록</div>
           <div class="stab" onclick="switchCsTab('settle',this)">💰 위탁정산 현황</div>
         </div>
       </div>
-
-      <!-- 신청 목록 탭 콘텐츠 -->
       <div id="cs-tab-list" class="card" style="border-radius:0 0 var(--radius) var(--radius);margin-top:0;">
         <div class="card-hd">
           <div class="card-title">위탁판매 신청 목록</div>
@@ -464,8 +459,6 @@
         </div>
         <div class="tw" id="cm-tw"><div class="loading"><div class="lspin">⏳</div></div></div>
       </div>
-
-      <!-- 위탁정산 탭 콘텐츠 -->
       <div id="cs-tab-settle" class="card" style="border-radius:0 0 var(--radius) var(--radius);margin-top:0;display:none;">
         <div class="card-hd">
           <div class="card-title">💰 위탁정산 내역</div>
@@ -474,6 +467,7 @@
         <div class="tw" id="cs-settle-tw"><div style="padding:30px;text-align:center;color:#aaa;">새로고침 버튼을 누르세요</div></div>
       </div>
     </div>
+
     <!-- ⑮ 부가세 관리 -->
     <div id="page-vat-mgmt" class="page">
       <div class="ph">
@@ -515,7 +509,8 @@
         </div>
       </div>
     </div>
-      <!-- ⑯ 딜러 목록 -->
+
+    <!-- ⑯ 딜러 목록 -->
     <div id="page-dlr-list" class="page">
       <div class="ph">
         <div><div class="ph-title">🧑‍💼 딜러 목록</div><div class="ph-sub">딜러 등록 현황 및 수수료 구간</div></div>
@@ -542,7 +537,7 @@
         <div class="tw" id="dlr-list-tw"><div class="loading"><div class="lspin">⏳</div></div></div>
       </div>
     </div>
- 
+
     <!-- ⑰ 딜러 수수료 현황 -->
     <div id="page-dlr-commission" class="page">
       <div class="ph">
@@ -553,8 +548,6 @@
           <button class="btn btn-primary" onclick="runDlrCalc()" style="background:#1a7f4b;">⚙️ 수수료 계산</button>
         </div>
       </div>
- 
-      <!-- 구간 안내 -->
       <div class="card" style="margin-bottom:16px;padding:20px;">
         <div style="font-size:13px;font-weight:700;margin-bottom:14px;">📊 수수료 구간 기준 (매월 1일 리셋)</div>
         <div style="display:flex;gap:12px;flex-wrap:wrap;">
@@ -578,7 +571,6 @@
           </div>
         </div>
       </div>
- 
       <div class="stat-grid">
         <div class="sc c-blue"><div class="sc-top"><div class="sc-icon">💳</div></div><div class="sc-val" id="dlr-comm-total-sales">0원</div><div class="sc-label">총 매출</div></div>
         <div class="sc c-green"><div class="sc-top"><div class="sc-icon">💰</div></div><div class="sc-val" id="dlr-comm-total-comm">0원</div><div class="sc-label">딜러 수수료 합계</div></div>
@@ -590,7 +582,7 @@
         <div class="tw" id="dlr-comm-tw"><div style="padding:30px;text-align:center;color:#aaa;">월을 선택하고 조회 버튼을 누르세요</div></div>
       </div>
     </div>
- 
+
     <!-- ⑱ 포인트 지급 -->
     <div id="page-dlr-point" class="page">
       <div class="ph">
@@ -605,20 +597,10 @@
         <div class="tw" id="dlr-point-tw"><div class="loading"><div class="lspin">⏳</div></div></div>
       </div>
     </div>
- 
- 
-<!-- ★ 수정 3: go() 함수 라우팅 -->
-<!-- 찾기: if (pageId==='settings') -->
-<!-- 그 위에 아래 3줄 추가 -->
- 
-  if (pageId==='dlr-list')       { showPage('dlr-list', el);       loadDlrList();       return; }
-  if (pageId==='dlr-commission') { showPage('dlr-commission', el); loadDlrCommission(); return; }
-  if (pageId==='dlr-point')      { showPage('dlr-point', el);      loadDlrPoints();     return; }
- 
- 
-<!-- ★ 수정 4: 딜러 등록 모달 -->
-<!-- 찾기: <!-- ── dealer 모달 끝 --> 바로 아래에 추가 -->
- 
+
+  </main>
+</div>
+
 <!-- ── 딜러 등록/수정 모달 ── -->
 <div class="modal-ov" id="dlr-modal" style="display:none;">
   <div class="modal" style="max-width:560px;">
@@ -690,7 +672,7 @@
     </div>
   </div>
 </div>
- 
+
 <!-- ── 포인트 지급 모달 ── -->
 <div class="modal-ov" id="point-modal" style="display:none;">
   <div class="modal" style="max-width:440px;">
@@ -721,8 +703,6 @@
       <button class="btn btn-primary" onclick="savePoint()">💾 저장</button>
     </div>
   </div>
-</div>
-  </main>
 </div>
 
 <!-- ── 라이브 등록/수정 모달 ── -->
@@ -1029,7 +1009,7 @@ function go(pageId, el) {
   if (pageId==='live-alarm')       { showPage('live-alarm', el);        loadLiveData(); loadAlarmData(); return; }
   if (pageId==='live-coupon')      { showPage('live-coupon', el);       loadCouponData();        return; }
   if (pageId==='consignment-mgmt') { showPage('consignment-mgmt', el);  loadConsignmentMgmt();   return; }
-  if (pageId==='vat-mgmt')   { showPage('vat-mgmt', el);   initVatMgmt();   return; }
+  if (pageId==='vat-mgmt')         { showPage('vat-mgmt', el);          initVatMgmt();           return; }
   if (pageId==='settlement')       { showPage('settlement', el);        initSettlement();        return; }
   if (pageId==='dashboard')        { showPage('dashboard', el);         loadDashboard();         return; }
   if (pageId==='prod-list')        { showPage('prod-list', el);         loadProds();             return; }
@@ -1041,9 +1021,9 @@ function go(pageId, el) {
   if (pageId==='banners')          { showPage('banners', el);           loadBanners();           return; }
   if (pageId==='dealer')           { showPage('dealer', el);            loadDealer();            return; }
   if (pageId==='notice')           { showPage('notice', el);            loadNotice();            return; }
-  if (pageId==='dlr-list')       { showPage('dlr-list', el);       loadDlrList();       return; }
-  if (pageId==='dlr-commission') { showPage('dlr-commission', el); loadDlrCommission(); return; }
-  if (pageId==='dlr-point')      { showPage('dlr-point', el);      loadDlrPoints(); 
+  if (pageId==='dlr-list')         { showPage('dlr-list', el);          loadDlrList();           return; }
+  if (pageId==='dlr-commission')   { showPage('dlr-commission', el);    loadDlrCommission();     return; }
+  if (pageId==='dlr-point')        { showPage('dlr-point', el);         loadDlrPoints();         return; }
   if (pageId==='settings')         { showPage('settings', el);          loadSettings();          return; }
   if (_origGo) _origGo(pageId, el);
 }
@@ -1055,7 +1035,6 @@ function showPage(pageId, el) {
   if (el) el.classList.add('active');
 }
 
-// ── 위탁판매 탭 전환 ────────────────────────────────────────
 function switchCsTab(tab, el) {
   document.querySelectorAll('#page-consignment-mgmt .stab').forEach(function(t){ t.classList.remove('active'); });
   if (el) el.classList.add('active');
@@ -1064,7 +1043,6 @@ function switchCsTab(tab, el) {
   if (tab==='settle') loadConsignSettlement();
 }
 
-// ── 사이드바 토글 ────────────────────────────────────────────
 function toggleSidebar() {
   var sb = document.querySelector('.sb');
   var ov = document.getElementById('sb-overlay');
@@ -1077,7 +1055,6 @@ document.querySelectorAll('.sb-item').forEach(function(el) {
   });
 });
 
-// ── showAdminToast (공통) ────────────────────────────────────
 function showAdminToast(msg) {
   var t = document.getElementById('admin-toast');
   if (!t) {
