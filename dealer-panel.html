@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests; script-src 'self' 'unsafe-eval' 'unsafe-inline' https:">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>담누리마켓 딜러 패널</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:       #0f1117;
+      --surface:  #1a1d2e;
+      --surface2: #222539;
+      --border:   rgba(255,255,255,0.07);
+      --accent:   #6c63ff;
+      --accent2:  #ff6584;
+      --green:    #00c9a7;
+      --orange:   #ff9f43;
+      --blue:     #54a0ff;
+      --red:      #ff6b6b;
+      --text:     #e8eaf0;
+      --gray:     rgba(255,255,255,0.4);
+      --gray-dark:rgba(255,255,255,0.6);
+      --font:     'Noto Sans KR', sans-serif;
+      --radius:   14px;
+      --sb-w:     240px;
+      --hd-h:     60px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--font); background: var(--bg); color: var(--text); font-size: 14px; }
+
+    /* ── 로그인 ── */
+    #login-screen {
+      position: fixed; inset: 0; background: var(--bg);
+      display: flex; align-items: center; justify-content: center; z-index: 9999;
+    }
+    .lbox {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 20px; padding: 44px 40px; width: 360px; text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+    .lbox-logo { font-size: 42px; margin-bottom: 8px; }
+    .lbox-brand { font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+    .lbox-sub {
+      font-size: 12px; color: var(--gray); margin-bottom: 28px;
+      background: rgba(108,99,255,0.15); border-radius: 20px;
+      padding: 4px 12px; display: inline-block;
+    }
+    .lbox input {
+      width: 100%; background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 10px; padding: 12px 16px; color: var(--text);
+      font-family: var(--font); font-size: 14px; outline: none; margin-bottom: 10px;
+      transition: border-color .2s;
+    }
+    .lbox input:focus { border-color: var(--accent); }
+    .lbox-btn {
+      width: 100%; background: var(--accent); border: none; border-radius: 10px;
+      padding: 13px; color: #fff; font-family: var(--font); font-size: 15px;
+      font-weight: 700; cursor: pointer; margin-top: 6px; transition: opacity .2s;
+    }
+    .lbox-btn:hover { opacity: .85; }
+    .lbox-loading { display: none; color: var(--gray); font-size: 13px; margin-top: 12px; }
+    .lbox-err { display: none; color: var(--red); font-size: 12px; margin-top: 10px; }
+
+    /* ── 헤더 ── */
+    .hd {
+      position: fixed; top: 0; left: 0; right: 0; height: var(--hd-h);
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; padding: 0 20px; gap: 14px; z-index: 100;
+    }
+    .hd-hamburger {
+      background: none; border: none; color: var(--gray-dark); font-size: 20px;
+      cursor: pointer; display: none; padding: 4px;
+    }
+    .hd-brand { display: flex; align-items: center; gap: 10px; }
+    .hd-logo { font-size: 26px; }
+    .hd-title { font-size: 15px; font-weight: 700; color: var(--text); }
+    .hd-badge {
+      font-size: 10px; background: var(--accent); color: #fff;
+      border-radius: 6px; padding: 2px 7px; font-weight: 700;
+    }
+    .hd-right { margin-left: auto; display: flex; align-items: center; gap: 14px; }
+    .hd-dealer-info { font-size: 12px; color: var(--gray); }
+    .hd-logout {
+      background: rgba(255,107,107,0.15); border: 1px solid rgba(255,107,107,0.3);
+      color: var(--red); border-radius: 8px; padding: 6px 14px;
+      font-family: var(--font); font-size: 12px; cursor: pointer; transition: all .2s;
+    }
+    .hd-logout:hover { background: var(--red); color: #fff; }
+
+    /* ── 사이드바 ── */
+    .sb {
+      position: fixed; top: var(--hd-h); left: 0; bottom: 0; width: var(--sb-w);
+      background: var(--surface); border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; overflow-y: auto; z-index: 90;
+      transition: transform .3s;
+    }
+    .sb-inner { flex: 1; padding: 16px 10px; }
+    .sb-label { font-size: 10px; font-weight: 700; color: var(--gray); letter-spacing: .08em; text-transform: uppercase; padding: 8px 10px 4px; }
+    .sb-item {
+      display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+      border-radius: 10px; cursor: pointer; color: var(--gray-dark); font-size: 13px;
+      font-weight: 500; transition: all .15s; margin-bottom: 2px; position: relative;
+    }
+    .sb-item:hover { background: rgba(255,255,255,0.05); color: var(--text); }
+    .sb-item.active { background: rgba(108,99,255,0.18); color: var(--accent); font-weight: 700; }
+    .sb-item .si { font-size: 16px; width: 22px; text-align: center; flex-shrink: 0; }
+    .sb-hr { border: none; border-top: 1px solid var(--border); margin: 8px 10px; }
+    .sb-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 85; }
+
+    /* ── 메인 ── */
+    .main {
+      margin-left: var(--sb-w); margin-top: var(--hd-h);
+      padding: 24px; min-height: calc(100vh - var(--hd-h));
+    }
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* ── 페이지 헤더 ── */
+    .ph { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+    .ph-title { font-size: 20px; font-weight: 700; }
+    .ph-sub { font-size: 13px; color: var(--gray); margin-top: 3px; }
+    .ph-acts { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+    /* ── 수수료 구간 배너 ── */
+    .tier-banner {
+      background: linear-gradient(135deg, rgba(108,99,255,0.2) 0%, rgba(255,101,132,0.1) 100%);
+      border: 1px solid rgba(108,99,255,0.3); border-radius: var(--radius);
+      padding: 20px 24px; margin-bottom: 20px; display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+    }
+    .tier-icon { font-size: 36px; }
+    .tier-info { flex: 1; }
+    .tier-label { font-size: 11px; color: var(--gray); margin-bottom: 4px; }
+    .tier-name { font-size: 18px; font-weight: 700; color: var(--accent); }
+    .tier-desc { font-size: 12px; color: var(--gray-dark); margin-top: 2px; }
+    .tier-progress-wrap { flex: 1; min-width: 200px; }
+    .tier-progress-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--gray); margin-bottom: 6px; }
+    .tier-progress-bar { height: 8px; background: rgba(255,255,255,0.1); border-radius: 10px; overflow: hidden; }
+    .tier-progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 10px; transition: width 1s ease; }
+    .tier-ratio { text-align: right; min-width: 100px; }
+    .tier-ratio-val { font-size: 22px; font-weight: 900; color: var(--green); }
+    .tier-ratio-label { font-size: 11px; color: var(--gray); }
+
+    /* ── 스탯 카드 ── */
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; margin-bottom: 20px; }
+    .sc {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 18px 20px;
+    }
+    .sc-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+    .sc-icon { font-size: 22px; }
+    .sc-val { font-size: 22px; font-weight: 800; margin-bottom: 4px; }
+    .sc-label { font-size: 11px; color: var(--gray); font-weight: 500; }
+    .c-blue .sc-val  { color: var(--blue); }
+    .c-green .sc-val { color: var(--green); }
+    .c-orange .sc-val{ color: var(--orange); }
+    .c-red .sc-val   { color: var(--red); }
+    .c-purple .sc-val{ color: var(--accent); }
+
+    /* ── 카드 ── */
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); margin-bottom: 16px;
+    }
+    .card-hd {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px; border-bottom: 1px solid var(--border); flex-wrap: wrap; gap: 8px;
+    }
+    .card-title { font-size: 14px; font-weight: 700; }
+    .card-acts { display: flex; gap: 8px; align-items: center; }
+
+    /* ── 테이블 ── */
+    .tw { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th {
+      background: rgba(255,255,255,0.03); color: var(--gray);
+      font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .04em;
+      padding: 10px 16px; text-align: left; border-bottom: 1px solid var(--border);
+    }
+    td { padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.04); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+
+    /* ── 뱃지 ── */
+    .badge {
+      display: inline-block; padding: 3px 10px; border-radius: 20px;
+      font-size: 11px; font-weight: 700;
+    }
+    .badge-tier1 { background: rgba(84,160,255,0.15); color: var(--blue); }
+    .badge-tier2 { background: rgba(0,201,167,0.15); color: var(--green); }
+    .badge-tier3 { background: rgba(255,159,67,0.15); color: var(--orange); }
+    .badge-plus  { background: rgba(108,99,255,0.15); color: var(--accent); }
+    .badge-point { background: rgba(255,101,132,0.15); color: var(--accent2); }
+    .badge-green { background: rgba(0,201,167,0.15); color: var(--green); }
+    .badge-gray  { background: rgba(255,255,255,0.08); color: var(--gray-dark); }
+
+    /* ── 버튼 ── */
+    .btn {
+      border-radius: 8px; padding: 8px 16px; font-family: var(--font);
+      font-size: 13px; font-weight: 600; cursor: pointer; transition: all .15s; border: none;
+    }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { opacity: .85; }
+    .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--gray-dark); }
+    .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── 입력 ── */
+    .fi {
+      background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+      padding: 8px 12px; color: var(--text); font-family: var(--font); font-size: 13px;
+      outline: none; transition: border-color .2s;
+    }
+    .fi:focus { border-color: var(--accent); }
+    .sel { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px; color: var(--text); font-family: var(--font); font-size: 13px; }
+
+    /* ── 로딩 ── */
+    .loading { display: flex; align-items: center; justify-content: center; padding: 40px; }
+    .lspin { font-size: 24px; animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .empty { text-align: center; padding: 40px; color: var(--gray); font-size: 13px; }
+
+    /* ── 내 링크 박스 ── */
+    .link-box {
+      background: linear-gradient(135deg, #1e2336 0%, #2d3561 100%);
+      border-radius: var(--radius); padding: 18px 22px; margin-bottom: 20px;
+      display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+      border: 1px solid rgba(108,99,255,0.2);
+    }
+    .link-box-icon { font-size: 22px; }
+    .link-box-info { flex: 1; min-width: 0; }
+    .link-box-label { color: var(--gray); font-size: 11px; margin-bottom: 4px; }
+    .link-box-url { color: #fff; font-size: 13px; font-weight: 600; word-break: break-all; }
+    .link-box-acts { display: flex; gap: 8px; flex-shrink: 0; }
+    .link-copy-btn {
+      padding: 8px 16px; background: #fff; color: #1e2336;
+      border: none; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer;
+    }
+    .link-open-btn {
+      padding: 8px 16px; background: rgba(255,255,255,0.15); color: #fff;
+      border: none; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer;
+      text-decoration: none; display: inline-flex; align-items: center;
+    }
+
+    /* ── 내 정보 폼 ── */
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 20px; }
+    .fg { display: flex; flex-direction: column; gap: 6px; }
+    .fl { font-size: 12px; color: var(--gray); font-weight: 600; }
+    .fi-full { width: 100%; }
+
+    /* ── 토스트 ── */
+    .toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+      background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
+      padding: 12px 20px; font-size: 13px; color: var(--text); opacity: 0;
+      transition: all .3s; pointer-events: none; z-index: 9999; white-space: nowrap;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ── 수수료 구간 표 ── */
+    .tier-table { width: 100%; }
+    .tier-table td { padding: 14px 20px; }
+    .tier-row-active { background: rgba(108,99,255,0.08) !important; }
+    .tier-now-badge {
+      background: var(--accent); color: #fff; font-size: 10px;
+      font-weight: 700; border-radius: 6px; padding: 2px 8px; margin-left: 8px;
+    }
+
+    /* ── 반응형 ── */
+    @media (max-width: 768px) {
+      .hd-hamburger { display: block; }
+      .sb { transform: translateX(-100%); }
+      .sb.open { transform: translateX(0); }
+      .sb-overlay.open { display: block; }
+      .main { margin-left: 0; padding: 16px; }
+      .info-grid { grid-template-columns: 1fr; }
+      .tier-banner { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- 로그인 -->
+<div id="login-screen">
+  <div class="lbox">
+    <div class="lbox-logo">🏪</div>
+    <div class="lbox-brand">담누리마켓</div>
+    <div class="lbox-sub">딜러 관리 패널</div>
+    <input type="text" id="lid" placeholder="딜러 아이디" autocomplete="off"
+      onkeydown="if(event.key==='Enter')document.getElementById('lpw').focus()">
+    <input type="password" id="lpw" placeholder="비밀번호"
+      onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="lbox-btn" onclick="doLogin()">로그인</button>
+    <div class="lbox-loading" id="lloading">⏳ 확인 중...</div>
+    <div class="lbox-err" id="lerr">아이디 또는 비밀번호가 올바르지 않습니다.</div>
+  </div>
+</div>
+
+<!-- 앱 -->
+<div id="app" style="display:none;">
+  <header class="hd">
+    <button class="hd-hamburger" onclick="toggleSidebar()">☰</button>
+    <div class="hd-brand">
+      <div class="hd-logo">🏪</div>
+      <div>
+        <div class="hd-title">담누리마켓 <span class="hd-badge">딜러</span></div>
+      </div>
+    </div>
+    <div class="hd-right">
+      <div class="hd-dealer-info" id="hd-dealer-info">딜러</div>
+      <button class="hd-logout" onclick="doLogout()">로그아웃</button>
+    </div>
+  </header>
+
+  <div class="sb-overlay" id="sb-overlay" onclick="toggleSidebar()"></div>
+  <aside class="sb" id="sidebar">
+    <div class="sb-inner">
+      <div class="sb-sec">
+        <div class="sb-label">메인</div>
+        <div class="sb-item active" onclick="go('dashboard',this)"><span class="si">📊</span> 대시보드</div>
+      </div>
+      <div class="sb-hr"></div>
+      <div class="sb-sec">
+        <div class="sb-label">영업 실적</div>
+        <div class="sb-item" onclick="go('sales',this)"><span class="si">📈</span> 내 판매 현황</div>
+        <div class="sb-item" onclick="go('commission',this)"><span class="si">💰</span> 수수료 내역</div>
+      </div>
+      <div class="sb-hr"></div>
+      <div class="sb-sec">
+        <div class="sb-label">혜택</div>
+        <div class="sb-item" onclick="go('points',this)"><span class="si">🎁</span> 포인트 내역</div>
+      </div>
+      <div class="sb-hr"></div>
+      <div class="sb-sec">
+        <div class="sb-label">설정</div>
+        <div class="sb-item" onclick="go('myinfo',this)"><span class="si">👤</span> 내 정보</div>
+        <div class="sb-item" onclick="go('notice',this)"><span class="si">📢</span> 본사 공지</div>
+      </div>
+    </div>
+    <div style="padding:14px 18px;border-top:1px solid var(--border);">
+      <div style="color:var(--gray);font-size:11px;text-align:center;" id="sb-dealer-name">딜러</div>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <!-- ① 대시보드 -->
+    <div id="page-dashboard" class="page active">
+      <div class="ph">
+        <div>
+          <div class="ph-title">대시보드</div>
+          <div class="ph-sub" id="dash-greeting">안녕하세요! 오늘도 좋은 하루 되세요 😊</div>
+        </div>
+      </div>
+
+      <!-- 내 추천 링크 -->
+      <div class="link-box">
+        <div class="link-box-icon">🔗</div>
+        <div class="link-box-info">
+          <div class="link-box-label">내 추천 링크 (고객에게 이 주소를 공유하세요)</div>
+          <div class="link-box-url" id="my-ref-url">로딩 중...</div>
+        </div>
+        <div class="link-box-acts">
+          <button class="link-copy-btn" onclick="copyRefLink()">📋 복사</button>
+          <a id="my-ref-open" href="#" target="_blank" class="link-open-btn">↗ 열기</a>
+        </div>
+      </div>
+
+      <!-- 수수료 구간 배너 -->
+      <div class="tier-banner">
+        <div class="tier-icon" id="tier-icon">🥉</div>
+        <div class="tier-info">
+          <div class="tier-label">현재 수수료 구간</div>
+          <div class="tier-name" id="tier-name">1구간</div>
+          <div class="tier-desc" id="tier-desc">이번달 매출 목표까지 열심히 달려요!</div>
+        </div>
+        <div class="tier-progress-wrap">
+          <div class="tier-progress-label">
+            <span id="tier-progress-cur">0원</span>
+            <span id="tier-progress-next">목표: 1,000만원</span>
+          </div>
+          <div class="tier-progress-bar">
+            <div class="tier-progress-fill" id="tier-progress-fill" style="width:0%"></div>
+          </div>
+        </div>
+        <div class="tier-ratio">
+          <div class="tier-ratio-val" id="tier-ratio">40%</div>
+          <div class="tier-ratio-label">내 수수료율</div>
+        </div>
+      </div>
+
+      <!-- 스탯 -->
+      <div class="stat-grid">
+        <div class="sc c-blue">
+          <div class="sc-top"><div class="sc-icon">💳</div></div>
+          <div class="sc-val" id="dash-month-sales">0원</div>
+          <div class="sc-label">이번달 매출</div>
+        </div>
+        <div class="sc c-green">
+          <div class="sc-top"><div class="sc-icon">💰</div></div>
+          <div class="sc-val" id="dash-month-commission">0원</div>
+          <div class="sc-label">이번달 수수료</div>
+        </div>
+        <div class="sc c-orange">
+          <div class="sc-top"><div class="sc-icon">📦</div></div>
+          <div class="sc-val" id="dash-month-orders">0건</div>
+          <div class="sc-label">이번달 판매건수</div>
+        </div>
+        <div class="sc c-purple">
+          <div class="sc-top"><div class="sc-icon">🎁</div></div>
+          <div class="sc-val" id="dash-points">0P</div>
+          <div class="sc-label">포인트 잔액</div>
+        </div>
+      </div>
+
+      <!-- 최근 판매 -->
+      <div class="two-col" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div class="card">
+          <div class="card-hd"><div class="card-title">📋 최근 판매 5건</div></div>
+          <div id="dash-recent-sales"><div class="loading"><div class="lspin">⏳</div></div></div>
+        </div>
+        <div class="card">
+          <div class="card-hd"><div class="card-title">📢 본사 공지</div></div>
+          <div id="dash-notice"><div class="loading"><div class="lspin">⏳</div></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ② 내 판매 현황 -->
+    <div id="page-sales" class="page">
+      <div class="ph">
+        <div><div class="ph-title">📈 내 판매 현황</div><div class="ph-sub">내 추천코드로 발생한 판매 내역</div></div>
+        <div class="ph-acts">
+          <input type="month" id="sales-month" class="fi" onchange="loadSales()">
+          <button class="btn btn-outline" onclick="loadSales()">🔄 조회</button>
+        </div>
+      </div>
+      <div class="stat-grid">
+        <div class="sc c-blue"><div class="sc-top"><div class="sc-icon">💳</div></div><div class="sc-val" id="sales-total">0원</div><div class="sc-label">총 매출</div></div>
+        <div class="sc c-green"><div class="sc-top"><div class="sc-icon">💰</div></div><div class="sc-val" id="sales-commission">0원</div><div class="sc-label">수수료 수령액</div></div>
+        <div class="sc c-orange"><div class="sc-top"><div class="sc-icon">📦</div></div><div class="sc-val" id="sales-count">0건</div><div class="sc-label">판매 건수</div></div>
+        <div class="sc c-purple"><div class="sc-top"><div class="sc-icon">📊</div></div><div class="sc-val" id="sales-rate">0%</div><div class="sc-label">수수료율</div></div>
+      </div>
+      <div class="card">
+        <div class="card-hd"><div class="card-title">판매 내역</div></div>
+        <div class="tw" id="sales-tw"><div class="loading"><div class="lspin">⏳</div></div></div>
+      </div>
+    </div>
+
+    <!-- ③ 수수료 내역 -->
+    <div id="page-commission" class="page">
+      <div class="ph">
+        <div><div class="ph-title">💰 수수료 내역</div><div class="ph-sub">월별 수수료 정산 현황</div></div>
+        <div class="ph-acts"><button class="btn btn-outline" onclick="loadCommission()">🔄 새로고침</button></div>
+      </div>
+
+      <!-- 수수료 구간 안내 -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-hd"><div class="card-title">📊 수수료 구간 안내 (매월 1일 기준 리셋)</div></div>
+        <div class="tw">
+          <table class="tier-table">
+            <thead>
+              <tr>
+                <th>구간</th>
+                <th>월 매출 기준</th>
+                <th>본사</th>
+                <th>딜러 수수료율</th>
+                <th>현재 상태</th>
+              </tr>
+            </thead>
+            <tbody id="tier-table-body">
+              <tr id="tier-row-1">
+                <td><span class="badge badge-tier1">1구간</span></td>
+                <td>~ 1,000만원</td>
+                <td>60%</td>
+                <td><strong style="color:var(--blue)">40%</strong></td>
+                <td><span class="tier-now-badge" id="tier-badge-1">현재</span></td>
+              </tr>
+              <tr id="tier-row-2">
+                <td><span class="badge badge-tier2">2구간</span></td>
+                <td>1,000만 ~ 3,000만원</td>
+                <td>50%</td>
+                <td><strong style="color:var(--green)">50%</strong></td>
+                <td><span class="tier-now-badge" id="tier-badge-2" style="display:none">현재</span></td>
+              </tr>
+              <tr id="tier-row-3">
+                <td><span class="badge badge-tier3">3구간</span></td>
+                <td>3,000만원 이상</td>
+                <td>40%</td>
+                <td><strong style="color:var(--orange)">60%</strong></td>
+                <td><span class="tier-now-badge" id="tier-badge-3" style="display:none">현재</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-hd"><div class="card-title">월별 정산 내역</div></div>
+        <div class="tw" id="commission-tw"><div class="loading"><div class="lspin">⏳</div></div></div>
+      </div>
+    </div>
+
+    <!-- ④ 포인트 내역 -->
+    <div id="page-points" class="page">
+      <div class="ph">
+        <div><div class="ph-title">🎁 포인트 내역</div><div class="ph-sub">적립 및 사용 이력</div></div>
+        <div class="ph-acts"><button class="btn btn-outline" onclick="loadPoints()">🔄 새로고침</button></div>
+      </div>
+      <div class="stat-grid">
+        <div class="sc c-purple"><div class="sc-top"><div class="sc-icon">🎁</div></div><div class="sc-val" id="point-balance">0P</div><div class="sc-label">포인트 잔액</div></div>
+        <div class="sc c-green"><div class="sc-top"><div class="sc-icon">➕</div></div><div class="sc-val" id="point-total-plus">0P</div><div class="sc-label">총 적립</div></div>
+        <div class="sc c-red"><div class="sc-top"><div class="sc-icon">➖</div></div><div class="sc-val" id="point-total-minus">0P</div><div class="sc-label">총 사용</div></div>
+      </div>
+      <div class="card">
+        <div class="card-hd"><div class="card-title">포인트 이력</div></div>
+        <div class="tw" id="points-tw"><div class="loading"><div class="lspin">⏳</div></div></div>
+      </div>
+    </div>
+
+    <!-- ⑤ 내 정보 -->
+    <div id="page-myinfo" class="page">
+      <div class="ph">
+        <div><div class="ph-title">👤 내 정보</div><div class="ph-sub">딜러 기본 정보</div></div>
+      </div>
+      <div class="card">
+        <div class="card-hd"><div class="card-title">기본 정보</div></div>
+        <div class="info-grid">
+          <div class="fg"><label class="fl">딜러ID</label><input class="fi fi-full" id="info-id" readonly style="background:rgba(255,255,255,0.03);"></div>
+          <div class="fg"><label class="fl">딜러명</label><input class="fi fi-full" id="info-name" readonly style="background:rgba(255,255,255,0.03);"></div>
+          <div class="fg"><label class="fl">연락처</label><input class="fi fi-full" id="info-phone" readonly style="background:rgba(255,255,255,0.03);"></div>
+          <div class="fg"><label class="fl">이메일</label><input class="fi fi-full" id="info-email" readonly style="background:rgba(255,255,255,0.03);"></div>
+          <div class="fg"><label class="fl">추천코드</label>
+            <div style="display:flex;gap:8px;">
+              <input class="fi fi-full" id="info-refcode" readonly style="background:rgba(255,255,255,0.03);">
+              <button class="btn btn-outline" onclick="copyRefCode()" style="flex-shrink:0;">복사</button>
+            </div>
+          </div>
+          <div class="fg"><label class="fl">상태</label><input class="fi fi-full" id="info-status" readonly style="background:rgba(255,255,255,0.03);"></div>
+          <div class="fg"><label class="fl">등록일</label><input class="fi fi-full" id="info-regdate" readonly style="background:rgba(255,255,255,0.03);"></div>
+          <div class="fg"><label class="fl">과세유형</label><input class="fi fi-full" id="info-tax" readonly style="background:rgba(255,255,255,0.03);"></div>
+          <div class="fg"><label class="fl">입점비 납부</label><input class="fi fi-full" id="info-entry" readonly style="background:rgba(255,255,255,0.03);"></div>
+          <div class="fg"><label class="fl">월 사용비 (CMS)</label><input class="fi fi-full" id="info-monthly" readonly style="background:rgba(255,255,255,0.03);"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ⑥ 본사 공지 -->
+    <div id="page-notice" class="page">
+      <div class="ph">
+        <div><div class="ph-title">📢 본사 공지사항</div><div class="ph-sub">본사에서 보낸 공지를 확인하세요</div></div>
+        <div class="ph-acts"><button class="btn btn-outline" onclick="loadNotice()">🔄 새로고침</button></div>
+      </div>
+      <div id="notice-list" style="padding:4px 0;"></div>
+    </div>
+
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// ⚙️ 설정
+// ============================================================
+const SHEET_ID = '1gjnczt_Db959Nc6aAF6CIPIj1SBY4XvoIXuEAAIJOZE';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzQ-Ce8Zbj5mO-iMF6IJQhNtbsHl7DGo9ER4bsBoJRoz1JnvIdkp3M3qb1efEcSlwoB/exec';
+const BASE_URL = 'https://gasway.shop';
+
+// 슬라이딩 수수료 구간
+const COMMISSION_TIERS = [
+  { tier: 1, max: 10000000,  hq: 0.6, dealer: 0.4, label: '1구간', icon: '🥉' },
+  { tier: 2, max: 30000000,  hq: 0.5, dealer: 0.5, label: '2구간', icon: '🥈' },
+  { tier: 3, max: Infinity,  hq: 0.4, dealer: 0.6, label: '3구간', icon: '🥇' },
+];
+
+let myDealerId   = '';
+let myDealerName = '';
+let myRefCode    = '';
+let myRow        = null;
+let orderData    = [];
+let noticeData   = [];
+let pointData    = [];
+
+// ============================================================
+// 🔧 유틸
+// ============================================================
+function fmt(n) { return Number(n||0).toLocaleString() + '원'; }
+function fmtNum(n) { return Number(n||0).toLocaleString(); }
+function sheetUrl(name) {
+  return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(name)}&t=${Date.now()}`;
+}
+function parseCSV(csv) {
+  const lines = csv.trim().split('\n');
+  if (lines.length < 2) return [];
+  const headers = lines[0].split(',').map(h => h.trim().replace(/"/g,''));
+  return lines.slice(1).map(line => {
+    const vals = []; let cur = '', inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') { inQ = !inQ; }
+      else if (ch === ',' && !inQ) { vals.push(cur.trim()); cur = ''; }
+      else { cur += ch; }
+    }
+    vals.push(cur.trim());
+    const obj = {};
+    headers.forEach((h,i) => obj[h] = (vals[i]||'').replace(/"/g,'').trim());
+    return obj;
+  }).filter(r => Object.values(r).some(v => v));
+}
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+function getCurrentMonth() {
+  const now = new Date();
+  return now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+}
+
+// ============================================================
+// 🔐 로그인
+// ============================================================
+async function doLogin() {
+  const id = document.getElementById('lid').value.trim();
+  const pw = document.getElementById('lpw').value.trim();
+  if (!id || !pw) return;
+  document.getElementById('lloading').style.display = 'block';
+  document.getElementById('lerr').style.display = 'none';
+  try {
+    const csv = await fetch(sheetUrl('딜러')).then(r => r.text());
+    const rows = parseCSV(csv);
+    const found = rows.find(r => r['아이디'] === id && r['비밀번호'] === pw);
+    if (!found) throw new Error('not found');
+    myDealerId   = found['딜러ID']   || '';
+    myDealerName = found['딜러명']   || '';
+    myRefCode    = found['추천코드'] || '';
+    myRow        = found;
+    sessionStorage.setItem('dlr_id',   myDealerId);
+    sessionStorage.setItem('dlr_name', myDealerName);
+    sessionStorage.setItem('dlr_ref',  myRefCode);
+    sessionStorage.setItem('dlr_row',  JSON.stringify(found));
+    initApp();
+  } catch(e) {
+    document.getElementById('lerr').style.display = 'block';
+  } finally {
+    document.getElementById('lloading').style.display = 'none';
+  }
+}
+function doLogout() {
+  sessionStorage.clear();
+  location.reload();
+}
+function checkSession() {
+  const id = sessionStorage.getItem('dlr_id');
+  if (!id) return false;
+  myDealerId   = id;
+  myDealerName = sessionStorage.getItem('dlr_name') || '';
+  myRefCode    = sessionStorage.getItem('dlr_ref')  || '';
+  myRow        = JSON.parse(sessionStorage.getItem('dlr_row') || '{}');
+  return true;
+}
+
+// ============================================================
+// 🚀 앱 초기화
+// ============================================================
+function initApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('hd-dealer-info').textContent = myDealerName + ' 딜러님';
+  document.getElementById('sb-dealer-name').textContent = myDealerName;
+  document.getElementById('dash-greeting').textContent = `안녕하세요, ${myDealerName} 딜러님! 오늘도 파이팅 💪`;
+  // 내 추천 링크
+  const refUrl = `${BASE_URL}?dealer=${myDealerId}`;
+  document.getElementById('my-ref-url').textContent = refUrl;
+  document.getElementById('my-ref-open').href = refUrl;
+  // 판매 월 기본값
+  document.getElementById('sales-month').value = getCurrentMonth();
+  // 초기 데이터 로드
+  loadDashboard();
+}
+
+// ============================================================
+// 📊 대시보드
+// ============================================================
+async function loadDashboard() {
+  await Promise.all([loadOrderData(), loadNoticeData(), loadPointData()]);
+  renderDashboard();
+}
+
+async function loadOrderData() {
+  try {
+    const csv = await fetch(sheetUrl('주문')).then(r => r.text());
+    orderData = parseCSV(csv).filter(r => r['딜러ID'] === myDealerId || r['추천코드'] === myRefCode);
+  } catch(e) { orderData = []; }
+}
+async function loadNoticeData() {
+  try {
+    const csv = await fetch(sheetUrl('공지사항')).then(r => r.text());
+    noticeData = parseCSV(csv);
+  } catch(e) { noticeData = []; }
+}
+async function loadPointData() {
+  try {
+    const csv = await fetch(sheetUrl('딜러포인트')).then(r => r.text()).catch(() => '');
+    pointData = csv ? parseCSV(csv).filter(r => r['딜러ID'] === myDealerId) : [];
+  } catch(e) { pointData = []; }
+}
+
+function renderDashboard() {
+  const now = new Date();
+  const ym = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const thisMonth = orderData.filter(r => (r['주문일시']||'').startsWith(ym));
+  const monthSales = thisMonth.reduce((s,r) => s + Number(r['결제금액']||0), 0);
+  const monthOrders = thisMonth.length;
+
+  // 수수료 구간
+  const tier = getTier(monthSales);
+  const commission = Math.round(monthSales * tier.dealer);
+
+  // 포인트
+  const points = pointData.reduce((s,r) => {
+    const v = Number(r['포인트금액']||0);
+    return r['포인트종류'] === '사용' ? s - v : s + v;
+  }, 0);
+
+  // 스탯
+  document.getElementById('dash-month-sales').textContent = fmt(monthSales);
+  document.getElementById('dash-month-commission').textContent = fmt(commission);
+  document.getElementById('dash-month-orders').textContent = monthOrders + '건';
+  document.getElementById('dash-points').textContent = fmtNum(points) + 'P';
+
+  // 수수료 구간 배너
+  renderTierBanner(monthSales, tier);
+
+  // 최근 판매
+  const recentEl = document.getElementById('dash-recent-sales');
+  if (!thisMonth.length) {
+    recentEl.innerHTML = '<div class="empty">이번달 판매 내역이 없습니다</div>';
+  } else {
+    const rows = thisMonth.slice(-5).reverse().map(r => `
+      <tr>
+        <td>${(r['주문일시']||'').slice(0,10)}</td>
+        <td>${r['상품명']||'-'}</td>
+        <td style="color:var(--green);font-weight:700;">${fmt(r['결제금액'])}</td>
+      </tr>`).join('');
+    recentEl.innerHTML = `<table><thead><tr><th>주문일</th><th>상품</th><th>금액</th></tr></thead><tbody>${rows}</tbody></table>`;
+  }
+
+  // 공지
+  const noticeEl = document.getElementById('dash-notice');
+  if (!noticeData.length) {
+    noticeEl.innerHTML = '<div class="empty">공지사항이 없습니다</div>';
+  } else {
+    noticeEl.innerHTML = noticeData.slice(0,5).map(n => `
+      <div style="padding:12px 20px;border-bottom:1px solid var(--border);cursor:pointer;" onclick="go('notice')">
+        <div style="font-size:13px;font-weight:600;">${n['제목']||''}</div>
+        <div style="font-size:11px;color:var(--gray);margin-top:3px;">${(n['작성일']||'').slice(0,10)}</div>
+      </div>`).join('');
+  }
+
+  // 내 정보 채우기
+  fillMyInfo();
+}
+
+function getTier(sales) {
+  return COMMISSION_TIERS.find(t => sales < t.max) || COMMISSION_TIERS[2];
+}
+
+function renderTierBanner(sales, tier) {
+  document.getElementById('tier-icon').textContent = tier.icon;
+  document.getElementById('tier-name').textContent = tier.label;
+  document.getElementById('tier-ratio').textContent = Math.round(tier.dealer * 100) + '%';
+  document.getElementById('tier-progress-cur').textContent = fmt(sales);
+
+  let progress = 0, nextGoal = '';
+  if (tier.tier === 1) {
+    progress = Math.min((sales / 10000000) * 100, 100);
+    nextGoal = '목표: 1,000만원';
+    document.getElementById('tier-desc').textContent = `1,000만원까지 ${fmt(10000000 - sales)} 남았어요!`;
+  } else if (tier.tier === 2) {
+    progress = Math.min(((sales - 10000000) / 20000000) * 100, 100);
+    nextGoal = '목표: 3,000만원';
+    document.getElementById('tier-desc').textContent = `3,000만원까지 ${fmt(30000000 - sales)} 남았어요!`;
+  } else {
+    progress = 100;
+    nextGoal = '최고 구간 달성! 🎉';
+    document.getElementById('tier-desc').textContent = '최고 구간 달성! 수수료 60% 적용 중입니다 🎉';
+  }
+  document.getElementById('tier-progress-fill').style.width = progress + '%';
+  document.getElementById('tier-progress-next').textContent = nextGoal;
+
+  // 구간 표에서 현재 구간 하이라이트
+  [1,2,3].forEach(i => {
+    const row = document.getElementById(`tier-row-${i}`);
+    const badge = document.getElementById(`tier-badge-${i}`);
+    if (i === tier.tier) {
+      row.classList.add('tier-row-active');
+      badge.style.display = 'inline';
+    } else {
+      row.classList.remove('tier-row-active');
+      badge.style.display = 'none';
+    }
+  });
+}
+
+// ============================================================
+// 📈 판매 현황
+// ============================================================
+async function loadSales() {
+  const month = document.getElementById('sales-month').value;
+  document.getElementById('sales-tw').innerHTML = '<div class="loading"><div class="lspin">⏳</div></div>';
+  await loadOrderData();
+  const filtered = orderData.filter(r => (r['주문일시']||'').startsWith(month));
+  const total = filtered.reduce((s,r) => s + Number(r['결제금액']||0), 0);
+  const tier = getTier(total);
+  const commission = Math.round(total * tier.dealer);
+
+  document.getElementById('sales-total').textContent = fmt(total);
+  document.getElementById('sales-commission').textContent = fmt(commission);
+  document.getElementById('sales-count').textContent = filtered.length + '건';
+  document.getElementById('sales-rate').textContent = Math.round(tier.dealer * 100) + '%';
+
+  if (!filtered.length) {
+    document.getElementById('sales-tw').innerHTML = '<div class="empty">해당 월 판매 내역이 없습니다</div>';
+    return;
+  }
+  const rows = filtered.map(r => {
+    const amt = Number(r['결제금액']||0);
+    const t = getTier(amt);
+    return `<tr>
+      <td>${(r['주문일시']||'').slice(0,10)}</td>
+      <td>${r['주문번호']||'-'}</td>
+      <td>${r['상품명']||'-'}</td>
+      <td style="color:var(--blue);font-weight:700;">${fmt(amt)}</td>
+      <td style="color:var(--green);font-weight:700;">${fmt(Math.round(amt * t.dealer))}</td>
+      <td><span class="badge badge-tier${t.tier}">${t.label}</span></td>
+    </tr>`;
+  }).join('');
+  document.getElementById('sales-tw').innerHTML = `
+    <table><thead><tr>
+      <th>주문일</th><th>주문번호</th><th>상품명</th>
+      <th>결제금액</th><th>수수료</th><th>구간</th>
+    </tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+// ============================================================
+// 💰 수수료 내역
+// ============================================================
+async function loadCommission() {
+  document.getElementById('commission-tw').innerHTML = '<div class="loading"><div class="lspin">⏳</div></div>';
+  await loadOrderData();
+
+  // 월별 집계
+  const byMonth = {};
+  orderData.forEach(r => {
+    const ym = (r['주문일시']||'').slice(0,7);
+    if (!ym) return;
+    if (!byMonth[ym]) byMonth[ym] = { sales: 0, count: 0 };
+    byMonth[ym].sales += Number(r['결제금액']||0);
+    byMonth[ym].count++;
+  });
+
+  const months = Object.keys(byMonth).sort().reverse();
+  if (!months.length) {
+    document.getElementById('commission-tw').innerHTML = '<div class="empty">정산 내역이 없습니다</div>';
+    return;
+  }
+  const rows = months.map(ym => {
+    const d = byMonth[ym];
+    const tier = getTier(d.sales);
+    const comm = Math.round(d.sales * tier.dealer);
+    return `<tr>
+      <td><strong>${ym}</strong></td>
+      <td>${fmtNum(d.count)}건</td>
+      <td style="color:var(--blue);font-weight:700;">${fmt(d.sales)}</td>
+      <td><span class="badge badge-tier${tier.tier}">${tier.label} (${Math.round(tier.dealer*100)}%)</span></td>
+      <td style="color:var(--green);font-weight:800;font-size:15px;">${fmt(comm)}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('commission-tw').innerHTML = `
+    <table><thead><tr>
+      <th>정산월</th><th>판매건수</th><th>총매출</th><th>수수료구간</th><th>수수료 수령액</th>
+    </tr></thead><tbody>${rows}</tbody></table>`;
+
+  // 현재 구간 배너도 업데이트
+  const now = new Date();
+  const ym = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const thisMonthSales = (byMonth[ym]||{}).sales || 0;
+  renderTierBanner(thisMonthSales, getTier(thisMonthSales));
+}
+
+// ============================================================
+// 🎁 포인트 내역
+// ============================================================
+async function loadPoints() {
+  document.getElementById('points-tw').innerHTML = '<div class="loading"><div class="lspin">⏳</div></div>';
+  await loadPointData();
+
+  let plus = 0, minus = 0;
+  pointData.forEach(r => {
+    const v = Number(r['포인트금액']||0);
+    if (r['포인트종류'] === '사용') minus += v; else plus += v;
+  });
+  const balance = plus - minus;
+
+  document.getElementById('point-balance').textContent = fmtNum(balance) + 'P';
+  document.getElementById('point-total-plus').textContent = fmtNum(plus) + 'P';
+  document.getElementById('point-total-minus').textContent = fmtNum(minus) + 'P';
+  document.getElementById('dash-points').textContent = fmtNum(balance) + 'P';
+
+  if (!pointData.length) {
+    document.getElementById('points-tw').innerHTML = '<div class="empty">포인트 내역이 없습니다</div>';
+    return;
+  }
+  const rows = pointData.slice().reverse().map(r => {
+    const isMinus = r['포인트종류'] === '사용';
+    return `<tr>
+      <td>${(r['발생일']||'').slice(0,10)}</td>
+      <td><span class="badge ${isMinus ? 'badge-gray' : 'badge-point'}">${r['포인트종류']||'-'}</span></td>
+      <td>${r['사유']||'-'}</td>
+      <td style="color:${isMinus ? 'var(--red)' : 'var(--accent2)'};font-weight:700;">
+        ${isMinus ? '-' : '+'}${fmtNum(r['포인트금액'])}P
+      </td>
+    </tr>`;
+  }).join('');
+  document.getElementById('points-tw').innerHTML = `
+    <table><thead><tr>
+      <th>날짜</th><th>구분</th><th>사유</th><th>포인트</th>
+    </tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+// ============================================================
+// 📢 공지사항
+// ============================================================
+async function loadNotice() {
+  await loadNoticeData();
+  const el = document.getElementById('notice-list');
+  if (!noticeData.length) {
+    el.innerHTML = '<div class="card"><div class="empty">공지사항이 없습니다</div></div>';
+    return;
+  }
+  el.innerHTML = noticeData.map(n => `
+    <div class="card" style="margin-bottom:10px;padding:18px 22px;">
+      <div style="font-size:15px;font-weight:700;margin-bottom:6px;">${n['제목']||''}</div>
+      <div style="font-size:12px;color:var(--gray);margin-bottom:10px;">${(n['작성일']||'').slice(0,10)}</div>
+      <div style="font-size:13px;color:var(--gray-dark);line-height:1.7;white-space:pre-line;">${n['내용']||''}</div>
+    </div>`).join('');
+}
+
+// ============================================================
+// 👤 내 정보
+// ============================================================
+function fillMyInfo() {
+  if (!myRow) return;
+  document.getElementById('info-id').value      = myRow['딜러ID']   || '';
+  document.getElementById('info-name').value    = myRow['딜러명']   || '';
+  document.getElementById('info-phone').value   = myRow['연락처']   || '';
+  document.getElementById('info-email').value   = myRow['이메일']   || '';
+  document.getElementById('info-refcode').value = myRow['추천코드'] || '';
+  document.getElementById('info-status').value  = myRow['상태']     || '';
+  document.getElementById('info-regdate').value = myRow['등록일']   || '';
+  document.getElementById('info-tax').value     = myRow['과세유형'] || '';
+  document.getElementById('info-entry').value   = myRow['입점비납부'] === 'TRUE' ? '✅ 납부완료' : '❌ 미납부';
+  document.getElementById('info-monthly').value = myRow['월사용비'] === 'TRUE'  ? '✅ 정상' : '❌ 미설정';
+}
+
+// ============================================================
+// 🔗 복사 기능
+// ============================================================
+function copyRefLink() {
+  const url = `${BASE_URL}?dealer=${myDealerId}`;
+  navigator.clipboard.writeText(url).then(() => showToast('📋 링크가 복사되었습니다!'));
+}
+function copyRefCode() {
+  navigator.clipboard.writeText(myRefCode).then(() => showToast('📋 추천코드가 복사되었습니다!'));
+}
+
+// ============================================================
+// 🧭 네비게이션
+// ============================================================
+function go(pageId, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sb-item').forEach(i => i.classList.remove('active'));
+  const page = document.getElementById('page-' + pageId);
+  if (page) page.classList.add('active');
+  if (el) el.classList.add('active');
+  // 페이지별 데이터 로드
+  if (pageId === 'sales')      loadSales();
+  if (pageId === 'commission') loadCommission();
+  if (pageId === 'points')     loadPoints();
+  if (pageId === 'notice')     loadNotice();
+  if (pageId === 'myinfo')     fillMyInfo();
+  // 모바일 사이드바 닫기
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sb-overlay').classList.remove('open');
+}
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sb-overlay').classList.toggle('open');
+}
+
+// ============================================================
+// 🟢 시작
+// ============================================================
+window.addEventListener('DOMContentLoaded', () => {
+  if (checkSession()) {
+    initApp();
+  }
+});
+</script>
+</body>
+</html>
