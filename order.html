@@ -230,6 +230,8 @@
               <span id="sum-total" style="color:var(--accent)">0원</span>
             </div>
           </div>
+          <!-- ✅ 딜러 포인트 적립 안내 -->
+          <div id="dealer-point-notice" style="display:none;margin-top:12px;padding:10px 14px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;font-size:12px;color:#166534;font-weight:600;"></div>
           <button class="btn-order" id="btn-order" onclick="submitOrder()">결제하기</button>
           <p style="text-align:center;font-size:11px;color:var(--gray-light);margin-top:8px;">🔒 SSL 보안 결제 | 개인정보 암호화 전송</p>
         </div>
@@ -239,7 +241,6 @@
   </div>
 </main>
 
-<!-- ===== 풀 푸터 (index.html 동일 구조 / main.js 자동 반영) ===== -->
 <footer class="footer">
   <div class="footer-inner">
     <div>
@@ -291,6 +292,7 @@ var orderRawAmount = 0;
 var usedPoints     = 0;
 var myPoints       = 0;
 var MIN_POINT      = 3000;
+var DEALER_POINT_RATE = 0.01; // ✅ 딜러 포인트 적립율 1%
 
 function getCurrentDealerId() {
   var p = new URLSearchParams(window.location.search);
@@ -301,6 +303,59 @@ function getCurrentDealerId() {
   return '본사';
 }
 
+// ✅ 딜러 여부 확인 (dlr_ 로 시작하면 딜러)
+function isDealerOrder() {
+  var id = getCurrentDealerId();
+  return id && id.startsWith('dlr_');
+}
+
+// ✅ 딜러 포인트 적립 안내 업데이트
+function updateDealerPointNotice() {
+  var notice = document.getElementById('dealer-point-notice');
+  if (!notice) return;
+  if (isDealerOrder()) {
+    var finalAmt = Math.max(0, orderRawAmount - usedPoints);
+    var pts = Math.floor(finalAmt * DEALER_POINT_RATE);
+    if (pts > 0) {
+      notice.style.display = 'block';
+      notice.innerHTML = '🎁 이 주문으로 딜러에게 <strong>' + pts.toLocaleString() + 'P</strong> 자동 적립됩니다';
+    } else {
+      notice.style.display = 'none';
+    }
+  } else {
+    notice.style.display = 'none';
+  }
+}
+
+// ✅ 딜러 포인트 적립 실행 (주문 완료 시 호출)
+function saveDealerPoint(orderNo, finalAmount) {
+  var dealerId = getCurrentDealerId();
+  if (!dealerId || !dealerId.startsWith('dlr_')) return; // 딜러가 아니면 스킵
+  var pts = Math.floor(finalAmount * DEALER_POINT_RATE);
+  if (pts <= 0) return;
+
+  var SCRIPT_URL = (typeof CONFIG !== 'undefined') ? CONFIG.APPS_SCRIPT_URL : '';
+  if (!SCRIPT_URL) return;
+
+  fetch(SCRIPT_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({
+      action: 'saveDealerPoint',
+      data: {
+        딜러ID:      dealerId,
+        포인트종류:  '적립',
+        포인트금액:  pts,
+        사유:        '고객 주문 적립 (' + orderNo + ') - 주문금액 ' + finalAmount.toLocaleString() + '원의 1%',
+        주문번호:    orderNo
+      }
+    })
+  }).catch(function(e) { console.log('딜러 포인트 적립 실패:', e); });
+
+  console.log('딜러 포인트 적립:', dealerId, pts + 'P', orderNo);
+}
+
 function initDealerBadge() {
   var id    = getCurrentDealerId();
   var badge = document.getElementById('dealer-badge');
@@ -309,6 +364,7 @@ function initDealerBadge() {
     nm.textContent       = id;
     badge.style.display  = 'inline-flex';
   }
+  updateDealerPointNotice();
 }
 
 function selectPay(el, type) {
@@ -426,6 +482,8 @@ function applyPoint(pts) {
     if (pointOnly) pointOnly.style.display = 'none';
     if (selectedPay === '포인트전액') selectedPay = '신용카드';
   }
+
+  updateDealerPointNotice(); // ✅ 포인트 변경 시 딜러 적립 안내도 업데이트
 }
 
 function loadOrderItems() {
@@ -462,6 +520,7 @@ function loadOrderItems() {
   document.getElementById('btn-order').textContent    = orderRawAmount.toLocaleString() + '원 결제하기';
 
   initPointSection();
+  updateDealerPointNotice(); // ✅ 상품 로드 후 딜러 적립 안내 표시
 }
 
 function validateForm() {
@@ -489,10 +548,11 @@ function validateForm() {
 function buildOrderData(orderNo) {
   var finalAmt = Math.max(0, orderRawAmount - usedPoints);
   var items    = Cart.getItems();
+  var dealerId = getCurrentDealerId();
   return {
     '주문번호':     orderNo,
     '주문일시':     new Date().toLocaleString('ko-KR'),
-    '대리점ID':     getCurrentDealerId(),
+    '대리점ID':     dealerId,
     '주문자명':     document.getElementById('orderer-name').value.trim(),
     '연락처':       document.getElementById('orderer-phone').value.trim(),
     '이메일':       document.getElementById('orderer-email').value.trim(),
@@ -506,7 +566,7 @@ function buildOrderData(orderNo) {
     '결제금액':     finalAmt,
     '결제방법':     selectedPay,
     '사용포인트':   usedPoints,
-    '추천인코드':   '',
+    '추천인코드':   dealerId.startsWith('dlr_') ? dealerId : '', // ✅ 딜러ID를 추천코드로 저장
     '회원구분':     '비회원',
     '주문상태':     '결제대기',
     '메모':         document.getElementById('delivery-memo').value,
@@ -554,10 +614,12 @@ function saveOrderToSheets(orderData) {
 
 function requestPG(orderData) {
   var PG_MERCHANT_ID = (typeof CONFIG !== 'undefined') ? CONFIG.PG.MERCHANT_ID : '';
+  var finalAmt = orderData['결제금액'];
 
-  if (usedPoints > 0 && orderData['결제금액'] === 0) {
+  if (usedPoints > 0 && finalAmt === 0) {
     saveOrderToSheets(orderData);
     savePointDeduction(orderData['주문번호']);
+    saveDealerPoint(orderData['주문번호'], orderRawAmount); // ✅ 딜러 포인트 적립
     Cart.clear();
     location.href = 'order-complete.html?no=' + orderData['주문번호'] + '&method=포인트전액';
     return;
@@ -566,7 +628,7 @@ function requestPG(orderData) {
   if (PG_MERCHANT_ID && typeof WinPay !== 'undefined') {
     WinPay.pay({
       orderNo:    orderData['주문번호'],
-      amount:     orderData['결제금액'],
+      amount:     finalAmt,
       goodsName:  orderData['주문상품'],
       buyerName:  orderData['주문자명'],
       buyerTel:   orderData['연락처'],
@@ -576,6 +638,7 @@ function requestPG(orderData) {
         orderData['PG거래번호']  = tid;
         saveOrderToSheets(orderData);
         savePointDeduction(orderData['주문번호']);
+        saveDealerPoint(orderData['주문번호'], finalAmt); // ✅ 딜러 포인트 적립
         Cart.clear();
         location.href = 'order-complete.html?no=' + orderData['주문번호'] + '&method=' + selectedPay;
       },
@@ -591,6 +654,7 @@ function requestPG(orderData) {
 
   saveOrderToSheets(orderData);
   savePointDeduction(orderData['주문번호']);
+  saveDealerPoint(orderData['주문번호'], finalAmt); // ✅ 딜러 포인트 적립
   Cart.clear();
   location.href = 'order-complete.html?no=' + orderData['주문번호'] + '&method=' + selectedPay;
 }
