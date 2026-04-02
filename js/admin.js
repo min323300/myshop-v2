@@ -1048,7 +1048,7 @@ function closeProdModal(){ document.getElementById('prod-modal').classList.remov
 document.getElementById('prod-modal').addEventListener('click',function(e){ if(e.target===this) closeProdModal(); });
 
 function clearForm(){
-  ['f-id','f-name','f-supp','f-subcat','f-price','f-sale','f-stock','f-img','f-det1','f-det2','f-cert','f-yt','f-desc','f-colors','f-sizes','f-caution','f-specs','f-delivery-fee','f-delivery-free'].forEach(function(id){
+  ['f-id','f-name','f-supp','f-subcat','f-price','f-sale','f-cost','f-stock','f-img','f-det1','f-det2','f-cert','f-yt','f-desc','f-colors','f-sizes','f-caution','f-specs','f-delivery-fee','f-delivery-free'].forEach(function(id){
     var el=document.getElementById(id); if(el) el.value='';
   });
   var dType = document.getElementById('f-delivery-type'); if(dType) dType.value='택배배송';
@@ -1058,7 +1058,7 @@ function clearForm(){
 
 function fillForm(p){
   var sv=function(id,v){ var el=document.getElementById(id); if(el) el.value=v||''; };
-  sv('f-id',p.id); sv('f-name',p.name); sv('f-supp',p.supplier); sv('f-subcat',p.subCategory); sv('f-price',p.price); sv('f-sale',p.salePrice||''); sv('f-stock',p.stock); sv('f-yt',p.youtube); sv('f-desc',p.description); sv('f-colors',p.colors); sv('f-sizes',p.sizes); sv('f-caution',p.caution); sv('f-specs',p.specs);
+  sv('f-id',p.id); sv('f-name',p.name); sv('f-supp',p.supplier); sv('f-subcat',p.subCategory); sv('f-price',p.price); sv('f-sale',p.salePrice||''); sv('f-cost',p.cost||''); sv('f-stock',p.stock); sv('f-yt',p.youtube); sv('f-desc',p.description); sv('f-colors',p.colors); sv('f-sizes',p.sizes); sv('f-caution',p.caution); sv('f-specs',p.specs);
   var dType = document.getElementById('f-delivery-type'); if(dType) dType.value = p.deliveryType || '택배배송';
   sv('f-delivery-fee',  p.deliveryFee  !== undefined ? p.deliveryFee  : '3000');
   sv('f-delivery-free', p.deliveryFree !== undefined ? p.deliveryFree : '50000');
@@ -1143,7 +1143,7 @@ function saveProd(){
   var deliveryFree = dFreeEl ? (dFreeEl.value || '0') : '0';
   var data={
     번호:id, 상품명:name, 공급사:document.getElementById('f-supp').value.trim(),
-    가격:price, 할인가:document.getElementById('f-sale').value||'0',
+    가격:price, 할인가:document.getElementById('f-sale').value||'0', 원가:document.getElementById('f-cost').value||'0',
     카테고리:cat, 세부카테고리:document.getElementById('f-subcat').value.trim(),
     이미지:document.getElementById('f-img').value.trim(),
     상품설명:document.getElementById('f-desc').value.trim(),
@@ -1198,7 +1198,7 @@ document.querySelectorAll('.prod-sec-hd').forEach(function(hd){
 var bulkProducts = [];
 
 var BULK_HEADERS = [
-  '상품명','카테고리','세부카테고리','가격','할인가',
+  '상품명','카테고리','세부카테고리','가격','할인가','원가',
   '이미지','상세이미지','상세이미지2','인증이미지',
   '상품설명','색상','사이즈','공급사','유튜브',
   '상세스펙','주의사항','배송방법','배송비','무료배송조건',

@@ -964,8 +964,11 @@
           <div class="fg4">
             <div><label class="flabel">판매가 *</label><input type="number" class="finput" id="f-price" placeholder="예: 29000" oninput="calcDisc()"></div>
             <div><label class="flabel">할인가</label><input type="number" class="finput" id="f-sale" placeholder="없으면 0" oninput="calcDisc()"></div>
+            <div><label class="flabel">원가</label><input type="number" class="finput" id="f-cost" placeholder="매입가"></div>
             <div><label class="flabel">재고수량</label><input type="number" class="finput" id="f-stock" placeholder="예: 100"></div>
-            <div><label class="flabel">할인율</label><div class="disc-box">할인율: <strong id="disc-val" style="color:var(--accent);margin-left:6px;">-</strong></div></div>
+          </div>
+          <div style="margin-top:8px">
+            <div class="disc-box">할인율: <strong id="disc-val" style="color:var(--accent);margin-left:6px;">-</strong></div>
           </div>
         </div>
       </div>

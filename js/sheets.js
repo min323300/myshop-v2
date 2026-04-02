@@ -299,6 +299,7 @@ const ProductAPI = {
       youtube: row['유튜브'] || '',
       specs: row['상세스펙'] || '',
       caution: row['주의사항'] || '',
+      cost: parseInt(row['원가']) || 0,
       shippingMethod: row['배송방법'] || '',      // ✅ 이 줄 추가
       shippingFee: row['배송방법'] === '무료배송' ? 0 : (parseInt(row['배송비']) || 3000),
       isDealer: false,
