@@ -1,7 +1,17 @@
 // ============================================================
 // CONFIG
 // ============================================================
-var ADMIN_ID = 'admin', ADMIN_PW = 'damnuri2026';
+// ✅ 보안 개선: 비밀번호를 SHA-256 해시로 비교 (평문 제거)
+var ADMIN_ID = 'admin';
+// 'damnuri2026'의 SHA-256 해시값
+var ADMIN_PW_HASH = 'bda221a3cd5c517da0f7542e0c38b4756b0f670cbf4d43b492a4bb524a464412';
+
+async function sha256(message) {
+  var msgBuffer = new TextEncoder().encode(message);
+  var hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+  var hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+}
 
 // ✅ v4.7 수정: CONFIG.APPS_SCRIPT_URL 사용 (기존: CONFIG.PG.API_PROXY_URL → 잘못된 URL)
 var SCRIPT_URL = (typeof CONFIG !== 'undefined') ? CONFIG.APPS_SCRIPT_URL : '';
@@ -27,7 +37,7 @@ var currentUser = { type: '', dealerId: '', dealerName: '', raw: {} };
 // ============================================================
 // ✅ 로그인 - 본사 admin 또는 구글시트 대리점 계정
 // ============================================================
-window.doLogin = function() {
+window.doLogin = async function() {
   var id = document.getElementById('lid').value.trim();
   var pw = document.getElementById('lpw').value.trim();
   if (!id || !pw) { document.getElementById('lerr').style.display = 'block'; return; }
@@ -36,11 +46,14 @@ window.doLogin = function() {
   errEl.style.display = 'none';
   errEl.textContent = '아이디 또는 비밀번호가 올바르지 않습니다.';
 
-  // ① 본사 admin 계정 먼저 확인
-  if (id === ADMIN_ID && pw === ADMIN_PW) {
-    currentUser = { type: 'admin', dealerId: '', dealerName: '본사 관리자', raw: {} };
-    loginSuccess('본사 관리자');
-    return;
+  // ① 본사 admin 계정 먼저 확인 (해시 비교)
+  if (id === ADMIN_ID) {
+    var pwHash = await sha256(pw);
+    if (pwHash === ADMIN_PW_HASH) {
+      currentUser = { type: 'admin', dealerId: '', dealerName: '본사 관리자', raw: {} };
+      loginSuccess('본사 관리자');
+      return;
+    }
   }
 
   // ② 구글시트 대리점 시트에서 대리점 계정 확인
@@ -534,9 +547,13 @@ function loadReviews() {
 }
 
 // ============================================================
-// CSV 파싱 공통 함수
+// CSV 파싱 공통 함수 (SheetAPI.parseCSV 위임 — 중복 제거)
 // ============================================================
 function parseAdminCSV(csv) {
+  if (typeof SheetAPI !== 'undefined' && SheetAPI.parseCSV) {
+    return SheetAPI.parseCSV(csv);
+  }
+  // fallback: SheetAPI 미로드 시 최소 파서
   var lines = csv.trim().split('\n');
   var headers = lines[0].split(',').map(function(h){ return h.trim().replace(/"/g,''); });
   return lines.slice(1).map(function(line) {
@@ -1174,3 +1191,228 @@ document.querySelectorAll('.prod-sec-hd').forEach(function(hd){
     this.querySelector('.prod-sec-toggle').textContent=this.classList.contains('collapsed')?'∨':'∧';
   });
 });
+
+// ============================================================
+// 📥 상품 엑셀 일괄 등록
+// ============================================================
+var bulkProducts = [];
+
+var BULK_HEADERS = [
+  '상품명','카테고리','세부카테고리','가격','할인가',
+  '이미지','상세이미지','상세이미지2','인증이미지',
+  '상품설명','색상','사이즈','공급사','유튜브',
+  '상세스펙','주의사항','배송방법','배송비','무료배송조건',
+  '재고','뱃지','추천여부','사용여부'
+];
+
+function openBulkUploadModal() {
+  bulkProducts = [];
+  document.getElementById('bulk-file-input').value = '';
+  document.getElementById('bulk-file-info').style.display = 'none';
+  document.getElementById('bulk-preview').style.display = 'none';
+  document.getElementById('bulk-result').style.display = 'none';
+  document.getElementById('bulk-submit-btn').disabled = true;
+  document.getElementById('bulk-upload-modal').classList.add('open');
+}
+
+function closeBulkUploadModal() {
+  document.getElementById('bulk-upload-modal').classList.remove('open');
+  bulkProducts = [];
+}
+
+function downloadBulkTemplate() {
+  var bom = '\uFEFF';
+  var csv = bom + BULK_HEADERS.join(',') + '\n';
+  // 예시 행 추가
+  csv += '예시상품명,식품,과일,15000,12000,https://이미지주소.jpg,,,,맛있는 과일입니다,빨강/노랑,대/중/소,담누리농장,,비타민C 풍부,냉장보관,택배배송,3000,30000,100,NEW,TRUE,TRUE\n';
+  var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  var link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = '상품_일괄등록_템플릿.csv';
+  link.click();
+  URL.revokeObjectURL(link.href);
+  showToast('템플릿이 다운로드되었습니다.','ok');
+}
+
+function handleBulkFile(evt) {
+  var file = evt.target.files[0];
+  if (!file) return;
+
+  var info = document.getElementById('bulk-file-info');
+  info.style.display = 'block';
+  info.innerHTML = '📄 <b>' + file.name + '</b> (' + (file.size/1024).toFixed(1) + ' KB) 읽는 중...';
+
+  var ext = file.name.split('.').pop().toLowerCase();
+
+  if (ext === 'csv') {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var text = e.target.result;
+      var rows = parseCSVText(text);
+      processBulkRows(rows, file.name);
+    };
+    reader.readAsText(file, 'UTF-8');
+  } else if (ext === 'xlsx' || ext === 'xls') {
+    // SheetJS(XLSX) 라이브러리 동적 로드
+    loadSheetJS(function() {
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        var data = new Uint8Array(e.target.result);
+        var workbook = XLSX.read(data, { type: 'array' });
+        var firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        var jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+        processBulkRows(jsonData, file.name);
+      };
+      reader.readAsArrayBuffer(file);
+    });
+  } else {
+    info.innerHTML = '❌ 지원하지 않는 파일 형식입니다. CSV 또는 XLSX 파일만 가능합니다.';
+  }
+}
+
+function loadSheetJS(callback) {
+  if (typeof XLSX !== 'undefined') { callback(); return; }
+  var script = document.createElement('script');
+  script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+  script.onload = callback;
+  script.onerror = function() { showToast('SheetJS 라이브러리 로드 실패','err'); };
+  document.head.appendChild(script);
+}
+
+function parseCSVText(text) {
+  var lines = text.split(/\r?\n/).filter(function(l) { return l.trim(); });
+  return lines.map(function(line) {
+    var result = [], current = '', inQuotes = false;
+    for (var i = 0; i < line.length; i++) {
+      var ch = line[i];
+      if (inQuotes) {
+        if (ch === '"' && line[i+1] === '"') { current += '"'; i++; }
+        else if (ch === '"') { inQuotes = false; }
+        else { current += ch; }
+      } else {
+        if (ch === '"') { inQuotes = true; }
+        else if (ch === ',') { result.push(current.trim()); current = ''; }
+        else { current += ch; }
+      }
+    }
+    result.push(current.trim());
+    return result;
+  });
+}
+
+function processBulkRows(rows, filename) {
+  if (rows.length < 2) {
+    document.getElementById('bulk-file-info').innerHTML = '❌ 데이터가 없습니다. 헤더 행 + 1건 이상의 상품이 필요합니다.';
+    return;
+  }
+
+  var fileHeaders = rows[0].map(function(h) { return String(h).trim(); });
+  var dataRows = rows.slice(1).filter(function(r) {
+    return r.some(function(cell) { return String(cell).trim(); });
+  });
+
+  if (!dataRows.length) {
+    document.getElementById('bulk-file-info').innerHTML = '❌ 상품 데이터가 없습니다.';
+    return;
+  }
+
+  // 헤더 매핑 검증
+  var requiredFields = ['상품명', '카테고리', '가격'];
+  var missing = requiredFields.filter(function(f) { return fileHeaders.indexOf(f) === -1; });
+  if (missing.length) {
+    document.getElementById('bulk-file-info').innerHTML = '❌ 필수 열이 누락되었습니다: <b>' + missing.join(', ') + '</b>';
+    return;
+  }
+
+  // 상품 데이터 생성
+  bulkProducts = dataRows.map(function(row) {
+    var obj = {};
+    fileHeaders.forEach(function(h, i) {
+      if (h && row[i] !== undefined && String(row[i]).trim()) {
+        obj[h] = String(row[i]).trim();
+      }
+    });
+    return obj;
+  });
+
+  // 파일 정보 업데이트
+  document.getElementById('bulk-file-info').innerHTML =
+    '📄 <b>' + filename + '</b> — ' + bulkProducts.length + '건의 상품이 감지되었습니다.';
+
+  // 미리보기 테이블 표시
+  var previewCols = ['상품명','카테고리','가격','할인가','재고'];
+  var html = '<table style="width:100%;font-size:12px;border-collapse:collapse">' +
+    '<thead><tr style="background:#f5f5f5">' +
+    '<th style="padding:6px;border:1px solid #ddd;text-align:center">No</th>' +
+    previewCols.map(function(c){ return '<th style="padding:6px;border:1px solid #ddd">' + c + '</th>'; }).join('') +
+    '</tr></thead><tbody>';
+  bulkProducts.forEach(function(p, i) {
+    var valid = p['상품명'] && p['카테고리'] && p['가격'];
+    html += '<tr style="' + (valid?'':'background:#fff3f3') + '">' +
+      '<td style="padding:4px 6px;border:1px solid #ddd;text-align:center">' + (i+1) + '</td>' +
+      previewCols.map(function(c) {
+        return '<td style="padding:4px 6px;border:1px solid #ddd">' + (p[c]||'-') + '</td>';
+      }).join('') + '</tr>';
+  });
+  html += '</tbody></table>';
+
+  var preview = document.getElementById('bulk-preview');
+  preview.innerHTML = html;
+  preview.style.display = 'block';
+  document.getElementById('bulk-submit-btn').disabled = false;
+}
+
+function submitBulkProducts() {
+  if (!bulkProducts.length) { showToast('업로드할 상품이 없습니다.','err'); return; }
+  if (!SCRIPT_URL) { showToast('Apps Script URL이 설정되지 않았습니다.','err'); return; }
+
+  // 필수 필드 검증
+  var invalidRows = [];
+  bulkProducts.forEach(function(p, i) {
+    if (!p['상품명'] || !p['카테고리'] || !p['가격']) invalidRows.push(i + 1);
+  });
+  if (invalidRows.length) {
+    showToast(invalidRows.length + '건의 상품에 필수 항목이 누락되었습니다. (행: ' + invalidRows.slice(0,5).join(',') + ')','err');
+    return;
+  }
+
+  if (!confirm(bulkProducts.length + '건의 상품을 일괄 등록하시겠습니까?')) return;
+
+  var btn = document.getElementById('bulk-submit-btn');
+  btn.disabled = true;
+  btn.textContent = '등록 중...';
+
+  var resultDiv = document.getElementById('bulk-result');
+  resultDiv.style.display = 'block';
+  resultDiv.style.background = '#fffde7';
+  resultDiv.innerHTML = '⏳ ' + bulkProducts.length + '건 등록 처리 중... 잠시 기다려주세요.';
+
+  // 기본값 세팅
+  var payload = bulkProducts.map(function(p) {
+    if (!p['사용여부']) p['사용여부'] = 'TRUE';
+    if (!p['배송방법']) p['배송방법'] = '택배배송';
+    if (!p['배송비']) p['배송비'] = '0';
+    if (!p['무료배송조건']) p['무료배송조건'] = '0';
+    if (!p['할인가']) p['할인가'] = '0';
+    if (!p['재고']) p['재고'] = '0';
+    return p;
+  });
+
+  fetch(SCRIPT_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    body: JSON.stringify({ action: 'saveBulkProducts', data: { products: payload } })
+  }).then(function() {
+    resultDiv.style.background = '#e8f5e9';
+    resultDiv.innerHTML = '✅ ' + bulkProducts.length + '건의 상품이 등록 요청되었습니다!<br><span style="font-size:12px;color:#666">구글시트에서 결과를 확인해주세요. 반영까지 몇 초 소요될 수 있습니다.</span>';
+    btn.textContent = '등록 완료';
+    showToast(bulkProducts.length + '건 일괄 등록 완료! 새로고침하세요.','ok');
+    setTimeout(loadProds, 3000);
+  }).catch(function(e) {
+    resultDiv.style.background = '#ffebee';
+    resultDiv.innerHTML = '❌ 오류 발생: ' + e.message;
+    btn.disabled = false;
+    btn.textContent = '일괄 등록';
+    showToast('일괄 등록 오류: ' + e.message, 'err');
+  });
+}

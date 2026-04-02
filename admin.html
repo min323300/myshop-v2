@@ -147,6 +147,7 @@
         <div><div class="ph-title">상품 조회/수정</div><div class="ph-sub" id="prod-sub">전체 상품</div></div>
         <div class="ph-acts">
           <button class="btn btn-outline" onclick="loadProds()">🔄 새로고침</button>
+          <button class="btn btn-outline" onclick="openBulkUploadModal()">📥 엑셀 일괄등록</button>
           <button class="btn btn-primary" onclick="openProdModal()">➕ 상품 등록</button>
         </div>
       </div>
@@ -896,6 +897,39 @@
       <div><label class="flabel">사용여부</label><select class="fi" id="nm-active" style="width:100%;"><option value="TRUE">✅ 사용</option><option value="FALSE">❌ 미사용</option></select></div>
     </div>
     <div class="modal-ft"><button class="btn btn-outline" onclick="closeNoticeModal()">취소</button><button class="btn btn-primary" onclick="saveNotice()">💾 저장</button></div>
+  </div>
+</div>
+
+<!-- ── 상품 엑셀 일괄등록 모달 ── -->
+<div class="modal-ov" id="bulk-upload-modal">
+  <div class="modal" style="max-width:700px">
+    <div class="m-hd"><div class="m-title">📥 엑셀 일괄 등록</div><button class="m-close" onclick="closeBulkUploadModal()">×</button></div>
+    <div class="m-body" style="padding:24px">
+      <div style="background:#f0f7ff;border:1px solid #c2d9f0;border-radius:8px;padding:16px;margin-bottom:20px">
+        <div style="font-weight:600;margin-bottom:8px">사용 방법</div>
+        <div style="font-size:13px;color:#555;line-height:1.8">
+          1. 아래 <b>템플릿 다운로드</b> 버튼으로 엑셀 양식을 받으세요.<br>
+          2. 엑셀 파일에 상품 정보를 입력합니다. (첫 번째 행은 헤더, 두 번째 행부터 상품)<br>
+          3. <b>.csv</b> 또는 <b>.xlsx</b> 파일을 업로드하세요.<br>
+          4. 미리보기를 확인한 후 <b>일괄 등록</b> 버튼을 누르세요.<br>
+          <span style="color:#c0392b">※ 번호는 자동 생성됩니다. 비워두세요.</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:20px">
+        <button class="btn btn-outline" onclick="downloadBulkTemplate()">📋 템플릿 다운로드 (CSV)</button>
+        <label class="btn btn-primary" style="cursor:pointer;margin:0">
+          📂 파일 선택
+          <input type="file" id="bulk-file-input" accept=".csv,.xlsx,.xls" onchange="handleBulkFile(event)" style="display:none">
+        </label>
+      </div>
+      <div id="bulk-file-info" style="display:none;margin-bottom:16px;padding:12px;background:#f9f9f9;border-radius:6px;font-size:13px"></div>
+      <div id="bulk-preview" style="display:none;margin-bottom:16px;max-height:300px;overflow:auto;border:1px solid #ddd;border-radius:6px"></div>
+      <div id="bulk-result" style="display:none;margin-bottom:16px;padding:12px;border-radius:6px;font-size:13px"></div>
+      <div style="text-align:right">
+        <button class="btn btn-outline" onclick="closeBulkUploadModal()">취소</button>
+        <button class="btn btn-primary" id="bulk-submit-btn" onclick="submitBulkProducts()" disabled style="margin-left:8px">일괄 등록</button>
+      </div>
+    </div>
   </div>
 </div>
 

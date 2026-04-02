@@ -2,6 +2,19 @@
 // 📊 Google Sheets 연동 모듈 - sheets.js (한글 헤더 버전)
 // ============================================================
 
+// ============================================================
+// 🛡️ XSS 방지 - HTML 이스케이프 헬퍼
+// ============================================================
+function escHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 const SheetAPI = {
   parseCSV(csv) {
     const lines = csv.trim().split('\n');
@@ -24,9 +37,20 @@ const SheetAPI = {
   async fetch(url) {
     try {
       const res = await fetch(url);
+      if (!res.ok) {
+        console.warn('시트 HTTP 오류:', res.status, url);
+        return [];
+      }
       const csv = await res.text();
+      if (!csv || csv.trim().length === 0) {
+        console.warn('시트 빈 응답:', url);
+        return [];
+      }
       return this.parseCSV(csv);
-    } catch(e) { console.warn('시트 로드 실패:', url); return []; }
+    } catch(e) {
+      console.warn('시트 로드 실패:', e.message || e);
+      return [];
+    }
   },
 
   _cache: {},
@@ -73,7 +97,7 @@ const DealerContext = {
     const id = this.getDealerId();
     if (!id) { this._loaded = true; return null; }
     try {
-      const SHEET_ID = CONFIG.SHEET_ID || '1t804fRO8HfQtmOzpDAz2IZfzRDQ7t8LYllFGZr3ftUI';
+      const SHEET_ID = CONFIG.SHEET_ID;
       const url = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID
         + '/gviz/tq?tqx=out:csv&sheet=' + encodeURIComponent('대리점') + '&t=' + Date.now();
       const rows = await SheetAPI.fetch(url);
@@ -178,21 +202,20 @@ const DealerContext = {
 // 대리점 상품 API
 // ============================================================
 const DealerProductAPI = {
+  _getSheetUrl() {
+    return 'https://docs.google.com/spreadsheets/d/' + CONFIG.SHEET_ID
+      + '/gviz/tq?tqx=out:csv&sheet=' + encodeURIComponent('대리점상품');
+  },
+
   async getAll() {
-    const SHEET_ID = CONFIG.SHEET_ID || '1t804fRO8HfQtmOzpDAz2IZfzRDQ7t8LYllFGZr3ftUI';
-    const url = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID
-      + '/gviz/tq?tqx=out:csv&sheet=' + encodeURIComponent('대리점상품') + '&t=' + Date.now();
-    const rows = await SheetAPI.fetch(url);
+    const rows = await SheetAPI.fetchCached(this._getSheetUrl());
     return rows
       .filter(r => r['사용여부'] !== 'FALSE' && r['상품명'])
       .map(row => this._mapRow(row));
   },
 
   async getByDealer(dealerId) {
-    const SHEET_ID = CONFIG.SHEET_ID || '1t804fRO8HfQtmOzpDAz2IZfzRDQ7t8LYllFGZr3ftUI';
-    const url = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID
-      + '/gviz/tq?tqx=out:csv&sheet=' + encodeURIComponent('대리점상품') + '&t=' + Date.now();
-    const rows = await SheetAPI.fetch(url);
+    const rows = await SheetAPI.fetchCached(this._getSheetUrl());
     return rows
       .filter(r => (r['대리점ID']||r['가맹점ID']) === dealerId && r['사용여부'] !== 'FALSE' && r['상품명'])
       .map(row => this._mapRow(row));
@@ -240,7 +263,15 @@ function resolveImageUrl(val) {
 // 상품 데이터
 // ============================================================
 const ProductAPI = {
+  _allCache: null,
+  _allCacheTime: 0,
+  _ALL_CACHE_TTL: 300000, // 5분
+
   async getAll() {
+    const now = Date.now();
+    if (this._allCache && (now - this._allCacheTime) < this._ALL_CACHE_TTL) {
+      return this._allCache;
+    }
     // 본사 상품 로드
     const rows = await SheetAPI.fetchCached(CONFIG.SHEETS.상품목록);
     const hqProducts = rows.map(row => ({
@@ -283,18 +314,24 @@ const ProductAPI = {
         ? await DealerProductAPI.getByDealer(dealerId)   // 특정 대리점
         : await DealerProductAPI.getAll();               // 본사: 전체 대리점 상품
       const combined = [...hqProducts, ...dealerProducts];
-      return combined.sort((a, b) => {
+      const result = combined.sort((a, b) => {
         const scoreA = (a.salesCount * 0.4) + (a.rating * 20 * 0.4) + (a.reviewCount * 0.2);
         const scoreB = (b.salesCount * 0.4) + (b.rating * 20 * 0.4) + (b.reviewCount * 0.2);
         return scoreB - scoreA;
       });
+      this._allCache = result;
+      this._allCacheTime = Date.now();
+      return result;
     } catch(e) { /* 대리점 상품 로드 실패 시 본사 상품만 */ }
 
-    return hqProducts.sort((a, b) => {
+    const fallback = hqProducts.sort((a, b) => {
       const scoreA = (a.salesCount * 0.4) + (a.rating * 20 * 0.4) + (a.reviewCount * 0.2);
       const scoreB = (b.salesCount * 0.4) + (b.rating * 20 * 0.4) + (b.reviewCount * 0.2);
       return scoreB - scoreA;
     });
+    this._allCache = fallback;
+    this._allCacheTime = Date.now();
+    return fallback;
   },
 
   async getById(id) {
@@ -502,7 +539,7 @@ const GroupBuyAPI = {
   },
 
   async getAll() {
-    const SHEET_ID = '1t804fRO8HfQtmOzpDAz2IZfzRDQ7t8LYllFGZr3ftUI';
+    const SHEET_ID = CONFIG.SHEET_ID;
     const url = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID
       + '/gviz/tq?tqx=out:csv&sheet=' + encodeURIComponent('공동구매');
     const rows = await SheetAPI.fetch(url);
@@ -560,7 +597,7 @@ const GroupBuyAPI = {
 // 📢 공지사항 API
 // ============================================================
 const NoticeAPI = {
-  _SHEET_ID: '1t804fRO8HfQtmOzpDAz2IZfzRDQ7t8LYllFGZr3ftUI',
+  _SHEET_ID: CONFIG.SHEET_ID,
 
   async getAll() {
     const url = 'https://docs.google.com/spreadsheets/d/' + this._SHEET_ID
@@ -599,38 +636,32 @@ document.addEventListener('DOMContentLoaded', async function() {
   if (dealerId) {
     // ── 대리점 모드: 대리점 브랜딩 적용 ──
     await DealerContext.applyBranding();
-    setTimeout(() => DealerContext.applyBranding(), 1000);
-    setTimeout(() => DealerContext.applyBranding(), 2500);
+    // 1회만 보정 (MutationObserver가 이후 덮어쓰기 방지)
+    setTimeout(() => DealerContext.applyBranding(), 1500);
   } else {
     // ── 본사 모드: 브랜드명 항상 "담누리마켓" 고정 ──
     const BRAND = '담누리마켓';
 
     function fixBrandName() {
-      // 헤더 로고
       const storeName = document.getElementById('store-name');
       if (storeName && storeName.textContent !== BRAND) storeName.textContent = BRAND;
 
-      // 푸터 브랜드명
       const footerName = document.getElementById('footer-store-name');
       if (footerName && !footerName.textContent.includes(BRAND)) footerName.textContent = '🏪 ' + BRAND;
 
-      // 푸터 저작권
       const footerCopy = document.getElementById('footer-copy');
       if (footerCopy && !footerCopy.textContent.includes(BRAND)) {
         footerCopy.textContent = '© 2026 ' + BRAND + '. All rights reserved.';
       }
 
-      // 페이지 타이틀
       if (document.title.includes('비에스컴퍼니')) {
         document.title = document.title.replace(/\(주\)비에스컴퍼니|비에스컴퍼니/g, BRAND);
       }
     }
 
-    // 즉시 + app.js 로드 후 반복 보정
+    // 즉시 1회 + window.onload 후 1회 보정 (setTimeout 남발 제거)
     fixBrandName();
-    setTimeout(fixBrandName, 500);
-    setTimeout(fixBrandName, 1500);
-    setTimeout(fixBrandName, 3000);
+    window.addEventListener('load', fixBrandName);
 
     // MutationObserver로 app.js 덮어쓰기 방지
     const storeName = document.getElementById('store-name');

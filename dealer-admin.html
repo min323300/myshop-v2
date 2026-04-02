@@ -160,6 +160,7 @@
         <div><div class="ph-title">📦 내 상품 관리</div><div class="ph-sub">내 쇼핑몰에만 표시되는 상품을 관리합니다</div></div>
         <div class="ph-acts">
           <button class="btn btn-outline" onclick="loadMyProducts()">🔄 새로고침</button>
+          <button class="btn btn-outline" onclick="openDealerBulkUploadModal()">📥 엑셀 일괄등록</button>
           <button class="btn btn-primary" onclick="openMyProdModal()">➕ 상품 등록</button>
         </div>
       </div>
@@ -371,6 +372,39 @@
       </div>
     </div>
   </main>
+</div>
+
+<!-- ── 대리점 상품 엑셀 일괄등록 모달 ── -->
+<div class="modal-ov" id="dealer-bulk-upload-modal">
+  <div class="modal" style="max-width:700px">
+    <div class="modal-hd"><span>📥 엑셀 일괄 등록</span><button onclick="closeDealerBulkUploadModal()">✕</button></div>
+    <div class="modal-body" style="padding:20px">
+      <div style="background:#f0f7ff;border:1px solid #c2d9f0;border-radius:8px;padding:16px;margin-bottom:20px">
+        <div style="font-weight:600;margin-bottom:8px">사용 방법</div>
+        <div style="font-size:13px;color:#555;line-height:1.8">
+          1. 아래 <b>템플릿 다운로드</b> 버튼으로 엑셀 양식을 받으세요.<br>
+          2. 엑셀 파일에 상품 정보를 입력합니다. (첫 번째 행은 헤더, 두 번째 행부터 상품)<br>
+          3. <b>.csv</b> 또는 <b>.xlsx</b> 파일을 업로드하세요.<br>
+          4. 미리보기를 확인한 후 <b>일괄 등록</b> 버튼을 누르세요.<br>
+          <span style="color:#c0392b">※ 번호/대리점ID는 자동 생성됩니다. 비워두세요.</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:20px">
+        <button class="btn btn-outline" onclick="downloadDealerBulkTemplate()">📋 템플릿 다운로드 (CSV)</button>
+        <label class="btn btn-primary" style="cursor:pointer;margin:0">
+          📂 파일 선택
+          <input type="file" id="dealer-bulk-file-input" accept=".csv,.xlsx,.xls" onchange="handleDealerBulkFile(event)" style="display:none">
+        </label>
+      </div>
+      <div id="dealer-bulk-file-info" style="display:none;margin-bottom:16px;padding:12px;background:#f9f9f9;border-radius:6px;font-size:13px"></div>
+      <div id="dealer-bulk-preview" style="display:none;margin-bottom:16px;max-height:300px;overflow:auto;border:1px solid #ddd;border-radius:6px"></div>
+      <div id="dealer-bulk-result" style="display:none;margin-bottom:16px;padding:12px;border-radius:6px;font-size:13px"></div>
+      <div style="text-align:right">
+        <button class="btn btn-outline" onclick="closeDealerBulkUploadModal()">취소</button>
+        <button class="btn btn-primary" id="dealer-bulk-submit-btn" onclick="submitDealerBulkProducts()" disabled style="margin-left:8px">일괄 등록</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- ── 내 상품 등록/수정 모달 ── -->

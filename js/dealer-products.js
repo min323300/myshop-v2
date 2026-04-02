@@ -336,3 +336,213 @@ function toggleConsignment(productNo, newValue) {
     setTimeout(function(){ loadConsignment(); loadMyProducts(); },1500);
   }).catch(function(){ showToast('오류가 발생했습니다',''); });
 }
+
+// ============================================================
+// 📥 대리점 상품 엑셀 일괄 등록
+// ============================================================
+var dealerBulkProducts = [];
+
+var DEALER_BULK_HEADERS = [
+  '상품명','카테고리','가격','할인가','원가',
+  '이미지','이미지2','이미지3','이미지4','상세이미지',
+  '상품설명','색상','사이즈','옵션','배송비','배송일',
+  '재고','뱃지','추천여부','사용여부'
+];
+
+function openDealerBulkUploadModal() {
+  dealerBulkProducts = [];
+  document.getElementById('dealer-bulk-file-input').value = '';
+  document.getElementById('dealer-bulk-file-info').style.display = 'none';
+  document.getElementById('dealer-bulk-preview').style.display = 'none';
+  document.getElementById('dealer-bulk-result').style.display = 'none';
+  document.getElementById('dealer-bulk-submit-btn').disabled = true;
+  document.getElementById('dealer-bulk-upload-modal').classList.add('active');
+}
+
+function closeDealerBulkUploadModal() {
+  document.getElementById('dealer-bulk-upload-modal').classList.remove('active');
+  dealerBulkProducts = [];
+}
+
+function downloadDealerBulkTemplate() {
+  var bom = '\uFEFF';
+  var csv = bom + DEALER_BULK_HEADERS.join(',') + '\n';
+  csv += '예시상품명,식품,15000,12000,10000,https://이미지주소.jpg,,,,,,맛있는 상품입니다,빨강/파랑,L/M/S,,무료,1~3일,100,NEW,TRUE,TRUE\n';
+  var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  var link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = '대리점_상품_일괄등록_템플릿.csv';
+  link.click();
+  URL.revokeObjectURL(link.href);
+  showToast('템플릿이 다운로드되었습니다.','ok');
+}
+
+function handleDealerBulkFile(evt) {
+  var file = evt.target.files[0];
+  if (!file) return;
+
+  var info = document.getElementById('dealer-bulk-file-info');
+  info.style.display = 'block';
+  info.innerHTML = '📄 <b>' + file.name + '</b> (' + (file.size/1024).toFixed(1) + ' KB) 읽는 중...';
+
+  var ext = file.name.split('.').pop().toLowerCase();
+
+  if (ext === 'csv') {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var rows = parseBulkCSVText(e.target.result);
+      processDealerBulkRows(rows, file.name);
+    };
+    reader.readAsText(file, 'UTF-8');
+  } else if (ext === 'xlsx' || ext === 'xls') {
+    loadSheetJSLib(function() {
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        var data = new Uint8Array(e.target.result);
+        var workbook = XLSX.read(data, { type: 'array' });
+        var firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        var jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+        processDealerBulkRows(jsonData, file.name);
+      };
+      reader.readAsArrayBuffer(file);
+    });
+  } else {
+    info.innerHTML = '❌ CSV 또는 XLSX 파일만 가능합니다.';
+  }
+}
+
+function loadSheetJSLib(callback) {
+  if (typeof XLSX !== 'undefined') { callback(); return; }
+  var script = document.createElement('script');
+  script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+  script.onload = callback;
+  script.onerror = function() { showToast('SheetJS 로드 실패','err'); };
+  document.head.appendChild(script);
+}
+
+function parseBulkCSVText(text) {
+  var lines = text.split(/\r?\n/).filter(function(l) { return l.trim(); });
+  return lines.map(function(line) {
+    var result = [], current = '', inQuotes = false;
+    for (var i = 0; i < line.length; i++) {
+      var ch = line[i];
+      if (inQuotes) {
+        if (ch === '"' && line[i+1] === '"') { current += '"'; i++; }
+        else if (ch === '"') { inQuotes = false; }
+        else { current += ch; }
+      } else {
+        if (ch === '"') { inQuotes = true; }
+        else if (ch === ',') { result.push(current.trim()); current = ''; }
+        else { current += ch; }
+      }
+    }
+    result.push(current.trim());
+    return result;
+  });
+}
+
+function processDealerBulkRows(rows, filename) {
+  if (rows.length < 2) {
+    document.getElementById('dealer-bulk-file-info').innerHTML = '❌ 데이터가 없습니다.';
+    return;
+  }
+
+  var fileHeaders = rows[0].map(function(h) { return String(h).trim(); });
+  var dataRows = rows.slice(1).filter(function(r) {
+    return r.some(function(cell) { return String(cell).trim(); });
+  });
+
+  if (!dataRows.length) {
+    document.getElementById('dealer-bulk-file-info').innerHTML = '❌ 상품 데이터가 없습니다.';
+    return;
+  }
+
+  var missing = ['상품명','카테고리','가격'].filter(function(f) { return fileHeaders.indexOf(f) === -1; });
+  if (missing.length) {
+    document.getElementById('dealer-bulk-file-info').innerHTML = '❌ 필수 열 누락: <b>' + missing.join(', ') + '</b>';
+    return;
+  }
+
+  dealerBulkProducts = dataRows.map(function(row) {
+    var obj = {};
+    fileHeaders.forEach(function(h, i) {
+      if (h && row[i] !== undefined && String(row[i]).trim()) obj[h] = String(row[i]).trim();
+    });
+    return obj;
+  });
+
+  document.getElementById('dealer-bulk-file-info').innerHTML =
+    '📄 <b>' + filename + '</b> — ' + dealerBulkProducts.length + '건의 상품이 감지되었습니다.';
+
+  var previewCols = ['상품명','카테고리','가격','할인가','재고'];
+  var html = '<table style="width:100%;font-size:12px;border-collapse:collapse">' +
+    '<thead><tr style="background:#f5f5f5">' +
+    '<th style="padding:6px;border:1px solid #ddd;text-align:center">No</th>' +
+    previewCols.map(function(c){ return '<th style="padding:6px;border:1px solid #ddd">' + c + '</th>'; }).join('') +
+    '</tr></thead><tbody>';
+  dealerBulkProducts.forEach(function(p, i) {
+    var valid = p['상품명'] && p['카테고리'] && p['가격'];
+    html += '<tr style="' + (valid?'':'background:#fff3f3') + '">' +
+      '<td style="padding:4px 6px;border:1px solid #ddd;text-align:center">' + (i+1) + '</td>' +
+      previewCols.map(function(c) {
+        return '<td style="padding:4px 6px;border:1px solid #ddd">' + (p[c]||'-') + '</td>';
+      }).join('') + '</tr>';
+  });
+  html += '</tbody></table>';
+
+  document.getElementById('dealer-bulk-preview').innerHTML = html;
+  document.getElementById('dealer-bulk-preview').style.display = 'block';
+  document.getElementById('dealer-bulk-submit-btn').disabled = false;
+}
+
+function submitDealerBulkProducts() {
+  if (!dealerBulkProducts.length) { showToast('업로드할 상품이 없습니다.','err'); return; }
+  if (!SCRIPT_URL) { showToast('Apps Script URL 미설정','err'); return; }
+  if (!DEALER || !DEALER.id) { showToast('대리점 정보가 없습니다.','err'); return; }
+
+  var invalidRows = [];
+  dealerBulkProducts.forEach(function(p, i) {
+    if (!p['상품명'] || !p['카테고리'] || !p['가격']) invalidRows.push(i + 1);
+  });
+  if (invalidRows.length) {
+    showToast(invalidRows.length + '건 필수 항목 누락 (행: ' + invalidRows.slice(0,5).join(',') + ')','err');
+    return;
+  }
+
+  if (!confirm(dealerBulkProducts.length + '건의 상품을 일괄 등록하시겠습니까?')) return;
+
+  var btn = document.getElementById('dealer-bulk-submit-btn');
+  btn.disabled = true;
+  btn.textContent = '등록 중...';
+
+  var resultDiv = document.getElementById('dealer-bulk-result');
+  resultDiv.style.display = 'block';
+  resultDiv.style.background = '#fffde7';
+  resultDiv.innerHTML = '⏳ ' + dealerBulkProducts.length + '건 등록 처리 중...';
+
+  var payload = dealerBulkProducts.map(function(p) {
+    if (!p['사용여부']) p['사용여부'] = 'TRUE';
+    if (!p['배송비']) p['배송비'] = '무료';
+    if (!p['배송일']) p['배송일'] = '1~3일';
+    if (!p['할인가']) p['할인가'] = '0';
+    if (!p['재고']) p['재고'] = '0';
+    return p;
+  });
+
+  fetch(SCRIPT_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    body: JSON.stringify({ action: 'saveBulkDealerProducts', data: { dealerId: DEALER.id, products: payload } })
+  }).then(function() {
+    resultDiv.style.background = '#e8f5e9';
+    resultDiv.innerHTML = '✅ ' + dealerBulkProducts.length + '건 등록 요청 완료!<br><span style="font-size:12px;color:#666">구글시트에서 결과를 확인해주세요.</span>';
+    btn.textContent = '등록 완료';
+    showToast(dealerBulkProducts.length + '건 일괄 등록 완료!','ok');
+    setTimeout(loadMyProducts, 3000);
+  }).catch(function(e) {
+    resultDiv.style.background = '#ffebee';
+    resultDiv.innerHTML = '❌ 오류: ' + e.message;
+    btn.disabled = false;
+    btn.textContent = '일괄 등록';
+  });
+}

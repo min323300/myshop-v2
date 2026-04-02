@@ -2,8 +2,9 @@
 // 🔗 대리점 URL 생성 함수
 // ============================================================
 function dealerUrl(path) {
-  const storeId = new URLSearchParams(location.search).get('store');
-  if (storeId) return path + (path.includes('?') ? '&' : '?') + 'store=' + storeId;
+  var params = new URLSearchParams(location.search);
+  var dealerId = params.get('dealer') || params.get('store') || '';
+  if (dealerId) return path + (path.includes('?') ? '&' : '?') + 'dealer=' + dealerId;
   return path;
 }
 
@@ -149,8 +150,20 @@ const Popup = {
     }
   },
 
+  // 현재 팝업에 표시중인 상품 (onclick에 JSON 삽입 대신 참조)
+  _currentProduct: null,
+
+  addToCartFromPopup() {
+    if (!this._currentProduct) return;
+    var qty = +document.getElementById('popup-qty-input').value || 1;
+    Cart.add(this._currentProduct, qty);
+    var overlay = document.getElementById('product-popup');
+    if (overlay) overlay.remove();
+  },
+
   // 팝업 상품 상세 (상품 클릭 시)
   showProduct(product) {
+    this._currentProduct = product;
     const overlay = document.createElement('div');
     overlay.className = 'popup-overlay';
     overlay.id = 'product-popup';
@@ -162,12 +175,12 @@ const Popup = {
         <button class="popup-close" onclick="this.closest('.popup-overlay').remove()">✕</button>
         <div class="popup-product-inner">
           <div class="popup-product-img">
-            <img src="${product.image}" alt="${product.name}">
-            ${product.badge ? `<span class="product-badge badge-${product.badge.toLowerCase()}">${product.badge}</span>` : ''}
+            <img src="${escHtml(product.image)}" alt="${escHtml(product.name)}">
+            ${product.badge ? `<span class="product-badge badge-${escHtml(product.badge.toLowerCase())}">${escHtml(product.badge)}</span>` : ''}
           </div>
           <div class="popup-product-info">
-            <div class="popup-category">${product.category}</div>
-            <h2 class="popup-product-name">${product.name}</h2>
+            <div class="popup-category">${escHtml(product.category)}</div>
+            <h2 class="popup-product-name">${escHtml(product.name)}</h2>
             <div class="popup-price">
               ${product.salePrice
                 ? `<span class="price-sale">${product.salePrice.toLocaleString()}원</span>
@@ -176,7 +189,7 @@ const Popup = {
                 : `<span class="price-sale">${product.price.toLocaleString()}원</span>`
               }
             </div>
-            <p class="popup-desc">${product.description}</p>
+            <p class="popup-desc">${escHtml(product.description)}</p>
             <div class="popup-qty">
               <label>수량</label>
               <div class="qty-control">
@@ -186,7 +199,7 @@ const Popup = {
               </div>
             </div>
             <div class="popup-actions">
-              <button class="btn-cart" onclick="Cart.add(${JSON.stringify(product).replace(/"/g, '&quot;')}, +document.getElementById('popup-qty-input').value); this.closest('.popup-overlay').remove()">
+              <button class="btn-cart" onclick="Popup.addToCartFromPopup()">
                 🛒 장바구니 담기
               </button>
               <button class="btn-buy" onclick="alert('PG사 연동 후 결제 진행됩니다')">
@@ -226,19 +239,24 @@ const Search = {
   close() {
     document.getElementById('search-modal').classList.remove('active');
   },
+  _searchResults: [],
+  showSearchResult(idx) {
+    if (this._searchResults[idx]) Popup.showProduct(this._searchResults[idx]);
+  },
   async run(query) {
     if (!query.trim()) return;
     const results = await ProductAPI.search(query);
+    this._searchResults = results.slice(0, 8);
     const container = document.getElementById('search-results');
     if (!results.length) {
       container.innerHTML = `<p class="search-empty">검색 결과가 없습니다</p>`;
       return;
     }
-    container.innerHTML = results.slice(0, 8).map(p => `
-      <div class="search-item" onclick="Popup.showProduct(${JSON.stringify(p).replace(/"/g, '&quot;')})">
-        <img src="${p.image}" alt="${p.name}">
+    container.innerHTML = this._searchResults.map((p, idx) => `
+      <div class="search-item" onclick="Search.showSearchResult(${idx})">
+        <img src="${escHtml(p.image)}" alt="${escHtml(p.name)}">
         <div>
-          <div class="search-item-name">${p.name}</div>
+          <div class="search-item-name">${escHtml(p.name)}</div>
           <div class="search-item-price">${(p.salePrice || p.price).toLocaleString()}원</div>
         </div>
       </div>

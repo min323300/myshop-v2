@@ -1,0 +1,1920 @@
+// ============================================================
+// 담누리마켓 Apps Script - v4.8
+// (주)비에스컴퍼니 | 2026-03
+// ============================================================
+// ⚠️ 배포 방법:
+//   배포 관리 → ✏️ 새 버전 → 배포 (절대 "새 배포" 누르지 말것!)
+//
+// v4.8 수정사항 (v4.7 → v4.8):
+//   [딜러 시스템 신규 추가]
+//   - DEALER_COMMISSION_TIERS: 슬라이딩 수수료 구간 상수 정의
+//       1구간 ~1,000만: 본사60% / 딜러40%
+//       2구간 ~3,000만: 본사50% / 딜러50%
+//       3구간 3,000만+: 본사40% / 딜러60%
+//   - getDealerTier(): 매출 기준 현재 구간 반환
+//   - getDealerInfo(): 딜러 정보 조회 (딜러 시트)
+//   - updateDealerSales(): 주문 발생 시 딜러 이번달매출 자동 업데이트
+//   - calcDealerCommission(): 딜러별 수수료 계산 및 정산 시트 기록
+//   - getDealerCommissionData(): 딜러 수수료 내역 조회
+//   - saveDealerPoint(): 딜러 포인트 적립/차감
+//   - getDealerPointData(): 딜러 포인트 내역 조회
+//   - resetDealerMonthly(): 매월 1일 이번달매출/수수료구간 리셋
+//   - setMonthlyResetTrigger(): 월간 자동 리셋 트리거 등록
+//   - doGet/doPost: 딜러 관련 action 라우팅 추가
+//   - saveOrder(): 딜러 매출 자동 업데이트 연동
+// ============================================================
+
+var SS = SpreadsheetApp.getActiveSpreadsheet();
+
+// ============================================================
+// 딜러 수수료 구간 상수
+// ============================================================
+var DEALER_COMMISSION_TIERS = [
+  { tier: 1, max: 10000000, hq: 0.6, dealer: 0.4, label: '1구간' },
+  { tier: 2, max: 30000000, hq: 0.5, dealer: 0.5, label: '2구간' },
+  { tier: 3, max: Infinity, hq: 0.4, dealer: 0.6, label: '3구간' }
+];
+
+// ============================================================
+// 딜러 구간 계산
+// ============================================================
+function getDealerTier(sales) {
+  for (var i = 0; i < DEALER_COMMISSION_TIERS.length; i++) {
+    if (sales < DEALER_COMMISSION_TIERS[i].max) {
+      return DEALER_COMMISSION_TIERS[i];
+    }
+  }
+  return DEALER_COMMISSION_TIERS[DEALER_COMMISSION_TIERS.length - 1];
+}
+
+// ============================================================
+// GET 요청
+// ============================================================
+function doGet(e) {
+  var action  = e.parameter.action  || '';
+  var storeId = e.parameter.store   || '';
+
+  if (action === 'getPGConfig')               return getPGConfig();
+  if (action === 'getSettlement')             return jsonRes(getSettlementData(e.parameter));
+  if (action === 'getHqMarginRate')           return jsonRes({ status: 'ok', rate: getHqMarginRate() });
+  if (action === 'getConsignmentSettlement')  return jsonRes(getConsignmentSettlement(e.parameter));
+  if (action === 'getVatList')                return jsonRes(getVatList(e.parameter));
+  if (action === 'getVatSummary')             return jsonRes(getVatSummary(e.parameter));
+
+  // ✅ v4.8 딜러 관련 GET
+  if (action === 'getDealerInfo')             return jsonRes(getDealerInfo(e.parameter));
+  if (action === 'getDealerCommissionData')   return jsonRes(getDealerCommissionData(e.parameter));
+  if (action === 'getDealerPointData')        return jsonRes(getDealerPointData(e.parameter));
+
+  if (storeId)                                return buildOgProxy(storeId);
+
+  return jsonRes({
+    status: 'ok',
+    message: '담누리마켓 API 정상 v4.8',
+    time: Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss')
+  });
+}
+
+// ============================================================
+// POST 요청
+// ============================================================
+function doPost(e) {
+  var result = { status: 'ok' };
+  try {
+    var raw  = e.postData ? (e.postData.contents || '') : '';
+    var body = {};
+    try { body = JSON.parse(raw); } catch(pe) {
+      body = { action: e.parameter.action, data: e.parameter };
+    }
+    var action = body.action;
+    var data   = body.data || {};
+
+    if      (action === 'saveOrder')                  result = saveOrder(data);
+    else if (action === 'saveMember')                 result = saveMember(data);
+    else if (action === 'updateOrderStatus')          result = updateOrderStatus(data);
+    else if (action === 'saveProduct')                result = saveProduct(data);
+    else if (action === 'updateProduct')              result = saveProduct(data);
+    else if (action === 'updateProductStatus')        result = updateProductStatus(data);
+    else if (action === 'saveDealer')                 result = saveDealerRow(data);
+    else if (action === 'saveDealerProduct')          result = saveDealerProduct(data);
+    else if (action === 'deleteDealerProduct')        result = deleteRow('대리점상품', data['번호']);
+    else if (action === 'saveReviewReply')            result = saveReviewReply(data);
+    else if (action === 'saveReview')                 result = saveReview(data);
+    else if (action === 'savePGConfig')               result = savePGConfig(data);
+    else if (action === 'saveBanner')                 result = saveRow('배너',    data, getBannerHeaders());
+    else if (action === 'deleteBanner')               result = deleteRow('배너',    data['번호']);
+    else if (action === 'savePopup')                  result = saveRow('팝업',    data, getPopupHeaders());
+    else if (action === 'deletePopup')                result = deleteRow('팝업',    data['번호']);
+    else if (action === 'saveGroupBuy')               result = saveRow('공동구매', data, getGroupBuyHeaders());
+    else if (action === 'deleteGroupBuy')             result = deleteRow('공동구매', data['번호']);
+    else if (action === 'saveNotice')                 result = saveRow('공지사항', data, getNoticeHeaders());
+    else if (action === 'deleteNotice')               result = deleteRow('공지사항', data['번호']);
+    else if (action === 'saveReferral')               result = saveReferral(data);
+    else if (action === 'savePointHistory')           result = savePointHistory(data);
+    else if (action === 'saveTempPassword')           result = saveTempPassword(data);
+    else if (action === 'saveLiveBroadcast')          result = saveRow('라이브방송', data, getLiveBroadcastHeaders());
+    else if (action === 'deleteLiveBroadcast')        result = deleteRow('라이브방송', data['번호']);
+    else if (action === 'saveLiveAlarm')              result = saveLiveAlarm(data);
+    else if (action === 'saveLiveCoupon')             result = saveLiveCoupon(data);
+    else if (action === 'saveConsignmentProduct')     result = saveConsignmentProduct(data);
+    else if (action === 'approveConsignment')         result = approveConsignment(data);
+    else if (action === 'saveHqMarginRate')           result = saveHqMarginRate(data);
+    else if (action === 'saveDealerPGRate')           result = saveDealerPGRate(data);
+    else if (action === 'calcSettlement')             result = calcSettlement(data);
+    else if (action === 'getSettlementData')          result = getSettlementData(data);
+    else if (action === 'getConsignmentSettlement')   result = getConsignmentSettlement(data);
+    else if (action === 'updateTaxInvoiceStatus')     result = updateTaxInvoiceStatus(data);
+    else if (action === 'getVatList')                 result = getVatList(data);
+    else if (action === 'getVatSummary')              result = getVatSummary(data);
+
+    // ✅ v4.8 딜러 관련 POST
+    else if (action === 'calcDealerCommission')       result = calcDealerCommission(data);
+    else if (action === 'saveDealerPoint')            result = saveDealerPoint(data);
+    else if (action === 'getDealerCommissionData')    result = getDealerCommissionData(data);
+    else if (action === 'getDealerPointData')         result = getDealerPointData(data);
+
+    // ✅ v5.0 상품 일괄 등록
+    else if (action === 'saveBulkProducts')           result = saveBulkProducts(data);
+    else if (action === 'saveBulkDealerProducts')     result = saveBulkDealerProducts(data);
+
+    else result = { status: 'error', message: '알 수 없는 action: ' + action };
+
+  } catch(err) {
+    result = { status: 'error', message: err.toString() };
+  }
+
+  return jsonRes(result);
+}
+
+// ============================================================
+// ✅ v4.8: 딜러 정보 조회
+// ============================================================
+function getDealerInfo(data) {
+  var sheet = SS.getSheetByName('딜러');
+  if (!sheet) return { status: 'error', message: '딜러 시트 없음' };
+
+  var rows     = sheet.getDataRange().getValues();
+  var headers  = rows[0];
+  var dealerId = String(data['딜러ID'] || '').trim();
+
+  for (var i = 1; i < rows.length; i++) {
+    var row = {};
+    headers.forEach(function(h, idx) { row[h] = rows[i][idx]; });
+    if (String(row['딜러ID']).trim() === dealerId) {
+      // 현재 구간 계산
+      var sales = parseFloat(row['이번달매출'] || 0);
+      var tier  = getDealerTier(sales);
+      row['현재구간']     = tier.tier;
+      row['구간라벨']     = tier.label;
+      row['딜러수수료율'] = tier.dealer;
+      row['본사수수료율'] = tier.hq;
+      return { status: 'ok', dealer: row };
+    }
+  }
+  return { status: 'error', message: '딜러 없음: ' + dealerId };
+}
+
+// ============================================================
+// ✅ v4.8: 주문 발생 시 딜러 이번달매출 자동 업데이트
+//    saveOrder() 내부에서 딜러ID가 dlr_ 로 시작하면 자동 호출
+// ============================================================
+function updateDealerSales(dealerId, amount) {
+  try {
+    var sheet = SS.getSheetByName('딜러');
+    if (!sheet) return;
+
+    var rows    = sheet.getDataRange().getValues();
+    var headers = rows[0];
+    var idCol   = headers.indexOf('딜러ID');
+    var salesCol= headers.indexOf('이번달매출');
+    var tierCol = headers.indexOf('수수료구간');
+
+    if (idCol === -1 || salesCol === -1) return;
+
+    for (var i = 1; i < rows.length; i++) {
+      if (String(rows[i][idCol]).trim() === dealerId) {
+        var curSales = parseFloat(rows[i][salesCol] || 0) + parseFloat(amount || 0);
+        var tier     = getDealerTier(curSales);
+
+        sheet.getRange(i + 1, salesCol + 1).setValue(curSales);
+        if (tierCol !== -1) {
+          sheet.getRange(i + 1, tierCol + 1).setValue(tier.tier);
+        }
+        return;
+      }
+    }
+  } catch(err) {
+    console.log('딜러 매출 업데이트 오류:', err.toString());
+  }
+}
+
+// ============================================================
+// ✅ v4.8: 딜러 수수료 계산 및 정산 시트 기록
+//    매월 말 또는 수동으로 호출
+// ============================================================
+function calcDealerCommission(data) {
+  var orderSheet = SS.getSheetByName('주문');
+  if (!orderSheet) return { status: 'error', message: '주문 시트 없음' };
+
+  var yearMonth = data['yearMonth'] ||
+    Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM');
+  var dealerId  = data['딜러ID'] || null;
+
+  var rows    = orderSheet.getDataRange().getValues();
+  var headers = rows[0];
+  var dateCol = headers.indexOf('주문일시');
+  var dealCol = headers.indexOf('대리점ID');
+  var amtCol  = headers.indexOf('결제금액');
+  var statCol = headers.indexOf('주문상태');
+
+  // 딜러별 매출 집계
+  var summary = {};
+  for (var i = 1; i < rows.length; i++) {
+    var rowDate  = String(rows[i][dateCol] || '').substring(0, 7);
+    var rowDealer= String(rows[i][dealCol] || '').trim();
+    var rowAmt   = parseFloat(rows[i][amtCol]) || 0;
+    var rowStat  = String(rows[i][statCol] || '').trim();
+
+    if (rowDate !== yearMonth) continue;
+    if (rowStat === '취소' || rowStat === '반품') continue;
+    if (!rowDealer.startsWith('dlr_')) continue; // 딜러만
+    if (dealerId && rowDealer !== dealerId) continue;
+
+    if (!summary[rowDealer]) summary[rowDealer] = 0;
+    summary[rowDealer] += rowAmt;
+  }
+
+  var csHeaders = getDealerCommissionHeaders();
+  var csSheet   = getOrCreateSheet('딜러정산', csHeaders);
+  var results   = [];
+
+  Object.keys(summary).forEach(function(did) {
+    var totalSales = summary[did];
+    var tier       = getDealerTier(totalSales);
+    var dealerComm = Math.round(totalSales * tier.dealer);
+    var hqComm     = totalSales - dealerComm;
+
+    // 기존 정산 데이터 업데이트 또는 신규 추가
+    var csRows    = csSheet.getDataRange().getValues();
+    var csHeaders2= csRows[0];
+    var ymCol     = csHeaders2.indexOf('정산월');
+    var didCol    = csHeaders2.indexOf('딜러ID');
+    var updated   = false;
+
+    for (var j = 1; j < csRows.length; j++) {
+      if (String(csRows[j][ymCol]).trim() === yearMonth &&
+          String(csRows[j][didCol]).trim() === did) {
+        csSheet.getRange(j + 1, 1, 1, csHeaders2.length).setValues([[
+          csRows[j][0], yearMonth, did,
+          totalSales, tier.tier, tier.label,
+          Math.round(tier.dealer * 100) + '%',
+          dealerComm, hqComm,
+          '정산완료', now()
+        ]]);
+        csSheet.getRange(j + 1, 1, 1, csHeaders2.length).setBackground('#e8f5e9');
+        updated = true;
+        break;
+      }
+    }
+
+    if (!updated) {
+      csSheet.appendRow([
+        getNextNo(csSheet), yearMonth, did,
+        totalSales, tier.tier, tier.label,
+        Math.round(tier.dealer * 100) + '%',
+        dealerComm, hqComm,
+        '정산완료', now()
+      ]);
+      csSheet.getRange(csSheet.getLastRow(), 1, 1, csHeaders.length)
+        .setBackground('#e8f5e9');
+    }
+
+    results.push({
+      딜러ID:     did,
+      정산월:     yearMonth,
+      총매출:     totalSales,
+      수수료구간: tier.label,
+      딜러수수료: dealerComm,
+      본사수익:   hqComm
+    });
+  });
+
+  return { status: 'ok', yearMonth: yearMonth, results: results };
+}
+
+// ============================================================
+// ✅ v4.8: 딜러 수수료 내역 조회
+// ============================================================
+function getDealerCommissionData(data) {
+  var sheet = SS.getSheetByName('딜러정산');
+  if (!sheet) return { status: 'ok', rows: [] };
+
+  var rows      = sheet.getDataRange().getValues();
+  var headers   = rows[0];
+  var dealerId  = String(data['딜러ID']   || '').trim();
+  var yearMonth = String(data['yearMonth']|| '').trim();
+
+  var result = [];
+  for (var i = 1; i < rows.length; i++) {
+    var row = {};
+    headers.forEach(function(h, idx) { row[h] = rows[i][idx]; });
+    if (dealerId  && String(row['딜러ID']).trim()  !== dealerId)  continue;
+    if (yearMonth && String(row['정산월']).trim() !== yearMonth) continue;
+    result.push(row);
+  }
+  return { status: 'ok', rows: result };
+}
+
+// ============================================================
+// ✅ v4.8: 딜러 포인트 적립/차감
+// ============================================================
+function saveDealerPoint(data) {
+  var headers = getDealerPointHeaders();
+  var sheet   = getOrCreateSheet('딜러포인트', headers);
+
+  var dealerId = String(data['딜러ID']       || '').trim();
+  var type     = String(data['포인트종류']   || '적립').trim(); // 적립 / 사용
+  var amount   = parseFloat(data['포인트금액'] || 0);
+  var reason   = String(data['사유']          || '').trim();
+
+  if (!dealerId) return { status: 'error', message: '딜러ID 없음' };
+  if (amount <= 0) return { status: 'error', message: '포인트 금액 오류' };
+
+  // 사용 시 잔액 확인
+  if (type === '사용') {
+    var balance = getDealerPointBalance(dealerId);
+    if (balance < amount) {
+      return { status: 'error', message: '포인트 잔액 부족 (잔액: ' + balance + 'P)' };
+    }
+  }
+
+  var lastNo = getNextNo(sheet);
+  sheet.appendRow([
+    lastNo, dealerId, type, amount, reason, data['주문번호'] || '', now()
+  ]);
+
+  var color = (type === '사용') ? '#fce4ec' : '#e8f5e9';
+  sheet.getRange(sheet.getLastRow(), 1, 1, headers.length).setBackground(color);
+
+  // 딜러 시트 포인트잔액 업데이트
+  updateDealerPointBalance(dealerId);
+
+  return { status: 'ok', action: 'created', no: lastNo, type: type, amount: amount };
+}
+
+function getDealerPointBalance(dealerId) {
+  var sheet = SS.getSheetByName('딜러포인트');
+  if (!sheet) return 0;
+
+  var rows    = sheet.getDataRange().getValues();
+  var headers = rows[0];
+  var idCol   = headers.indexOf('딜러ID');
+  var typeCol = headers.indexOf('포인트종류');
+  var amtCol  = headers.indexOf('포인트금액');
+
+  var balance = 0;
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][idCol]).trim() !== dealerId) continue;
+    var amt  = parseFloat(rows[i][amtCol] || 0);
+    var type = String(rows[i][typeCol] || '').trim();
+    if (type === '사용') balance -= amt;
+    else                 balance += amt;
+  }
+  return balance;
+}
+
+function updateDealerPointBalance(dealerId) {
+  var sheet = SS.getSheetByName('딜러');
+  if (!sheet) return;
+
+  var rows    = sheet.getDataRange().getValues();
+  var headers = rows[0];
+  var idCol   = headers.indexOf('딜러ID');
+  var ptCol   = headers.indexOf('포인트잔액');
+  if (idCol === -1 || ptCol === -1) return;
+
+  var balance = getDealerPointBalance(dealerId);
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][idCol]).trim() === dealerId) {
+      sheet.getRange(i + 1, ptCol + 1).setValue(balance);
+      return;
+    }
+  }
+}
+
+// ============================================================
+// ✅ v4.8: 딜러 포인트 내역 조회
+// ============================================================
+function getDealerPointData(data) {
+  var sheet = SS.getSheetByName('딜러포인트');
+  if (!sheet) return { status: 'ok', rows: [], balance: 0 };
+
+  var rows     = sheet.getDataRange().getValues();
+  var headers  = rows[0];
+  var dealerId = String(data['딜러ID'] || '').trim();
+
+  var result = [];
+  for (var i = 1; i < rows.length; i++) {
+    var row = {};
+    headers.forEach(function(h, idx) { row[h] = rows[i][idx]; });
+    if (dealerId && String(row['딜러ID']).trim() !== dealerId) continue;
+    result.push(row);
+  }
+
+  return {
+    status:  'ok',
+    rows:    result,
+    balance: getDealerPointBalance(dealerId)
+  };
+}
+
+// ============================================================
+// ✅ v4.8: 매월 1일 딜러 이번달매출 / 수수료구간 자동 리셋
+//    → 트리거 등록: setMonthlyResetTrigger() 한번만 실행
+// ============================================================
+function resetDealerMonthly() {
+  var sheet = SS.getSheetByName('딜러');
+  if (!sheet) return;
+
+  var rows    = sheet.getDataRange().getValues();
+  var headers = rows[0];
+  var salesCol= headers.indexOf('이번달매출');
+  var tierCol = headers.indexOf('수수료구간');
+
+  if (salesCol === -1) return;
+
+  // 전월 정산 먼저 실행
+  var lastMonth = getPrevYearMonth();
+  calcDealerCommission({ yearMonth: lastMonth });
+
+  // 리셋
+  for (var i = 1; i < rows.length; i++) {
+    sheet.getRange(i + 1, salesCol + 1).setValue(0);
+    if (tierCol !== -1) {
+      sheet.getRange(i + 1, tierCol + 1).setValue(1);
+    }
+  }
+
+  console.log('딜러 월간 리셋 완료: ' + now());
+}
+
+function getPrevYearMonth() {
+  var now = new Date();
+  var y   = now.getFullYear();
+  var m   = now.getMonth(); // 0-indexed, 현재 월의 이전달
+  if (m === 0) { y -= 1; m = 12; }
+  return y + '-' + String(m).padStart(2, '0');
+}
+
+// ============================================================
+// ✅ v4.8: 월간 리셋 트리거 등록
+//    Apps Script 편집기에서 딱 한번만 실행하면 됨
+// ============================================================
+function setMonthlyResetTrigger() {
+  // 기존 트리거 삭제 (중복 방지)
+  ScriptApp.getProjectTriggers().forEach(function(t) {
+    if (t.getHandlerFunction() === 'resetDealerMonthly') {
+      ScriptApp.deleteTrigger(t);
+    }
+  });
+
+  // 매월 1일 오전 1시에 실행
+  ScriptApp.newTrigger('resetDealerMonthly')
+    .timeBased()
+    .onMonthDay(1)
+    .atHour(1)
+    .create();
+
+  console.log('월간 리셋 트리거 등록 완료!');
+}
+
+// ============================================================
+// 주문 저장 (v4.8: 딜러 매출 자동 업데이트 연동)
+// ============================================================
+function saveOrder(data) {
+  var headers = getOrderHeaders();
+  var sheet   = getOrCreateSheet('주문', headers);
+
+  var firstCell = sheet.getRange(1, 1).getValue();
+  if (String(firstCell).trim() !== '주문번호') {
+    sheet.insertRowBefore(1);
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    sheet.getRange(1, 1, 1, headers.length)
+      .setFontWeight('bold').setBackground('#1e2336').setFontColor('#ffffff');
+    sheet.setFrozenRows(1);
+  }
+
+  var orderNo      = String(data['주문번호']     || data['orderNo']      || '').trim();
+  var orderDate    = data['주문일시']     || data['orderDate']    || now();
+  var dealerId     = data['대리점ID']     || data['dealerId']     || '본사';
+  var ordererName  = data['주문자명']     || data['ordererName']  || data['name']         || '';
+  var phone        = data['연락처']       || data['ordererPhone'] || data['phone']         || '';
+  var email        = data['이메일']       || data['ordererEmail'] || data['email']         || '';
+  var receiverName = data['받는분']       || data['receiverName'] || ordererName;
+  var receiverPhone= data['받는분연락처'] || data['receiverPhone']|| phone;
+  var address      = data['배송주소']     || data['address']      || '';
+  var postCode     = data['우편번호']     || data['postCode']     || '';
+  var itemNo       = data['상품번호']     || data['itemNos']      || '';
+  var items        = data['주문상품']     || data['items']        || '';
+  var qty          = data['수량']         || data['qty']          || '';
+  var amount       = data['결제금액']     || data['amount']       || 0;
+  var payMethod    = data['결제방법']     || data['payMethod']    || '';
+  var referral     = data['추천인코드']   || data['referralCode'] || '';
+  var memberType   = data['회원구분']     || data['memberType']   || '비회원';
+  var orderStatus  = data['주문상태']     || data['status']       || '결제대기';
+  var memo         = data['메모']         || data['memo']         || '';
+
+  if (!orderNo) return { status: 'error', message: '주문번호 없음' };
+
+  var rows = sheet.getDataRange().getValues();
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][0]).trim() === orderNo) {
+      return { status: 'ok', action: 'already_exists', orderNo: orderNo };
+    }
+  }
+
+  var newRow = [
+    orderNo, orderDate, dealerId,
+    ordererName, phone, email,
+    receiverName, receiverPhone, address, postCode,
+    itemNo, items, qty,
+    amount, payMethod,
+    referral, memberType, orderStatus, memo,
+    now()
+  ];
+  sheet.appendRow(newRow);
+  sheet.getRange(sheet.getLastRow(), 1, 1, newRow.length).setBackground('#fffde7');
+
+  // ✅ v4.8: 딜러 매출 자동 업데이트
+  if (String(dealerId).startsWith('dlr_')) {
+    updateDealerSales(dealerId, amount);
+  }
+
+  if (email || phone) {
+    saveMember({
+      이름: ordererName, 연락처: phone, 이메일: email,
+      대리점ID: dealerId, 추천인코드: referral,
+      회원구분: memberType,
+      최근주문번호: orderNo, 최근주문금액: amount
+    });
+  }
+
+  return { status: 'ok', action: 'created', orderNo: orderNo, dealer: dealerId };
+}
+
+function getOrderHeaders() {
+  return [
+    '주문번호', '주문일시', '대리점ID',
+    '주문자명', '연락처', '이메일',
+    '받는분', '받는분연락처', '배송주소', '우편번호',
+    '상품번호', '주문상품', '수량',
+    '결제금액', '결제방법',
+    '추천인코드', '회원구분', '주문상태', '메모',
+    '저장일시'
+  ];
+}
+
+// ============================================================
+// 딜러 관련 헤더 정의
+// ============================================================
+function getDealerCommissionHeaders() {
+  return [
+    '번호', '정산월', '딜러ID',
+    '총매출', '수수료구간', '구간라벨', '딜러수수료율',
+    '딜러수수료', '본사수익',
+    '상태', '정산일시'
+  ];
+}
+
+function getDealerPointHeaders() {
+  return ['번호', '딜러ID', '포인트종류', '포인트금액', '사유', '주문번호', '발생일'];
+}
+
+// ============================================================
+// 아래는 v4.7과 동일한 함수들 (변경 없음)
+// ============================================================
+
+function buildOgProxy(storeId) {
+  var storeName = '담누리마켓';
+  var storeDesc = '담아서 누리는 쇼핑 - 신선한 먹거리부터 생활용품까지!';
+  var storeUrl  = 'https://min323300.github.io/myshop-v2/index.html?dealer=' + storeId;
+  var ogImage   = 'https://gasway.shop/images/og-image.jpg';
+
+  try {
+    var sheet = SS.getSheetByName('대리점');
+    if (sheet) {
+      var data    = sheet.getDataRange().getValues();
+      var headers = data[0];
+      var idCol   = headers.indexOf('대리점ID');
+      var nameCol = headers.indexOf('대리점명');
+      var domCol  = headers.indexOf('도메인');
+      var imgCol  = headers.indexOf('로고이미지');
+
+      for (var i = 1; i < data.length; i++) {
+        if (String(data[i][idCol] || '').trim() === storeId) {
+          var name   = String(data[i][nameCol] || '').trim();
+          var domain = String(data[i][domCol]  || '').trim();
+          var img    = String(data[i][imgCol]  || '').trim();
+          if (name)   storeName = name;
+          if (domain) storeUrl  = domain.startsWith('http') ? domain : 'https://' + domain;
+          if (img)    ogImage   = img;
+          var descCol = headers.indexOf('설명');
+          var customDesc = (descCol !== -1) ? String(data[i][descCol] || '').trim() : '';
+          storeDesc = customDesc || (storeName + ' - 담아서 누리는 쇼핑');
+          break;
+        }
+      }
+    }
+  } catch(err) {}
+
+  var html = '<!DOCTYPE html>\n'
+    + '<html lang="ko"><head>\n'
+    + '  <meta charset="UTF-8">\n'
+    + '  <title>' + storeName + ' - 담아서 누리는 쇼핑</title>\n'
+    + '  <meta property="og:type"        content="website" />\n'
+    + '  <meta property="og:title"       content="' + storeName + ' - 담아서 누리는 쇼핑" />\n'
+    + '  <meta property="og:description" content="' + storeDesc + '" />\n'
+    + '  <meta property="og:image"       content="' + ogImage   + '" />\n'
+    + '  <meta property="og:url"         content="' + storeUrl  + '" />\n'
+    + '  <meta property="og:site_name"   content="' + storeName + '" />\n'
+    + '  <meta name="description"        content="' + storeDesc + '" />\n'
+    + '  <meta name="twitter:card"       content="summary_large_image" />\n'
+    + '  <meta name="twitter:title"      content="' + storeName + ' - 담아서 누리는 쇼핑" />\n'
+    + '  <meta name="twitter:image"      content="' + ogImage   + '" />\n'
+    + '  <meta http-equiv="refresh" content="0;url=' + storeUrl + '" />\n'
+    + '</head><body>\n'
+    + '  <script>window.location.replace("' + storeUrl + '");<\/script>\n'
+    + '  <p>잠시 후 자동으로 이동합니다. <a href="' + storeUrl + '">' + storeName + ' 바로가기</a></p>\n'
+    + '</body></html>';
+
+  return HtmlService.createHtmlOutput(html)
+    .setTitle(storeName + ' - 담아서 누리는 쇼핑')
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+function updateOrderStatus(data) {
+  var sheet = SS.getSheetByName('주문');
+  if (!sheet) return { status: 'error', message: '주문 시트 없음' };
+
+  var rows    = sheet.getDataRange().getValues();
+  var headers = rows[0];
+  var noCol   = headers.indexOf('주문번호');
+  var stCol   = headers.indexOf('주문상태');
+  if (noCol === -1 || stCol === -1) return { status: 'error', message: '컬럼 없음' };
+
+  var trackCol = headers.indexOf('송장번호');
+  if (trackCol === -1) {
+    trackCol = headers.length;
+    var hCell = sheet.getRange(1, trackCol + 1);
+    hCell.setValue('송장번호');
+    hCell.setFontWeight('bold').setBackground('#1e2336').setFontColor('#ffffff');
+    headers.push('송장번호');
+  }
+
+  var carrierCol = headers.indexOf('택배사');
+  if (carrierCol === -1) {
+    carrierCol = headers.length;
+    var hCell2 = sheet.getRange(1, carrierCol + 1);
+    hCell2.setValue('택배사');
+    hCell2.setFontWeight('bold').setBackground('#1e2336').setFontColor('#ffffff');
+    headers.push('택배사');
+  }
+
+  var pgCol = headers.indexOf('PG거래번호');
+  if (pgCol === -1) {
+    pgCol = headers.length;
+    var hCell3 = sheet.getRange(1, pgCol + 1);
+    hCell3.setValue('PG거래번호');
+    hCell3.setFontWeight('bold').setBackground('#1e2336').setFontColor('#ffffff');
+    headers.push('PG거래번호');
+  }
+
+  var orderNo = String(data['주문번호'] || '').trim();
+  var statusColors = {
+    '결제대기': '#fffde7', '결제완료': '#e8f5e9',
+    '상품준비': '#e3f2fd', '배송중':   '#e8eaf6',
+    '배송완료': '#f3e5f5', '취소':     '#ffebee', '반품': '#ffebee'
+  };
+
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][noCol]).trim() === orderNo) {
+      if (data['주문상태'])
+        sheet.getRange(i + 1, stCol + 1).setValue(data['주문상태']);
+      if (data['송장번호'] !== undefined && data['송장번호'] !== '')
+        sheet.getRange(i + 1, trackCol + 1).setValue(data['송장번호']);
+      if (data['택배사'] !== undefined && data['택배사'] !== '')
+        sheet.getRange(i + 1, carrierCol + 1).setValue(data['택배사']);
+      if (data['PG거래번호'] !== undefined && data['PG거래번호'] !== '')
+        sheet.getRange(i + 1, pgCol + 1).setValue(data['PG거래번호']);
+      if (data['주문상태'])
+        sheet.getRange(i + 1, 1, 1, sheet.getLastColumn())
+          .setBackground(statusColors[data['주문상태']] || '#ffffff');
+
+      if (data['주문상태'] === '결제완료') {
+        saveConsignmentSettlement(orderNo, rows[i], headers);
+      }
+
+      return { status: 'ok', orderNo: orderNo };
+    }
+  }
+  return { status: 'error', message: '주문 없음: ' + orderNo };
+}
+
+function saveMember(data) {
+  var headers = getMemberHeaders();
+  var sheet   = getOrCreateSheet('회원', headers);
+
+  if (String(sheet.getRange(1, 1).getValue()).trim() !== '이름') {
+    sheet.insertRowBefore(1);
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold').setBackground('#e6f4ea');
+    sheet.setFrozenRows(1);
+  }
+
+  var phone = String(data['연락처'] || '').replace(/[^0-9]/g, '');
+  var email = String(data['이메일'] || '').trim().toLowerCase();
+  if (!phone && !email) return { status: 'ok', action: 'skip' };
+
+  var rows       = sheet.getDataRange().getValues();
+  var hdrs       = rows[0];
+  var phoneCol   = hdrs.indexOf('연락처');
+  var emailCol   = hdrs.indexOf('이메일');
+  var countCol   = hdrs.indexOf('주문횟수');
+  var amtCol     = hdrs.indexOf('누적금액');
+  var lastNoCol  = hdrs.indexOf('최근주문번호');
+  var lastAmtCol = hdrs.indexOf('최근주문금액');
+  var updCol     = hdrs.indexOf('최근주문일');
+
+  for (var i = 1; i < rows.length; i++) {
+    var rPhone = String(rows[i][phoneCol] || '').replace(/[^0-9]/g, '');
+    var rEmail = String(rows[i][emailCol] || '').trim().toLowerCase();
+    if ((phone && rPhone === phone) || (email && rEmail === email)) {
+      if (data['최근주문번호']) {
+        var cnt = (parseInt(rows[i][countCol]) || 0) + 1;
+        var amt = (parseInt(rows[i][amtCol])   || 0) + (parseInt(data['최근주문금액']) || 0);
+        sheet.getRange(i+1, countCol+1).setValue(cnt);
+        sheet.getRange(i+1, amtCol+1).setValue(amt);
+        sheet.getRange(i+1, lastNoCol+1).setValue(data['최근주문번호']);
+        sheet.getRange(i+1, lastAmtCol+1).setValue(data['최근주문금액'] || 0);
+        sheet.getRange(i+1, updCol+1).setValue(now());
+      }
+      return { status: 'ok', action: 'updated' };
+    }
+  }
+
+  sheet.appendRow([
+    data['이름']         || '',
+    data['연락처']       || '',
+    data['이메일']       || '',
+    data['비밀번호']     || '',
+    data['대리점ID']     || '',
+    data['추천인코드']   || '',
+    data['사용추천코드'] || '',
+    data['회원구분']     || '회원',
+    0, 0,
+    data['적립금']       || 0,
+    '', 0, '',
+    now()
+  ]);
+  sheet.getRange(sheet.getLastRow(), 1, 1, headers.length).setBackground('#f0fdf4');
+  return { status: 'ok', action: 'created' };
+}
+
+function getMemberHeaders() {
+  return [
+    '이름', '연락처', '이메일', '비밀번호',
+    '대리점ID', '추천인코드', '사용추천코드', '회원구분',
+    '주문횟수', '누적금액', '적립금',
+    '최근주문번호', '최근주문금액', '최근주문일',
+    '가입일'
+  ];
+}
+
+function saveProduct(data) {
+  var sheet = SS.getSheetByName('상품목록');
+  if (!sheet) return { status: 'error', message: '상품목록 시트 없음' };
+
+  var deliveryCols = ['배송방법', '배송비', '무료배송조건'];
+  var headerRow = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  deliveryCols.forEach(function(col) {
+    if (headerRow.indexOf(col) === -1) {
+      var newCol = sheet.getLastColumn() + 1;
+      var cell = sheet.getRange(1, newCol);
+      cell.setValue(col);
+      cell.setFontWeight('bold').setBackground('#e8f4fd').setFontColor('#1a5276');
+      headerRow.push(col);
+    }
+  });
+
+  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  var no      = data['번호'] ? String(data['번호']).trim() : '';
+  var rows    = sheet.getDataRange().getValues();
+
+  if (no) {
+    for (var i = 1; i < rows.length; i++) {
+      if (String(rows[i][0]).trim() === no) {
+        var updRow = headers.map(function(h, idx) {
+          return data[h] !== undefined ? data[h] : rows[i][idx];
+        });
+        sheet.getRange(i + 1, 1, 1, headers.length).setValues([updRow]);
+        return { status: 'ok', action: 'updated' };
+      }
+    }
+  }
+
+  var lastNo = getNextNo(sheet);
+  var newRow = headers.map(function(h) { return h === '번호' ? lastNo : (data[h] || ''); });
+  sheet.appendRow(newRow);
+  return { status: 'ok', action: 'created' };
+}
+
+// ✅ v5.0 상품 일괄(대량) 등록
+function saveBulkProducts(data) {
+  var products = data.products || [];
+  if (!products.length) return { status: 'error', message: '등록할 상품이 없습니다.' };
+
+  var sheet = SS.getSheetByName('상품목록');
+  if (!sheet) return { status: 'error', message: '상품목록 시트 없음' };
+
+  // 배송 관련 컬럼 자동 생성
+  var deliveryCols = ['배송방법', '배송비', '무료배송조건'];
+  var headerRow = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  deliveryCols.forEach(function(col) {
+    if (headerRow.indexOf(col) === -1) {
+      var newCol = sheet.getLastColumn() + 1;
+      sheet.getRange(1, newCol).setValue(col).setFontWeight('bold').setBackground('#e8f4fd');
+      headerRow.push(col);
+    }
+  });
+
+  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  var nextNo = getNextNo(sheet);
+  var success = 0, failed = 0, errors = [];
+
+  products.forEach(function(prod, idx) {
+    try {
+      var rowData = headers.map(function(h) {
+        if (h === '번호') return nextNo;
+        if (h === '사용여부' && !prod[h]) return 'TRUE';
+        if (h === '판매수량' && !prod[h]) return '0';
+        if (h === '별점평균' && !prod[h]) return '0';
+        if (h === '리뷰수' && !prod[h]) return '0';
+        return prod[h] || '';
+      });
+      sheet.appendRow(rowData);
+      nextNo++;
+      success++;
+    } catch(e) {
+      failed++;
+      errors.push({ row: idx + 1, message: e.toString() });
+    }
+  });
+
+  return {
+    status: 'ok',
+    message: '총 ' + products.length + '건 중 ' + success + '건 등록, ' + failed + '건 실패',
+    success: success,
+    failed: failed,
+    errors: errors
+  };
+}
+
+function updateProductStatus(data) {
+  var sheet = SS.getSheetByName('상품목록');
+  if (!sheet) return { status: 'error', message: '상품목록 시트 없음' };
+
+  var rows    = sheet.getDataRange().getValues();
+  var headers = rows[0];
+  var col     = headers.indexOf('사용여부');
+  if (col === -1) return { status: 'error', message: '사용여부 컬럼 없음' };
+
+  var no = String(data['번호']).trim();
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][0]).trim() === no) {
+      sheet.getRange(i + 1, col + 1).setValue(data['사용여부']);
+      return { status: 'ok' };
+    }
+  }
+  return { status: 'error', message: '상품 없음' };
+}
+
+function saveRow(sheetName, data, headers) {
+  var sheet = getOrCreateSheet(sheetName, headers);
+  var no    = data['번호'] ? String(data['번호']).trim() : '';
+
+  if (no) {
+    var rows = sheet.getDataRange().getValues();
+    for (var i = 1; i < rows.length; i++) {
+      if (String(rows[i][0]).trim() === no) {
+        var updRow = headers.map(function(h, idx) {
+          var newVal = data[h];
+          if (newVal === undefined) return rows[i][idx];
+          var isDateField = (h === '시작일' || h === '종료일' || h === '시작일시' || h === '종료일시');
+          if (isDateField && (newVal === '' || newVal === null)) return rows[i][idx];
+          return newVal;
+        });
+        sheet.getRange(i + 1, 1, 1, headers.length).setValues([updRow]);
+        return { status: 'ok', action: 'updated', sheet: sheetName, no: no };
+      }
+    }
+  }
+
+  var lastNo = getNextNo(sheet);
+  var newRow = headers.map(function(h) {
+    if (h === '번호')   return lastNo;
+    if (h === '작성일') return data[h] || new Date().toISOString().split('T')[0];
+    return data[h] !== undefined ? data[h] : '';
+  });
+  sheet.appendRow(newRow);
+  return { status: 'ok', action: 'created', sheet: sheetName, no: lastNo };
+}
+
+function deleteRow(sheetName, no) {
+  var sheet = SS.getSheetByName(sheetName);
+  if (!sheet) return { status: 'error', message: sheetName + ' 시트 없음' };
+
+  no = String(no).trim();
+  var rows = sheet.getDataRange().getValues();
+  for (var i = rows.length - 1; i >= 1; i--) {
+    if (String(rows[i][0]).trim() === no) {
+      sheet.deleteRow(i + 1);
+      return { status: 'ok', action: 'deleted', no: no };
+    }
+  }
+  return { status: 'error', message: '해당 번호 없음: ' + no };
+}
+
+function saveDealerRow(data) {
+  var headers = getDealerHeaders();
+  var sheet   = getOrCreateSheet('대리점', headers);
+  var fid     = data['대리점ID'] ? String(data['대리점ID']).trim() : '';
+
+  if (fid) {
+    var rows = sheet.getDataRange().getValues();
+    for (var i = 1; i < rows.length; i++) {
+      if (String(rows[i][0]).trim() === fid) {
+        var updRow = headers.map(function(h, idx) {
+          return data[h] !== undefined ? data[h] : rows[i][idx] || '';
+        });
+        sheet.getRange(i + 1, 1, 1, headers.length).setValues([updRow]);
+        return { status: 'ok', action: 'updated', id: fid };
+      }
+    }
+  }
+
+  var newRow = headers.map(function(h) { return data[h] || ''; });
+  sheet.appendRow(newRow);
+  return { status: 'ok', action: 'created', id: fid };
+}
+
+function saveDealerProduct(data) {
+  var headers  = getDealerProductHeaders();
+  var sheet    = getOrCreateSheet('대리점상품', headers);
+
+  if (String(sheet.getRange(1, 1).getValue()).trim() !== '번호') {
+    sheet.insertRowBefore(1);
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold').setBackground('#f0f0f0');
+  }
+
+  var no       = data['번호'] ? String(data['번호']).trim() : '';
+  var dealerId = String(data['대리점ID'] || '').trim();
+  var rows     = sheet.getDataRange().getValues();
+
+  if (no) {
+    for (var i = 1; i < rows.length; i++) {
+      if (String(rows[i][0]).trim() === no && String(rows[i][1]).trim() === dealerId) {
+        var updRow = headers.map(function(h, idx) {
+          return data[h] !== undefined ? data[h] : rows[i][idx] || '';
+        });
+        sheet.getRange(i + 1, 1, 1, headers.length).setValues([updRow]);
+        return { status: 'ok', action: 'updated', no: no };
+      }
+    }
+  }
+
+  var prefix = getDealerPhonePrefix(dealerId);
+  var nextNo = getNextDealerNo(sheet, prefix, dealerId);
+  data['번호'] = nextNo;
+  var newRow = headers.map(function(h) { return data[h] || ''; });
+  sheet.appendRow(newRow);
+  return { status: 'ok', action: 'created', no: nextNo };
+}
+
+// ✅ v5.0 대리점 상품 일괄(대량) 등록
+function saveBulkDealerProducts(data) {
+  var products = data.products || [];
+  var dealerId = String(data.dealerId || '').trim();
+  if (!dealerId) return { status: 'error', message: '대리점ID가 없습니다.' };
+  if (!products.length) return { status: 'error', message: '등록할 상품이 없습니다.' };
+
+  var headers = getDealerProductHeaders();
+  var sheet   = getOrCreateSheet('대리점상품', headers);
+
+  if (String(sheet.getRange(1, 1).getValue()).trim() !== '번호') {
+    sheet.insertRowBefore(1);
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold').setBackground('#f0f0f0');
+  }
+
+  var prefix = getDealerPhonePrefix(dealerId);
+  var success = 0, failed = 0, errors = [];
+
+  products.forEach(function(prod, idx) {
+    try {
+      prod['대리점ID'] = dealerId;
+      var nextNo = getNextDealerNo(sheet, prefix, dealerId);
+      prod['번호'] = nextNo;
+      if (!prod['사용여부']) prod['사용여부'] = 'TRUE';
+      if (!prod['위탁여부']) prod['위탁여부'] = 'FALSE';
+      if (!prod['본사승인']) prod['본사승인'] = '';
+      var newRow = headers.map(function(h) { return prod[h] || ''; });
+      sheet.appendRow(newRow);
+      success++;
+    } catch(e) {
+      failed++;
+      errors.push({ row: idx + 1, message: e.toString() });
+    }
+  });
+
+  return {
+    status: 'ok',
+    message: '총 ' + products.length + '건 중 ' + success + '건 등록, ' + failed + '건 실패',
+    success: success,
+    failed: failed,
+    errors: errors
+  };
+}
+
+function getDealerPhonePrefix(dealerId) {
+  var sheet = SS.getSheetByName('대리점');
+  if (!sheet) return '0000';
+  var rows     = sheet.getDataRange().getValues();
+  var headers  = rows[0];
+  var idCol    = headers.indexOf('대리점ID');
+  var phoneCol = headers.indexOf('연락처');
+  if (idCol === -1 || phoneCol === -1) return '0000';
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][idCol]).trim() === dealerId) {
+      var phone = String(rows[i][phoneCol]).replace(/[^0-9]/g, '');
+      return phone.slice(-4) || '0000';
+    }
+  }
+  return '0000';
+}
+
+function getNextDealerNo(sheet, prefix, dealerId) {
+  var rows    = sheet.getDataRange().getValues();
+  var headers = rows[0];
+  var noCol   = headers.indexOf('번호');
+  var idCol   = headers.indexOf('대리점ID');
+  var maxSeq  = 0;
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][idCol] || '').trim() === dealerId) {
+      var rowNo = String(rows[i][noCol] || '').trim();
+      if (rowNo.startsWith(prefix)) {
+        var seq = parseInt(rowNo.substring(prefix.length)) || 0;
+        if (seq > maxSeq) maxSeq = seq;
+      }
+    }
+  }
+  return prefix + String(maxSeq + 1);
+}
+
+function saveReviewReply(data) {
+  var sheet = SS.getSheetByName('리뷰');
+  if (!sheet) return { status: 'error', message: '리뷰 시트 없음' };
+
+  var rows     = sheet.getDataRange().getValues();
+  var headers  = rows[0];
+  var noCol    = headers.indexOf('번호');
+  var replyCol = headers.indexOf('답글내용');
+  if (noCol === -1 || replyCol === -1) return { status: 'error', message: '컬럼 없음' };
+
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][noCol]).trim() === String(data['번호']).trim()) {
+      sheet.getRange(i + 1, replyCol + 1).setValue(data['답글내용']);
+      return { status: 'ok' };
+    }
+  }
+  return { status: 'error', message: '리뷰 없음' };
+}
+
+function saveReview(data) {
+  var headers = ['번호', '상품번호', '작성자', '이메일', '별점', '리뷰내용', '이미지', '공개여부', '답글내용', '작성일'];
+  var sheet   = getOrCreateSheet('리뷰', headers);
+  var lastNo  = getNextNo(sheet);
+
+  sheet.appendRow([
+    lastNo,
+    data['상품번호']  || data['productId'] || '',
+    data['작성자']    || data['author']    || '익명',
+    data['이메일']    || data['email']     || '',
+    data['별점']      || data['rating']    || 5,
+    data['리뷰내용']  || data['content']   || '',
+    data['이미지']    || data['image']     || '',
+    data['공개여부']  !== undefined ? data['공개여부'] : 'TRUE',
+    '',
+    now()
+  ]);
+  sheet.getRange(sheet.getLastRow(), 1, 1, headers.length).setBackground('#fffde7');
+  return { status: 'ok', action: 'created', no: lastNo };
+}
+
+function savePGConfig(data) {
+  var headers = getPGConfigHeaders();
+  var sheet   = getOrCreateSheet('PG설정', headers);
+  var rows    = sheet.getDataRange().getValues();
+  var id      = String(data['대리점ID'] || '본사').trim();
+
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][0]).trim() === id) {
+      var updRow = headers.map(function(h, idx) {
+        return data[h] !== undefined ? data[h] : rows[i][idx] || '';
+      });
+      sheet.getRange(i+1, 1, 1, headers.length).setValues([updRow]);
+      return { status: 'ok', action: 'updated' };
+    }
+  }
+  var newRow = headers.map(function(h) { return data[h] || ''; });
+  sheet.appendRow(newRow);
+  return { status: 'ok', action: 'created' };
+}
+
+function getPGConfig() {
+  var sheet = SS.getSheetByName('PG설정');
+  if (!sheet) return jsonRes({ error: 'PG설정 시트 없음' });
+
+  var rows   = sheet.getDataRange().getValues();
+  var header = rows[0];
+  var row    = rows[1];
+  if (!row) return jsonRes({ error: '데이터 없음' });
+
+  var midIdx = header.indexOf('대리점MID');
+  var keyIdx = header.indexOf('API키');
+
+  return jsonRes({
+    tmnId:  String(row[midIdx]  || ''),
+    payKey: String(row[keyIdx]  || '')
+  });
+}
+
+function getPGConfigHeaders() {
+  return ['대리점ID', 'PG사', 'MID', 'API키', '시크릿키', 'ScriptURL'];
+}
+
+function saveReferral(data) {
+  var headers = ['추천코드','피추천인이름','피추천인이메일','적립금','일시','처리상태'];
+  var sheet   = getOrCreateSheet('추천인', headers);
+
+  if (String(sheet.getRange(1,1).getValue()).trim() !== '추천코드') {
+    sheet.insertRowBefore(1);
+    sheet.getRange(1,1,1,headers.length).setValues([headers]);
+    sheet.getRange(1,1,1,headers.length).setFontWeight('bold').setBackground('#e8d5f5');
+    sheet.setFrozenRows(1);
+  }
+
+  sheet.appendRow([
+    data['추천코드']       || '',
+    data['피추천인이름']   || '',
+    data['피추천인이메일'] || '',
+    data['적립금']         || 2000,
+    data['일시']           || now(),
+    '지급완료'
+  ]);
+  sheet.getRange(sheet.getLastRow(), 1, 1, headers.length).setBackground('#f3e5f5');
+
+  addPointToReferrer(data['추천코드'], data['적립금'] || 2000, data['피추천인이름'] || '');
+  return { status: 'ok', action: 'created', refCode: data['추천코드'] };
+}
+
+function addPointToReferrer(refCode, amount, fromName) {
+  var sheet = SS.getSheetByName('회원');
+  if (!sheet) return;
+
+  var rows    = sheet.getDataRange().getValues();
+  var headers = rows[0];
+  var refCol  = headers.indexOf('추천코드');
+  var ptCol   = headers.indexOf('적립금합계');
+
+  if (refCol === -1) {
+    var lastCol = sheet.getLastColumn();
+    sheet.getRange(1, lastCol+1).setValue('추천코드');
+    sheet.getRange(1, lastCol+2).setValue('적립금합계');
+    rows    = sheet.getDataRange().getValues();
+    headers = rows[0];
+    refCol  = headers.indexOf('추천코드');
+    ptCol   = headers.indexOf('적립금합계');
+  }
+
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][refCol]||'').trim() === refCode) {
+      var cur  = parseInt(rows[i][ptCol]) || 0;
+      var cell = sheet.getRange(i+1, ptCol+1);
+      cell.setValue(cur + amount);
+      cell.setNote((cell.getNote()||'') + '\n+' + amount + 'P (' + fromName + ' 추천)');
+      return;
+    }
+  }
+}
+
+function savePointHistory(data) {
+  var headers = ['이름','이메일','연락처','구분','금액','설명','주문번호','일시'];
+  var sheet   = getOrCreateSheet('포인트내역', headers);
+
+  if (String(sheet.getRange(1,1).getValue()).trim() !== '이름') {
+    sheet.insertRowBefore(1);
+    sheet.getRange(1,1,1,headers.length).setValues([headers]);
+    sheet.getRange(1,1,1,headers.length).setFontWeight('bold').setBackground('#d1fae5');
+    sheet.setFrozenRows(1);
+  }
+
+  sheet.appendRow([
+    data['이름']     || '',
+    data['이메일']   || '',
+    data['연락처']   || '',
+    data['구분']     || '사용',
+    data['금액']     || 0,
+    data['설명']     || '',
+    data['주문번호'] || '',
+    data['일시']     || now()
+  ]);
+
+  var color = (String(data['구분']||'').trim() === '사용') ? '#fce4ec' : '#f0fdf4';
+  sheet.getRange(sheet.getLastRow(), 1, 1, headers.length).setBackground(color);
+  return { status: 'ok', action: 'created' };
+}
+
+function saveTempPassword(data) {
+  var email  = (data['이메일'] || '').trim().toLowerCase();
+  var tempPw = data['임시비밀번호'] || '';
+
+  var sheet = SS.getSheetByName('회원');
+  if (!sheet) return { status: 'error', message: '회원 시트 없음' };
+
+  var rows     = sheet.getDataRange().getValues();
+  var headers  = rows[0];
+  var emailCol = headers.indexOf('이메일');
+  if (emailCol === -1) return { status: 'error', message: '이메일 컬럼 없음' };
+
+  var pwCol   = headers.indexOf('임시비밀번호');
+  var dateCol = headers.indexOf('임시비번발급일');
+  if (pwCol === -1) {
+    var last = sheet.getLastColumn();
+    sheet.getRange(1, last+1).setValue('임시비밀번호');
+    sheet.getRange(1, last+2).setValue('임시비번발급일');
+    pwCol   = last;
+    dateCol = last + 1;
+  }
+
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][emailCol]||'').trim().toLowerCase() === email) {
+      sheet.getRange(i+1, pwCol+1).setValue(tempPw);
+      sheet.getRange(i+1, dateCol+1).setValue(now());
+      sheet.getRange(i+1, pwCol+1, 1, 2).setBackground('#fff3cd');
+      return { status: 'ok', message: '임시 비밀번호 저장 완료' };
+    }
+  }
+  return { status: 'error', message: '회원 없음' };
+}
+
+function saveLiveAlarm(data) {
+  var headers = ['번호','방송번호','이름','연락처','이메일','신청일시'];
+  var sheet   = getOrCreateSheet('라이브알림', headers);
+
+  if (String(sheet.getRange(1,1).getValue()).trim() !== '번호') {
+    sheet.insertRowBefore(1);
+    sheet.getRange(1,1,1,headers.length).setValues([headers]);
+    sheet.getRange(1,1,1,headers.length).setFontWeight('bold').setBackground('#fce4ec');
+    sheet.setFrozenRows(1);
+  }
+
+  var phone    = String(data['연락처'] || '').replace(/[^0-9]/g, '');
+  var broadNo  = String(data['방송번호'] || '').trim();
+  var rows     = sheet.getDataRange().getValues();
+  var hdrs     = rows[0];
+  var noCol    = hdrs.indexOf('방송번호');
+  var phoneCol = hdrs.indexOf('연락처');
+
+  for (var i = 1; i < rows.length; i++) {
+    var rPhone = String(rows[i][phoneCol] || '').replace(/[^0-9]/g, '');
+    if (String(rows[i][noCol]).trim() === broadNo && rPhone === phone) {
+      return { status: 'ok', action: 'already_exists', message: '이미 신청됨' };
+    }
+  }
+
+  var lastNo = getNextNo(sheet);
+  sheet.appendRow([lastNo, broadNo, data['이름']||'', data['연락처']||'', data['이메일']||'', now()]);
+  sheet.getRange(sheet.getLastRow(), 1, 1, headers.length).setBackground('#fce4ec');
+
+  var liveSheet = SS.getSheetByName('라이브방송');
+  if (liveSheet) {
+    var lRows    = liveSheet.getDataRange().getValues();
+    var lHeaders = lRows[0];
+    var lNoCol   = lHeaders.indexOf('번호');
+    var cntCol   = lHeaders.indexOf('알림신청수');
+    for (var j = 1; j < lRows.length; j++) {
+      if (String(lRows[j][lNoCol]).trim() === broadNo) {
+        var cnt = (parseInt(lRows[j][cntCol]) || 0) + 1;
+        liveSheet.getRange(j+1, cntCol+1).setValue(cnt);
+        break;
+      }
+    }
+  }
+
+  return { status: 'ok', action: 'created', no: lastNo };
+}
+
+function saveLiveCoupon(data) {
+  var headers = ['번호','쿠폰코드','방송번호','이름','연락처','이메일','할인율','발급일시','사용여부'];
+  var sheet   = getOrCreateSheet('라이브쿠폰', headers);
+
+  if (String(sheet.getRange(1,1).getValue()).trim() !== '번호') {
+    sheet.insertRowBefore(1);
+    sheet.getRange(1,1,1,headers.length).setValues([headers]);
+    sheet.getRange(1,1,1,headers.length).setFontWeight('bold').setBackground('#fff9c4');
+    sheet.setFrozenRows(1);
+  }
+
+  var phone    = String(data['연락처'] || '').replace(/[^0-9]/g, '');
+  var coupon   = String(data['쿠폰코드'] || '').trim();
+  var rows     = sheet.getDataRange().getValues();
+  var hdrs     = rows[0];
+  var cpnCol   = hdrs.indexOf('쿠폰코드');
+  var phoneCol = hdrs.indexOf('연락처');
+
+  for (var i = 1; i < rows.length; i++) {
+    var rPhone = String(rows[i][phoneCol] || '').replace(/[^0-9]/g, '');
+    if (String(rows[i][cpnCol]).trim() === coupon && rPhone === phone) {
+      return { status: 'error', action: 'already_issued', message: '이미 발급된 쿠폰' };
+    }
+  }
+
+  var lastNo = getNextNo(sheet);
+  sheet.appendRow([lastNo, coupon, data['방송번호']||'', data['이름']||'',
+    data['연락처']||'', data['이메일']||'', data['할인율']||0, now(), 'FALSE']);
+  sheet.getRange(sheet.getLastRow(), 1, 1, headers.length).setBackground('#fff9c4');
+
+  return { status: 'ok', action: 'created', no: lastNo, coupon: coupon };
+}
+
+function saveConsignmentProduct(data) {
+  var sheet = SS.getSheetByName('대리점상품');
+  if (!sheet) return { status: 'error', message: '대리점상품 시트 없음' };
+
+  var rows     = sheet.getDataRange().getValues();
+  var headers  = rows[0];
+  var noCol    = headers.indexOf('번호');
+  var idCol    = headers.indexOf('대리점ID');
+  var csCol    = headers.indexOf('위탁여부');
+  var aprCol   = headers.indexOf('본사승인');
+
+  if (csCol === -1) return { status: 'error', message: '위탁여부 컬럼 없음' };
+
+  var no       = String(data['번호']     || '').trim();
+  var dealerId = String(data['대리점ID'] || '').trim();
+
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][noCol]).trim() === no &&
+        String(rows[i][idCol]).trim() === dealerId) {
+      sheet.getRange(i + 1, csCol + 1).setValue(data['위탁여부'] || 'FALSE');
+      if (data['위탁여부'] === 'FALSE') {
+        sheet.getRange(i + 1, aprCol + 1).setValue('');
+      }
+      return { status: 'ok', action: 'updated', no: no };
+    }
+  }
+  return { status: 'error', message: '상품 없음: ' + no };
+}
+
+function approveConsignment(data) {
+  var sheet = SS.getSheetByName('대리점상품');
+  if (!sheet) return { status: 'error', message: '대리점상품 시트 없음' };
+
+  var rows    = sheet.getDataRange().getValues();
+  var headers = rows[0];
+  var noCol   = headers.indexOf('번호');
+  var idCol   = headers.indexOf('대리점ID');
+  var aprCol  = headers.indexOf('본사승인');
+  var dateCol = headers.indexOf('승인일시');
+
+  if (aprCol === -1) return { status: 'error', message: '본사승인 컬럼 없음' };
+
+  if (dateCol === -1) {
+    dateCol = headers.length;
+    var hCell = sheet.getRange(1, dateCol + 1);
+    hCell.setValue('승인일시');
+    hCell.setFontWeight('bold').setBackground('#f0f0f0');
+    headers.push('승인일시');
+  }
+
+  var no       = String(data['번호']     || '').trim();
+  var dealerId = String(data['대리점ID'] || '').trim();
+  var value    = String(data['본사승인'] || '').trim();
+
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][noCol]).trim() === no &&
+        String(rows[i][idCol]).trim() === dealerId) {
+      sheet.getRange(i + 1, aprCol  + 1).setValue(value);
+      sheet.getRange(i + 1, dateCol + 1).setValue(now());
+      var color = value === 'TRUE' ? '#e8f5e9' : value === 'FALSE' ? '#fce4ec' : '#ffffff';
+      sheet.getRange(i + 1, aprCol + 1).setBackground(color);
+      return { status: 'ok', action: 'approved', no: no, result: value };
+    }
+  }
+  return { status: 'error', message: '상품 없음: ' + no };
+}
+
+function saveConsignmentSettlement(orderNo, orderRow, orderHeaders) {
+  try {
+    var dealerIdCol = orderHeaders.indexOf('대리점ID');
+    var itemNoCol   = orderHeaders.indexOf('상품번호');
+    var dateCol     = orderHeaders.indexOf('주문일시');
+
+    var salesDealerId = String(orderRow[dealerIdCol] || '').trim();
+    var itemNos       = String(orderRow[itemNoCol]   || '').trim();
+    var orderDate     = String(orderRow[dateCol]     || '').trim();
+
+    var dpSheet = SS.getSheetByName('대리점상품');
+    if (!dpSheet) return;
+
+    var dpRows     = dpSheet.getDataRange().getValues();
+    var dpHeaders  = dpRows[0];
+    var dpNoCol    = dpHeaders.indexOf('번호');
+    var dpIdCol    = dpHeaders.indexOf('대리점ID');
+    var dpCsCol    = dpHeaders.indexOf('위탁여부');
+    var dpAprCol   = dpHeaders.indexOf('본사승인');
+    var dpCostCol  = dpHeaders.indexOf('원가');
+    var dpPriceCol = dpHeaders.indexOf('가격');
+    var dpNameCol  = dpHeaders.indexOf('상품명');
+
+    var nos = itemNos.split(',').map(function(n) { return n.trim(); });
+
+    nos.forEach(function(no) {
+      for (var i = 1; i < dpRows.length; i++) {
+        if (String(dpRows[i][dpNoCol]).trim() !== no) continue;
+
+        var isConsignment = String(dpRows[i][dpCsCol]  || '').trim().toUpperCase() === 'TRUE';
+        var isApproved    = String(dpRows[i][dpAprCol] || '').trim().toUpperCase() === 'TRUE';
+        if (!isConsignment || !isApproved) return;
+
+        var consignDealerId = String(dpRows[i][dpIdCol]    || '').trim();
+        var cost            = parseFloat(dpRows[i][dpCostCol]  || 0);
+        var sellPrice       = parseFloat(dpRows[i][dpPriceCol] || 0);
+        var itemName        = String(dpRows[i][dpNameCol]  || '').trim();
+
+        var profit      = sellPrice - cost;
+        var hqShare     = Math.round(profit * 0.4);
+        var dealerShare = profit - hqShare;
+
+        var vatConsign = Math.round(cost * 0.1);
+        var vatHq      = Math.round(hqShare / 11);
+        var vatDealer  = Math.round(dealerShare / 11);
+
+        var csSheet = getOrCreateSheet('위탁정산', getConsignmentSettlementHeaders());
+        var lastNo  = getNextNo(csSheet);
+
+        csSheet.appendRow([
+          lastNo, orderNo, orderDate,
+          salesDealerId, consignDealerId, no, itemName,
+          sellPrice, cost, profit,
+          hqShare, dealerShare,
+          vatConsign, vatHq, vatDealer,
+          'FALSE', ''
+        ]);
+        csSheet.getRange(csSheet.getLastRow(), 1, 1, getConsignmentSettlementHeaders().length)
+          .setBackground('#e8f4fd');
+        break;
+      }
+    });
+  } catch(err) {
+    console.log('위탁정산 기록 오류:', err.toString());
+  }
+}
+
+function getConsignmentSettlement(data) {
+  var sheet = SS.getSheetByName('위탁정산');
+  if (!sheet) return { status: 'ok', rows: [] };
+
+  var rows     = sheet.getDataRange().getValues();
+  var headers  = rows[0];
+  var dealerId = String(data['대리점ID'] || '').trim();
+  var type     = String(data['type']     || '').trim();
+  var yearMonth= String(data['yearMonth']|| '').trim();
+
+  var result = [];
+  for (var i = 1; i < rows.length; i++) {
+    var row = {};
+    headers.forEach(function(h, idx) { row[h] = rows[i][idx]; });
+    if (type === 'sales'   && String(row['판매대리점ID']).trim() !== dealerId) continue;
+    if (type === 'consign' && String(row['위탁대리점ID']).trim() !== dealerId) continue;
+    if (yearMonth && String(row['결제일시']).substring(0, 7) !== yearMonth) continue;
+    result.push(row);
+  }
+  return { status: 'ok', rows: result };
+}
+
+function updateTaxInvoiceStatus(data) {
+  var sheet = SS.getSheetByName('위탁정산');
+  if (!sheet) return { status: 'error', message: '위탁정산 시트 없음' };
+
+  var rows    = sheet.getDataRange().getValues();
+  var headers = rows[0];
+  var noCol   = headers.indexOf('번호');
+  var issCol  = headers.indexOf('세금계산서_발행여부');
+  var dateCol = headers.indexOf('세금계산서_발행일');
+
+  if (issCol === -1) return { status: 'error', message: '세금계산서_발행여부 컬럼 없음' };
+
+  var no = String(data['번호'] || '').trim();
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][noCol]).trim() === no) {
+      sheet.getRange(i + 1, issCol  + 1).setValue('TRUE');
+      sheet.getRange(i + 1, dateCol + 1).setValue(now());
+      sheet.getRange(i + 1, issCol  + 1).setBackground('#e8f5e9');
+      return { status: 'ok', action: 'updated', no: no };
+    }
+  }
+  return { status: 'error', message: '정산 데이터 없음: ' + no };
+}
+
+function getVatList(data) {
+  var sheet = SS.getSheetByName('위탁정산');
+  if (!sheet) return { status: 'ok', rows: [] };
+
+  var rows      = sheet.getDataRange().getValues();
+  var headers   = rows[0];
+  var dealerId  = String(data['대리점ID']  || '').trim();
+  var type      = String(data['type']      || '').trim();
+  var yearMonth = String(data['yearMonth'] || '').trim();
+
+  var result = [];
+  for (var i = 1; i < rows.length; i++) {
+    var row = {};
+    headers.forEach(function(h, idx) { row[h] = rows[i][idx]; });
+    if (yearMonth && String(row['결제일시']).substring(0, 7) !== yearMonth) continue;
+    if (dealerId) {
+      if (type === 'consign' && String(row['위탁대리점ID']).trim() !== dealerId) continue;
+      if (type === 'sales'   && String(row['판매대리점ID']).trim() !== dealerId) continue;
+      if (type === 'hq') continue;
+    }
+    result.push(row);
+  }
+  return { status: 'ok', rows: result };
+}
+
+function getVatSummary(data) {
+  var sheet = SS.getSheetByName('위탁정산');
+  if (!sheet) return { status: 'ok', summary: [] };
+
+  var rows      = sheet.getDataRange().getValues();
+  var headers   = rows[0];
+  var yearMonth = String(data['yearMonth'] || '').trim();
+  var monthly   = {};
+
+  for (var i = 1; i < rows.length; i++) {
+    var row = {};
+    headers.forEach(function(h, idx) { row[h] = rows[i][idx]; });
+    var ym = String(row['결제일시']).substring(0, 7);
+    if (yearMonth && ym !== yearMonth) continue;
+    if (!ym) continue;
+    if (!monthly[ym]) {
+      monthly[ym] = { yearMonth: ym, 건수: 0, 총판매가: 0, 총원가: 0,
+        총수익금: 0, 본사수익합계: 0, 판매대리점수익합계: 0,
+        위탁대리점부가세합계: 0, 본사부가세합계: 0,
+        판매대리점부가세합계: 0, 세금계산서발행건수: 0 };
+    }
+    monthly[ym].건수               += 1;
+    monthly[ym].총판매가           += parseFloat(row['판매가']              || 0);
+    monthly[ym].총원가             += parseFloat(row['원가']                || 0);
+    monthly[ym].총수익금           += parseFloat(row['수익금']              || 0);
+    monthly[ym].본사수익합계       += parseFloat(row['본사수익']            || 0);
+    monthly[ym].판매대리점수익합계 += parseFloat(row['판매대리점수익']      || 0);
+    monthly[ym].위탁대리점부가세합계 += parseFloat(row['위탁대리점_부가세'] || 0);
+    monthly[ym].본사부가세합계     += parseFloat(row['본사_부가세']         || 0);
+    monthly[ym].판매대리점부가세합계 += parseFloat(row['판매대리점_부가세'] || 0);
+    if (String(row['세금계산서_발행여부']).trim().toUpperCase() === 'TRUE') {
+      monthly[ym].세금계산서발행건수 += 1;
+    }
+  }
+
+  return { status: 'ok', summary: Object.keys(monthly).sort().map(function(ym) { return monthly[ym]; }) };
+}
+
+function getHqMarginRate() {
+  var sheet = SS.getSheetByName('수수료');
+  if (!sheet) return 0.2;
+  var rows = sheet.getDataRange().getValues();
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][0]).trim() === '본사마진율') {
+      return parseFloat(rows[i][1]) || 0.2;
+    }
+  }
+  return 0.2;
+}
+
+function saveHqMarginRate(data) {
+  var sheet = SS.getSheetByName('수수료');
+  if (!sheet) return { status: 'error', message: '수수료 시트 없음' };
+  var rows = sheet.getDataRange().getValues();
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][0]).trim() === '본사마진율') {
+      sheet.getRange(i + 1, 2).setValue(data['비율']);
+      return { status: 'ok', action: 'updated' };
+    }
+  }
+  sheet.appendRow(['본사마진율', data['비율'], '전체', '조정가능 0.1~0.2']);
+  return { status: 'ok', action: 'created' };
+}
+
+function getDealerPGRate(dealerId) {
+  var sheet = SS.getSheetByName('대리점');
+  if (!sheet) return 0;
+  var rows    = sheet.getDataRange().getValues();
+  var headers = rows[0];
+  var idCol   = headers.indexOf('대리점ID');
+  var pgCol   = headers.indexOf('PG요율');
+  if (idCol === -1 || pgCol === -1) return 0;
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][idCol]).trim() === dealerId) {
+      return parseFloat(rows[i][pgCol]) || 0;
+    }
+  }
+  return 0;
+}
+
+function saveDealerPGRate(data) {
+  var sheet = SS.getSheetByName('대리점');
+  if (!sheet) return { status: 'error', message: '대리점 시트 없음' };
+  var rows    = sheet.getDataRange().getValues();
+  var headers = rows[0];
+  var idCol   = headers.indexOf('대리점ID');
+  var pgCol   = headers.indexOf('PG요율');
+  if (pgCol === -1) return { status: 'error', message: 'PG요율 컬럼 없음' };
+  var dealerId = String(data['대리점ID'] || '').trim();
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][idCol]).trim() === dealerId) {
+      sheet.getRange(i + 1, pgCol + 1).setValue(data['PG요율']);
+      return { status: 'ok', action: 'updated', id: dealerId };
+    }
+  }
+  return { status: 'error', message: '대리점 없음: ' + dealerId };
+}
+
+function calcSettlement(data) {
+  var orderSheet = SS.getSheetByName('주문');
+  if (!orderSheet) return { status: 'error', message: '주문 시트 없음' };
+
+  var yearMonth = data['yearMonth'] || Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM');
+  var dealerId  = data['대리점ID'] || null;
+  var hqRate    = getHqMarginRate();
+
+  var rows    = orderSheet.getDataRange().getValues();
+  var headers = rows[0];
+  var dateCol  = headers.indexOf('주문일시');
+  var dealCol  = headers.indexOf('대리점ID');
+  var amtCol   = headers.indexOf('결제금액');
+  var statCol  = headers.indexOf('주문상태');
+
+  var summary = {};
+  for (var i = 1; i < rows.length; i++) {
+    var rowDate   = String(rows[i][dateCol] || '').substring(0, 7);
+    var rowDealer = String(rows[i][dealCol] || '').trim();
+    var rowAmt    = parseFloat(rows[i][amtCol]) || 0;
+    var rowStat   = String(rows[i][statCol] || '').trim();
+
+    if (rowDate !== yearMonth) continue;
+    if (rowStat === '취소' || rowStat === '반품') continue;
+    if (rowDealer.startsWith('dlr_')) continue; // 딜러 주문은 별도 정산
+    if (dealerId && rowDealer !== dealerId) continue;
+
+    if (!summary[rowDealer]) summary[rowDealer] = 0;
+    summary[rowDealer] += rowAmt;
+  }
+
+  var settleSheet = getOrCreateSheet('정산', getSettlementHeaders());
+  var results = [];
+
+  Object.keys(summary).forEach(function(did) {
+    var totalAmt  = summary[did];
+    var pgRate    = getDealerPGRate(did);
+    var pgFee     = Math.round(totalAmt * pgRate / 100);
+    var hqFee     = Math.round(totalAmt * hqRate / 100);
+    var dealerAmt = totalAmt - pgFee - hqFee;
+
+    var sRows    = settleSheet.getDataRange().getValues();
+    var sHeaders = sRows[0];
+    var ymCol    = sHeaders.indexOf('정산월');
+    var didCol   = sHeaders.indexOf('대리점ID');
+    var updated  = false;
+
+    for (var j = 1; j < sRows.length; j++) {
+      if (String(sRows[j][ymCol]).trim() === yearMonth &&
+          String(sRows[j][didCol]).trim() === did) {
+        var updRow = sHeaders.map(function(h, idx) {
+          var map = {
+            '정산월': yearMonth, '대리점ID': did,
+            '총매출': totalAmt, 'PG요율': pgRate, 'PG수수료': pgFee,
+            '본사마진율': hqRate, '본사수수료': hqFee,
+            '대리점수령액': dealerAmt, '상태': '정산완료',
+            '정산일시': now()
+          };
+          return map[h] !== undefined ? map[h] : sRows[j][idx];
+        });
+        settleSheet.getRange(j + 1, 1, 1, sHeaders.length).setValues([updRow]);
+        settleSheet.getRange(j + 1, 1, 1, sHeaders.length).setBackground('#e8f5e9');
+        updated = true;
+        break;
+      }
+    }
+
+    if (!updated) {
+      settleSheet.appendRow([
+        getNextNo(settleSheet), yearMonth, did,
+        totalAmt, pgRate, pgFee,
+        hqRate, hqFee, dealerAmt,
+        '정산완료', now()
+      ]);
+      settleSheet.getRange(settleSheet.getLastRow(), 1, 1, getSettlementHeaders().length)
+        .setBackground('#e8f5e9');
+    }
+
+    results.push({
+      대리점ID: did, 총매출: totalAmt,
+      PG수수료: pgFee, 본사수수료: hqFee, 대리점수령액: dealerAmt
+    });
+  });
+
+  return { status: 'ok', yearMonth: yearMonth, results: results };
+}
+
+function getSettlementData(data) {
+  var sheet = SS.getSheetByName('정산');
+  if (!sheet) return { status: 'ok', rows: [] };
+
+  var rows      = sheet.getDataRange().getValues();
+  var headers   = rows[0];
+  var dealerId  = data['대리점ID']  || null;
+  var yearMonth = data['yearMonth'] || null;
+
+  var result = [];
+  for (var i = 1; i < rows.length; i++) {
+    var row = {};
+    headers.forEach(function(h, idx) { row[h] = rows[i][idx]; });
+    if (dealerId  && String(row['대리점ID']).trim() !== dealerId)   continue;
+    if (yearMonth && String(row['정산월']).trim()   !== yearMonth) continue;
+    result.push(row);
+  }
+  return { status: 'ok', rows: result };
+}
+
+function getBannerHeaders() {
+  return ['번호','제목','부제목','이미지','배경색','글자색','링크','버튼텍스트','순서','사용여부','시작일','종료일'];
+}
+function getPopupHeaders() {
+  return ['번호','제목','내용','이미지','링크','팝업너비','사용여부','시작일','종료일'];
+}
+function getGroupBuyHeaders() {
+  return ['번호','상품번호','제목','공동구매가','목표수량','현재참여','시작일시','종료일시','배송예정일','사용여부','설명'];
+}
+function getDealerHeaders() {
+  return ['대리점ID','대리점명','대표자명','연락처','이메일','주소','도메인','테마색상','계약일','계약종료일','PG요율','상태','정산계좌'];
+}
+function getDealerProductHeaders() {
+  return [
+    '번호','대리점ID','상품명','카테고리',
+    '가격','할인가','원가',
+    '이미지','이미지2','이미지3','이미지4','상세이미지','상품설명',
+    '색상','사이즈','옵션','배송비','배송일','재고',
+    '뱃지','추천여부','사용여부','별점평균','리뷰수',
+    '위탁여부','본사승인','승인일시'
+  ];
+}
+function getNoticeHeaders() {
+  return ['번호','제목','내용','구분','중요도','사용여부','작성일'];
+}
+function getLiveBroadcastHeaders() {
+  return [
+    '번호','대리점ID','방송제목','방송설명',
+    '유튜브URL','썸네일이미지',
+    '시작일시','종료일시',
+    '특가상품번호','특가정보',
+    '쿠폰코드','쿠폰할인율','쿠폰유효시간',
+    '알림신청수','상태','사용여부','예고편URL'
+  ];
+}
+function getSettlementHeaders() {
+  return [
+    '번호', '정산월', '대리점ID',
+    '총매출', 'PG요율', 'PG수수료',
+    '본사마진율', '본사수수료', '대리점수령액',
+    '상태', '정산일시'
+  ];
+}
+function getConsignmentSettlementHeaders() {
+  return [
+    '번호', '주문번호', '결제일시',
+    '판매대리점ID', '위탁대리점ID', '상품번호', '상품명',
+    '판매가', '원가', '수익금',
+    '본사수익', '판매대리점수익',
+    '위탁대리점_부가세', '본사_부가세', '판매대리점_부가세',
+    '세금계산서_발행여부', '세금계산서_발행일'
+  ];
+}
+
+function getOrCreateSheet(name, headers) {
+  var sheet = SS.getSheetByName(name);
+  if (!sheet) {
+    sheet = SS.insertSheet(name);
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    sheet.getRange(1, 1, 1, headers.length)
+      .setFontWeight('bold').setBackground('#f0f0f0');
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+
+function getNextNo(sheet) {
+  var last = sheet.getLastRow();
+  if (last <= 1) return 1;
+  var vals = sheet.getRange(2, 1, last - 1, 1).getValues();
+  var max  = 0;
+  vals.forEach(function(r) {
+    var n = parseInt(r[0]);
+    if (!isNaN(n) && n > max) max = n;
+  });
+  return max + 1;
+}
+
+function now() {
+  return Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss');
+}
+
+function jsonRes(obj) {
+  return ContentService
+    .createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function sendLiveAlarmEmails() {
+  var broadcastNo = Browser.inputBox('알림 발송', '방송 번호를 입력하세요 (예: 1)', Browser.Buttons.OK_CANCEL);
+  if (broadcastNo === 'cancel') return;
+
+  var liveSheet = SS.getSheetByName('라이브방송');
+  if (!liveSheet) { Browser.msgBox('라이브방송 시트 없음'); return; }
+
+  var liveRows     = liveSheet.getDataRange().getValues();
+  var liveHeaders  = liveRows[0];
+  var liveNoCol    = liveHeaders.indexOf('번호');
+  var liveTitleCol = liveHeaders.indexOf('방송제목');
+  var liveTimeCol  = liveHeaders.indexOf('시작일시');
+
+  var liveInfo = null;
+  for (var i = 1; i < liveRows.length; i++) {
+    if (String(liveRows[i][liveNoCol]).trim() === broadcastNo) {
+      liveInfo = liveRows[i]; break;
+    }
+  }
+  if (!liveInfo) { Browser.msgBox('방송 번호를 찾을 수 없습니다'); return; }
+
+  var title = liveInfo[liveTitleCol] || '방송';
+  var time  = liveInfo[liveTimeCol]  || '';
+
+  var alarmSheet = SS.getSheetByName('라이브알림');
+  if (!alarmSheet) { Browser.msgBox('라이브알림 시트 없음'); return; }
+
+  var alarmRows    = alarmSheet.getDataRange().getValues();
+  var alarmHeaders = alarmRows[0];
+  var noCol        = alarmHeaders.indexOf('방송번호');
+  var nameCol      = alarmHeaders.indexOf('이름');
+  var emailCol     = alarmHeaders.indexOf('이메일');
+
+  var targets = [];
+  for (var j = 1; j < alarmRows.length; j++) {
+    if (String(alarmRows[j][noCol]).trim() === broadcastNo) {
+      targets.push({ 이름: alarmRows[j][nameCol]||'', 이메일: alarmRows[j][emailCol]||'' });
+    }
+  }
+
+  if (!targets.length) { Browser.msgBox('알림 신청자가 없습니다'); return; }
+
+  var sent = 0;
+  targets.forEach(function(t) {
+    if (!t.이메일) return;
+    try {
+      GmailApp.sendEmail(t.이메일, '[담누리마켓] ' + title + ' 방송 알림',
+        t.이름 + '님, 안녕하세요!\n\n"' + title + '" 방송이 곧 시작됩니다.\n\n' +
+        '📅 방송 시간: ' + time + '\n📺 바로 보러가기: https://gasway.shop/live.html\n\n담누리마켓 드림');
+      sent++;
+    } catch(e) { console.log('발송 실패:', t.이메일, e); }
+  });
+
+  Browser.msgBox('발송 완료!\n\n총 신청자: ' + targets.length + '명\n이메일 발송: ' + sent + '명');
+}
+
+function onOpen() {
+  SpreadsheetApp.getUi()
+    .createMenu('📺 라이브 관리')
+    .addItem('🔔 알림 이메일 발송', 'sendLiveAlarmEmails')
+    .addToUi();
+}

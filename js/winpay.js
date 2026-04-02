@@ -27,19 +27,42 @@ const WinPay = {
   _saveToSheets(payload) {
     return fetch(CONFIG.APPS_SCRIPT_URL, {
       method:    'POST',
-      mode:      'no-cors',
       keepalive: true,
       headers:   { 'Content-Type': 'text/plain' },
       body:      JSON.stringify(payload)
+    }).then(function(res) {
+      // Apps Script는 리다이렉트 후 JSON 반환 — opaque 응답이면 성공 간주
+      if (res.type === 'opaque') return { status: 'ok' };
+      return res.json().catch(function() { return { status: 'ok' }; });
     });
   },
 
   // ─────────────────────────────────────────────────
   // 1. PG설정 시트에서 tmnId / payKey 로드
   // ─────────────────────────────────────────────────
-   async loadConfig() {
-    if (this.tmnId && this.payKey) return true;
-    return false;
+  async loadConfig() {
+    // 이미 로드된 경우 스킵
+    if (this._configLoaded) return true;
+
+    try {
+      // PG설정 시트에서 동적 로드 시도
+      var pgUrl = CONFIG.SHEETS.PG설정 || '';
+      if (pgUrl) {
+        var rows = await SheetAPI.fetchCached(pgUrl, 600000); // 10분 캐시
+        if (rows.length > 0) {
+          var row = rows[0];
+          if (row['가맹점ID'])  this.tmnId  = row['가맹점ID'];
+          if (row['payKey'])    this.payKey  = row['payKey'];
+          if (row['서버URL'])   this.SERVER_URL = row['서버URL'];
+          if (row['완료URL'])   this.COMPLETE_URL = row['완료URL'];
+        }
+      }
+    } catch(e) {
+      // 시트 로드 실패 시 하드코딩 기본값 사용
+    }
+
+    this._configLoaded = true;
+    return !!(this.tmnId && this.payKey);
   },
 
   // ─────────────────────────────────────────────────
@@ -147,7 +170,8 @@ const WinPay = {
       await new Promise(resolve => setTimeout(resolve, 300));
       console.log('[WinPay] 주문 선저장 완료:', orderNo);
     } catch (e) {
-      console.warn('[WinPay] 주문 선저장 실패:', e);
+      console.warn('[WinPay] 주문 선저장 실패:', e.message || e);
+      // 주문 저장 실패해도 결제는 계속 진행 (결제 후 재시도)
     }
 
     // localStorage에 주문정보 저장
@@ -165,7 +189,7 @@ const WinPay = {
       userResultUrl: mobileResultUrl,
     };
 
-    console.log('[WinPay] 결제 요청 payload:', JSON.stringify(payload));
+    // payload 로그 제거 (민감정보 포함: tmnId, payKey 등)
 
     const apiUrl = payMethod === 'BPAY'
       ? `${this.SERVER_URL}/api/bankpay/${isMobile ? 'mobile/' : ''}request`
@@ -281,7 +305,25 @@ const WinPay = {
   // PC - 팝업 닫힌 후 결제 결과 조회
   // ✅ v4.0: JWT 만료 시 자동 재로그인 + JSON 파싱 안전처리
   // ─────────────────────────────────────────────────
+  _retryCount: 0,
+  _MAX_RETRY: 5,
+
   async _onPopupClosed(tid) {
+    // 무한재귀 방지: 최대 5회까지만 재시도
+    this._retryCount = (this._retryCount || 0) + 1;
+    if (this._retryCount > this._MAX_RETRY) {
+      console.warn('[WinPay] 최대 재시도 횟수 초과 (' + this._MAX_RETRY + '회)');
+      const saved = JSON.parse(localStorage.getItem('wp_order') || '{}');
+      this._fallbackRedirect(
+        saved.orderNo || ('ORD' + Date.now()),
+        saved.amt || 0,
+        saved.goodsName || '',
+        saved.ordNm || '',
+        saved.dealer || ''
+      );
+      return;
+    }
+
     // 결제 승인 서버 처리 완료 대기 (2초)
     await new Promise(resolve => setTimeout(resolve, 2000));
 
@@ -313,7 +355,7 @@ const WinPay = {
 
       // ✅ v4.0: 텍스트로 먼저 받아서 JSON 파싱 오류 방지
       const text = await res.text();
-      console.log('[WinPay] status 원본 응답:', text);
+      // status 원본 응답 로그 제거 (민감정보 포함)
 
       if (!text || text.trim() === '') {
         throw new Error('빈 응답 수신');
@@ -332,7 +374,7 @@ const WinPay = {
       }
 
       const data = JSON.parse(text);
-      console.log('[WinPay] status 조회 결과:', JSON.stringify(data));
+      // status 조회 결과 로그 제거 (민감정보 포함)
 
       if (data.success) {
         // ✅ 상태 결제완료로 업데이트
@@ -352,7 +394,7 @@ const WinPay = {
         }
 
         // localStorage 삭제
-        localStorage.removeItem('cart');
+        sessionStorage.removeItem('cart');
         localStorage.removeItem('wp_tid');
         localStorage.removeItem('wp_order');
 
@@ -409,7 +451,7 @@ const WinPay = {
     console.warn('[WinPay] 업데이트 실패:', e);
   }
 
-  localStorage.removeItem('cart');
+  sessionStorage.removeItem('cart');
   localStorage.removeItem('wp_tid');
   localStorage.removeItem('wp_order');
 
@@ -425,6 +467,7 @@ const WinPay = {
   // 전체 결제 시작
   // ─────────────────────────────────────────────────
   async startPayment(orderInfo) {
+    this._retryCount = 0; // 재시도 카운터 리셋
     const btn = document.getElementById('btn-order');
     if (btn) { btn.disabled = true; btn.textContent = '결제 준비중...'; }
 

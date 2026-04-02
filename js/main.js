@@ -14,7 +14,7 @@ function dealerUrl(url) {
 var BC = {
   n: 0, c: 0, t: null,
   load: function() {
-    var SHEET_ID = '1t804fRO8HfQtmOzpDAz2IZfzRDQ7t8LYllFGZr3ftUI';
+    var SHEET_ID = CONFIG.SHEET_ID;
     var url = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/gviz/tq?tqx=out:csv&sheet=' + encodeURIComponent('배너');
     fetch(url).then(function(r){ return r.text(); }).then(function(csv) {
       var lines = csv.trim().split('\n').slice(1);
@@ -327,7 +327,7 @@ if(document.readyState==='loading') {
 // 사업자정보 로드
 // ============================================================
 function loadBizInfo() {
-  var SHEET_ID = '1t804fRO8HfQtmOzpDAz2IZfzRDQ7t8LYllFGZr3ftUI';
+  var SHEET_ID = CONFIG.SHEET_ID;
   var url = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/gviz/tq?tqx=out:csv&sheet=' + encodeURIComponent('사업자정보');
   fetch(url).then(function(r){ return r.text(); }).then(function(csv) {
     var lines = csv.trim().split('\n');
