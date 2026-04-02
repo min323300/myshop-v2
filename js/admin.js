@@ -1224,7 +1224,7 @@ function downloadBulkTemplate() {
   var bom = '\uFEFF';
   var csv = bom + BULK_HEADERS.join(',') + '\n';
   // 예시 행 추가
-  csv += '예시상품명,식품,과일,15000,12000,https://이미지주소.jpg,,,,맛있는 과일입니다,빨강/노랑,대/중/소,담누리농장,,비타민C 풍부,냉장보관,택배배송,3000,30000,100,NEW,TRUE,TRUE\n';
+  csv += '예시상품명,식품,과일,15000,12000,10000,https://이미지주소.jpg,,,,맛있는 과일입니다,빨강/노랑,대/중/소,담누리농장,,비타민C 풍부,냉장보관,택배배송,3000,30000,100,NEW,TRUE,TRUE\n';
   var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   var link = document.createElement('a');
   link.href = URL.createObjectURL(blob);
