@@ -951,7 +951,7 @@ function deleteRow(sheetName, no) {
 // ✅ 딜러 저장/수정
 // ============================================================
 function saveDlrRow(data) {
-  var headers = ['딜러ID','딜러명','연락처','이메일','추천코드','상태','과세유형','입점비납부','월사용비','아이디','비밀번호','등록일','이번달매출','수수료구간','포인트잔액'];
+  var headers = ['딜러ID','딜러명','연락처','이메일','추천코드','상태','등록일','이번달매출','수수료구간','포인트잔액','입점비납부','월사용비','아이디','비밀번호','과세유형'];
   var sheet   = getOrCreateSheet('딜러', headers);
   var fid     = data['딜러ID'] ? String(data['딜러ID']).trim() : '';
   var idCol   = headers.indexOf('딜러ID');
