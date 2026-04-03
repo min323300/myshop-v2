@@ -296,9 +296,28 @@
     /* 토스트 */
     .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 12px 24px; border-radius: 24px; font-size: 14px; font-weight: 500; z-index: 2000; opacity: 0; transition: opacity 0.3s; pointer-events: none; white-space: nowrap; }
     .toast.show { opacity: 1; }
+
+    /* ── 실시간 구매 알림 ── */
+    .purchase-toast-container { position: fixed; top: 80px; left: 50%; transform: translateX(-50%); z-index: 1500; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+    .purchase-toast {
+      background: linear-gradient(135deg, #ff6b35, #e85a2b); color: #fff;
+      padding: 12px 20px; border-radius: 12px; font-size: 13px; font-weight: 600;
+      box-shadow: 0 4px 20px rgba(232,90,43,0.35); display: flex; align-items: center; gap: 10px;
+      animation: purchaseSlideIn 0.5s ease, purchaseFadeOut 0.5s ease 4.5s forwards;
+      white-space: nowrap; max-width: 90vw;
+    }
+    .purchase-toast .pt-icon { font-size: 20px; flex-shrink: 0; }
+    .purchase-toast .pt-text { display: flex; flex-direction: column; gap: 2px; }
+    .purchase-toast .pt-name { font-size: 14px; font-weight: 700; }
+    .purchase-toast .pt-product { font-size: 12px; opacity: 0.9; }
+    @keyframes purchaseSlideIn { from { transform: translateY(-30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    @keyframes purchaseFadeOut { from { opacity: 1; } to { opacity: 0; transform: translateY(-10px); } }
   </style>
 </head>
 <body class="live-page">
+
+  <!-- 실시간 구매 알림 컨테이너 -->
+  <div class="purchase-toast-container" id="purchase-toast-container"></div>
 
   <div id="header-placeholder"></div>
 
@@ -666,6 +685,9 @@
     // 동시접속자 (YouTube Data API - CONFIG에 키 있을 때만)
     if (vid) fetchYoutubeViewers(vid);
 
+    // ★ 실시간 구매 알림 시작
+    startPurchasePoll();
+
     // 타임딜 카운트다운
     if (live['종료일시']) {
       document.getElementById('timedeal-bar').style.display = 'flex';
@@ -697,6 +719,7 @@
     document.getElementById('live-status-text').style.color = '#aaa';
     document.getElementById('sidebar-product-list').innerHTML =
       '<div style="padding:30px;text-align:center;color:#aaa;font-size:13px;">방송 중 상품이 없습니다</div>';
+    stopPurchasePoll();
   }
 
   // ── ★ YouTube 동시접속자 조회 ────────────────────────────
@@ -722,6 +745,64 @@
     if (!viewerPollInterval) {
       viewerPollInterval = setInterval(() => fetchYoutubeViewers(videoId), 30000);
     }
+  }
+
+  // ── ★ 실시간 구매 알림 시스템 ──────────────────────────────
+  let purchasePollInterval = null;
+  let lastOrderCount = -1;
+  let shownOrderIds = new Set();
+
+  function showPurchaseToast(name, product) {
+    const container = document.getElementById('purchase-toast-container');
+    if (!container) return;
+    const maskedName = name.length > 1 ? name[0] + '*'.repeat(name.length - 1) : name || '고객';
+    const toast = document.createElement('div');
+    toast.className = 'purchase-toast';
+    toast.innerHTML = `
+      <span class="pt-icon">🎉</span>
+      <div class="pt-text">
+        <span class="pt-name">${maskedName}님이 구매했습니다!</span>
+        <span class="pt-product">${product}</span>
+      </div>`;
+    container.appendChild(toast);
+    setTimeout(() => { if (toast.parentNode) toast.remove(); }, 5500);
+  }
+
+  async function pollLivePurchases() {
+    if (!currentLive) return;
+    try {
+      const url = CONFIG.SHEETS['주문'] + '&t=' + Date.now();
+      const res = await fetch(url);
+      const csv = await res.text();
+      const orders = parseCSV(csv);
+      if (lastOrderCount === -1) {
+        // 첫 로드: 기존 주문은 무시하고 ID만 기록
+        orders.forEach(o => shownOrderIds.add(o['주문번호'] || o['번호'] || ''));
+        lastOrderCount = orders.length;
+        return;
+      }
+      // 새 주문 감지
+      orders.forEach(o => {
+        const oid = o['주문번호'] || o['번호'] || '';
+        if (!shownOrderIds.has(oid) && oid) {
+          shownOrderIds.add(oid);
+          const buyerName = o['주문자명'] || o['이름'] || '고객';
+          const productName = o['상품명'] || '상품';
+          showPurchaseToast(buyerName, productName);
+        }
+      });
+      lastOrderCount = orders.length;
+    } catch(e) { /* 조용히 무시 */ }
+  }
+
+  function startPurchasePoll() {
+    if (purchasePollInterval) return;
+    pollLivePurchases(); // 초기 로드
+    purchasePollInterval = setInterval(pollLivePurchases, 15000); // 15초마다
+  }
+
+  function stopPurchasePoll() {
+    if (purchasePollInterval) { clearInterval(purchasePollInterval); purchasePollInterval = null; }
   }
 
   // ── ★ 알림신청수 실시간 갱신 (알림 신청 시) ──────────────

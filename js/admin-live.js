@@ -26,6 +26,7 @@ async function loadLiveData() {
     allLiveData = parseAdminCSV(csv);
     renderLiveList(allLiveData);
     updateAlarmFilter();
+    startLiveOrderFeed();
   } catch(e) {
     document.getElementById('live-list').innerHTML =
       '<div style="padding:20px;text-align:center;color:#aaa;">데이터 로드 실패</div>';
@@ -96,6 +97,78 @@ function filterLive(status, btn) {
   btn.classList.add('active');
   var filtered = status==='전체' ? allLiveData : allLiveData.filter(function(b){ return b['상태']===status; });
   renderLiveList(filtered);
+}
+
+// ── ★ 실시간 주문 피드 (관리자용) ──────────────────────────
+var liveOrderPollInterval = null;
+var liveOrderShownIds = {};
+var liveOrderFeedItems = [];
+
+function startLiveOrderFeed() {
+  var hasLive = allLiveData.some(function(b){ return b['상태']==='진행중'; });
+  var feedCard = document.getElementById('live-order-feed-card');
+  if (!feedCard) return;
+  if (!hasLive) { feedCard.style.display='none'; stopLiveOrderFeed(); return; }
+  feedCard.style.display='block';
+  pollLiveOrders();
+  if (!liveOrderPollInterval) liveOrderPollInterval = setInterval(pollLiveOrders, 15000);
+}
+
+function stopLiveOrderFeed() {
+  if (liveOrderPollInterval) { clearInterval(liveOrderPollInterval); liveOrderPollInterval=null; }
+}
+
+function pollLiveOrders() {
+  var url = CONFIG.SHEETS['주문'] + '&t=' + Date.now();
+  fetch(url).then(function(r){return r.text();}).then(function(csv){
+    var orders = parseAdminCSV(csv);
+    var isFirst = Object.keys(liveOrderShownIds).length === 0;
+    if (isFirst) { orders.forEach(function(o){ liveOrderShownIds[o['주문번호']||o['번호']||'']=true; }); return; }
+    var newOrders = [];
+    orders.forEach(function(o){
+      var oid = o['주문번호']||o['번호']||'';
+      if (!liveOrderShownIds[oid] && oid) {
+        liveOrderShownIds[oid]=true;
+        newOrders.push(o);
+      }
+    });
+    if (newOrders.length > 0) {
+      newOrders.forEach(function(o){
+        var name = o['주문자명']||o['이름']||'고객';
+        var masked = name.length > 1 ? name[0] + new Array(name.length).join('*') : name;
+        var item = {
+          time: new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}),
+          name: masked,
+          product: o['상품명']||'상품',
+          amount: o['결제금액']||o['총금액']||'-'
+        };
+        liveOrderFeedItems.unshift(item);
+      });
+      if (liveOrderFeedItems.length > 50) liveOrderFeedItems = liveOrderFeedItems.slice(0,50);
+      renderLiveOrderFeed();
+    }
+  }).catch(function(){});
+}
+
+function renderLiveOrderFeed() {
+  var el = document.getElementById('live-order-feed');
+  if (!el) return;
+  if (liveOrderFeedItems.length === 0) {
+    el.innerHTML = '<div style="text-align:center;color:#aaa;padding:20px;font-size:13px;">주문 대기 중...</div>';
+    return;
+  }
+  el.innerHTML = liveOrderFeedItems.map(function(item){
+    return '<div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-bottom:1px solid #f5f5f5;animation:fadeIn 0.3s;">'
+      + '<span style="font-size:18px;">🎉</span>'
+      + '<div style="flex:1;">'
+      + '<div style="font-size:13px;font-weight:600;color:#222;">' + item.name + '님이 구매!</div>'
+      + '<div style="font-size:12px;color:#888;">' + item.product + '</div>'
+      + '</div>'
+      + '<div style="text-align:right;">'
+      + '<div style="font-size:13px;font-weight:700;color:#e85a2b;">' + (item.amount!=='-'?Number(item.amount).toLocaleString()+'원':'-') + '</div>'
+      + '<div style="font-size:11px;color:#aaa;">' + item.time + '</div>'
+      + '</div></div>';
+  }).join('');
 }
 
 function openLiveModal() {
