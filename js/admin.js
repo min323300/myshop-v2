@@ -869,11 +869,11 @@ function editDealer(btn){
   document.getElementById('dm-color').value=d['테마색상']||'#FF5733';
   document.getElementById('dm-start').value=d['계약일']||'';
   document.getElementById('dm-end').value=d['계약종료일']||'';
-  document.getElementById('dm-commission').value=d['수수료율']||'2';
+  document.getElementById('dm-commission').value=d['PG요율']||d['수수료율']||'2';
   document.getElementById('dm-status').value=d['상태']||'모집중';
   document.getElementById('dm-bank').value=d['정산계좌']||'';
-  var adminIdEl = document.getElementById('dm-admin-id'); if(adminIdEl) adminIdEl.value = d['관리자ID'] || d['아이디'] || '';
-  var adminPwEl = document.getElementById('dm-admin-pw'); if(adminPwEl) adminPwEl.value = d['관리자PW'] || d['비밀번호'] || '';
+  var adminIdEl = document.getElementById('dm-admin-id'); if(adminIdEl) adminIdEl.value = d['아이디'] || d['관리자ID'] || '';
+  var adminPwEl = document.getElementById('dm-admin-pw'); if(adminPwEl) adminPwEl.value = d['비밀번호'] || d['관리자PW'] || '';
   // ✅ 로고이미지 필드 채우기
   var logoEl = document.getElementById('dm-logo');
   if(logoEl){
@@ -903,12 +903,12 @@ function saveDealer(){
     테마색상:   document.getElementById('dm-color').value,
     계약일:     document.getElementById('dm-start').value,
     계약종료일: document.getElementById('dm-end').value,
-    수수료율:   document.getElementById('dm-commission').value,
+    'PG요율':   document.getElementById('dm-commission').value,
     상태:       document.getElementById('dm-status').value,
     정산계좌:   document.getElementById('dm-bank').value,
     로고이미지: logoEl ? logoEl.value.trim() : '',
-    관리자ID:   (document.getElementById('dm-admin-id') ? document.getElementById('dm-admin-id').value.trim() : ''),
-    관리자PW:   (document.getElementById('dm-admin-pw') ? document.getElementById('dm-admin-pw').value.trim() : '')
+    아이디:     (document.getElementById('dm-admin-id') ? document.getElementById('dm-admin-id').value.trim() : ''),
+    비밀번호:   (document.getElementById('dm-admin-pw') ? document.getElementById('dm-admin-pw').value.trim() : '')
   };
   fetch(SCRIPT_URL, { method:'POST', mode:'no-cors', body:JSON.stringify({action:'saveDealer',data:data}) })
     .then(function(){ showToast('대리점이 저장됐습니다!','ok'); closeDealerModal(); setTimeout(loadDealer,1500); });

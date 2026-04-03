@@ -948,11 +948,12 @@ function saveDealerRow(data) {
   var headers = getDealerHeaders();
   var sheet   = getOrCreateSheet('대리점', headers);
   var fid     = data['대리점ID'] ? String(data['대리점ID']).trim() : '';
+  var idCol   = headers.indexOf('대리점ID');
 
   if (fid) {
     var rows = sheet.getDataRange().getValues();
     for (var i = 1; i < rows.length; i++) {
-      if (String(rows[i][0]).trim() === fid) {
+      if (String(rows[i][idCol]).trim() === fid) {
         var updRow = headers.map(function(h, idx) {
           return data[h] !== undefined ? data[h] : rows[i][idx] || '';
         });
@@ -1778,7 +1779,7 @@ function getGroupBuyHeaders() {
   return ['번호','상품번호','제목','공동구매가','목표수량','현재참여','시작일시','종료일시','배송예정일','사용여부','설명'];
 }
 function getDealerHeaders() {
-  return ['대리점ID','대리점명','대표자명','연락처','이메일','주소','도메인','테마색상','계약일','계약종료일','PG요율','상태','정산계좌'];
+  return ['번호','대리점명','대리점ID','대표자명','연락처','이메일','주소','도메인','테마색상','로고이미지','설명','계약일','계약종료일','상태','PG요율','정산계좌','아이디','비밀번호'];
 }
 function getDealerProductHeaders() {
   return [
