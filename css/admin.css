@@ -252,6 +252,12 @@ tr:hover td { background: #fafbff; }
 .ftarea { resize: vertical; min-height: 80px; }
 .fhint { font-size: 11px; color: var(--gray); margin-top: 4px; }
 
+/* 모달 내부 폼 호환 클래스 (fl, fi - 기존 모달 호환용) */
+.fl { display: block; font-size: 12px; font-weight: 600; margin-bottom: 5px; color: var(--gray-dark); }
+.fi { width: 100%; padding: 9px 13px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; font-family: var(--font); outline: none; transition: border-color .15s; background: var(--white); box-sizing: border-box; }
+.fi:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(255,87,51,0.08); }
+select.fi { appearance: auto; cursor: pointer; }
+
 /* 이미지 미리보기 */
 .img-pv { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
 .upload-btn { display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;background:#f1f5f9;border:1px solid #cbd5e1;border-radius:8px;cursor:pointer;font-size:16px;flex-shrink:0;transition:background .2s; }

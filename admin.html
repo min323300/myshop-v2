@@ -604,68 +604,77 @@
 
 <!-- ── 딜러 등록/수정 모달 ── -->
 <div class="modal-ov" id="dlr-modal" style="display:none;">
-  <div class="modal" style="max-width:560px;">
+  <div class="modal" style="max-width:580px;">
     <div class="modal-hd"><span id="dlrm-title">🧑‍💼 딜러 등록</span><button onclick="closeDlrModal()">✕</button></div>
     <div class="modal-body">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+
+      <div class="fsec">
+        <div class="fsec-title">기본 정보</div>
         <div class="fg">
-          <label class="fl">딜러ID * <span style="font-size:10px;color:#aaa;">(dlr_ 로 시작)</span></label>
-          <input class="fi" id="dlrm-did" placeholder="예: dlr_001">
+          <div><label class="flabel">딜러ID <span class="req">*</span> <span style="font-size:10px;color:var(--gray);">(dlr_ 로 시작)</span></label><input class="finput" id="dlrm-did" placeholder="예: dlr_001"></div>
+          <div><label class="flabel">딜러명 <span class="req">*</span></label><input class="finput" id="dlrm-name" placeholder="홍길동"></div>
         </div>
-        <div class="fg"><label class="fl">딜러명 *</label><input class="fi" id="dlrm-name" placeholder="홍길동"></div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-        <div class="fg"><label class="fl">연락처</label><input class="fi" id="dlrm-phone" placeholder="010-0000-0000"></div>
-        <div class="fg"><label class="fl">이메일</label><input class="fi" id="dlrm-email" placeholder="dealer@example.com"></div>
-      </div>
-      <div class="fg"><label class="fl">추천코드 *</label><input class="fi" id="dlrm-refcode" placeholder="예: REF001 (고객이 주문 시 입력하는 코드)"></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-        <div class="fg">
-          <label class="fl">상태</label>
-          <select class="fi" id="dlrm-status">
-            <option value="활성">🟢 활성</option>
-            <option value="정지">⏸️ 정지</option>
-            <option value="탈퇴">🔴 탈퇴</option>
-          </select>
+        <div class="fg" style="margin-top:14px;">
+          <div><label class="flabel">연락처</label><input class="finput" id="dlrm-phone" placeholder="010-0000-0000"></div>
+          <div><label class="flabel">이메일</label><input class="finput" id="dlrm-email" placeholder="dealer@example.com"></div>
         </div>
-        <div class="fg">
-          <label class="fl">과세유형</label>
-          <select class="fi" id="dlrm-tax">
-            <option value="일반">일반과세자</option>
-            <option value="간이">간이과세자</option>
-            <option value="면세">면세사업자</option>
-          </select>
+        <div style="margin-top:14px;">
+          <label class="flabel">추천코드 <span class="req">*</span></label><input class="finput" id="dlrm-refcode" placeholder="예: REF001 (고객이 주문 시 입력하는 코드)">
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+
+      <div class="fsec">
+        <div class="fsec-title">운영 설정</div>
         <div class="fg">
-          <label class="fl">입점비 납부</label>
-          <select class="fi" id="dlrm-entry">
-            <option value="FALSE">❌ 미납부</option>
-            <option value="TRUE">✅ 납부완료</option>
-          </select>
+          <div>
+            <label class="flabel">상태</label>
+            <select class="fselect" id="dlrm-status">
+              <option value="활성">🟢 활성</option>
+              <option value="정지">⏸️ 정지</option>
+              <option value="탈퇴">🔴 탈퇴</option>
+            </select>
+          </div>
+          <div>
+            <label class="flabel">과세유형</label>
+            <select class="fselect" id="dlrm-tax">
+              <option value="일반">일반과세자</option>
+              <option value="간이">간이과세자</option>
+              <option value="면세">면세사업자</option>
+            </select>
+          </div>
         </div>
-        <div class="fg">
-          <label class="fl">월 사용비(CMS)</label>
-          <select class="fi" id="dlrm-monthly">
-            <option value="FALSE">❌ 미설정</option>
-            <option value="TRUE">✅ 정상</option>
-          </select>
+        <div class="fg" style="margin-top:14px;">
+          <div>
+            <label class="flabel">입점비 납부</label>
+            <select class="fselect" id="dlrm-entry">
+              <option value="FALSE">❌ 미납부</option>
+              <option value="TRUE">✅ 납부완료</option>
+            </select>
+          </div>
+          <div>
+            <label class="flabel">월 사용비(CMS)</label>
+            <select class="fselect" id="dlrm-monthly">
+              <option value="FALSE">❌ 미설정</option>
+              <option value="TRUE">✅ 정상</option>
+            </select>
+          </div>
         </div>
       </div>
-      <div style="margin-top:12px;padding:14px;background:#f0f7ff;border:1px solid #bfdbfe;border-radius:10px;">
-        <div style="font-size:13px;font-weight:700;color:#1e40af;margin-bottom:10px;">🔐 딜러 패널 로그인 계정</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-          <div class="fg"><label class="fl">아이디 *</label><input class="fi" id="dlrm-uid" placeholder="예: dlr001"></div>
-          <div class="fg">
-            <label class="fl">비밀번호 *</label>
-            <div style="display:flex;gap:6px;">
-              <input class="fi" id="dlrm-pw" placeholder="비밀번호" style="flex:1;">
-              <button onclick="genDlrPw()" style="padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:#fff;font-size:14px;cursor:pointer;" title="비밀번호 자동생성">🎲</button>
+
+      <div class="fsec">
+        <div class="fsec-title">🔐 딜러 패널 로그인 계정</div>
+        <div class="fg">
+          <div><label class="flabel">아이디 <span class="req">*</span></label><input class="finput" id="dlrm-uid" placeholder="예: dlr001"></div>
+          <div>
+            <label class="flabel">비밀번호 <span class="req">*</span></label>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <input class="finput" id="dlrm-pw" placeholder="비밀번호" style="flex:1;">
+              <button onclick="genDlrPw()" class="btn btn-outline" style="padding:8px 12px;font-size:12px;" title="비밀번호 자동생성">🎲 생성</button>
             </div>
           </div>
         </div>
       </div>
+
     </div>
     <div class="modal-ft">
       <button class="btn btn-outline" onclick="closeDlrModal()">취소</button>
@@ -843,40 +852,62 @@
 
 <!-- ── 대리점 모달 ── -->
 <div class="modal-ov" id="dealer-modal">
-  <div class="modal" style="max-width:540px;">
+  <div class="modal" style="max-width:580px;">
     <div class="modal-hd"><span id="dm-title">🏬 대리점 등록</span><button onclick="closeDealerModal()">✕</button></div>
     <div class="modal-body">
       <input type="hidden" id="dm-id">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-        <div class="fg"><label class="fl">대리점 ID *</label><input class="fi" id="dm-fid" placeholder="dealer_001"></div>
-        <div class="fg"><label class="fl">대리점명 *</label><input class="fi" id="dm-name" placeholder="담누리마켓 서울점"></div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-        <div class="fg"><label class="fl">대표자명</label><input class="fi" id="dm-owner" placeholder="홍길동"></div>
-        <div class="fg"><label class="fl">연락처</label><input class="fi" id="dm-phone" placeholder="010-0000-0000"></div>
-      </div>
-      <div class="fg"><label class="fl">이메일</label><input class="fi" id="dm-email" placeholder="dealer@example.com"></div>
-      <div class="fg"><label class="fl">주소</label><input class="fi" id="dm-address" placeholder="서울시 강남구 ..."></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-        <div class="fg"><label class="fl">도메인</label><input class="fi" id="dm-domain" placeholder="seoul.damnuri.co.kr"></div>
-        <div class="fg"><label class="fl">테마색상</label><input class="fi" id="dm-color" type="color" value="#FF5733" style="height:40px;padding:4px;"></div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-        <div class="fg"><label class="fl">계약일</label><input class="fi" id="dm-start" type="date"></div>
-        <div class="fg"><label class="fl">계약종료일</label><input class="fi" id="dm-end" type="date"></div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-        <div class="fg"><label class="fl">PG요율 (%)</label><input class="fi" id="dm-commission" type="number" value="2.5" step="0.1"></div>
-        <div class="fg"><label class="fl">상태</label><select class="fi" id="dm-status"><option value="운영중">🟢 운영중</option><option value="모집중">📋 모집중</option><option value="일시중지">⏸️ 일시중지</option><option value="해지">🔴 해지</option></select></div>
-      </div>
-      <div class="fg"><label class="fl">정산계좌</label><input class="fi" id="dm-bank" placeholder="은행명 계좌번호 예금주"></div>
-      <div style="margin-top:16px;padding:16px;background:#f0f7ff;border:1px solid #bfdbfe;border-radius:10px;">
-        <div style="font-size:13px;font-weight:700;color:#1e40af;margin-bottom:12px;">🔐 관리자 로그인 계정</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-          <div class="fg"><label class="fl">관리자 아이디</label><input class="fi" id="dm-admin-id" placeholder="예: seoul_01"></div>
-          <div class="fg"><label class="fl">관리자 비밀번호</label><div style="display:flex;gap:6px;align-items:center;"><input class="fi" id="dm-admin-pw" placeholder="예: pass1234" type="text" style="flex:1;"><button onclick="genDealerPw()" style="padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:#fff;font-size:12px;cursor:pointer;white-space:nowrap;">🎲 생성</button></div></div>
+
+      <div class="fsec">
+        <div class="fsec-title">기본 정보</div>
+        <div class="fg">
+          <div><label class="flabel">대리점 ID <span class="req">*</span></label><input class="finput" id="dm-fid" placeholder="dealer_001"></div>
+          <div><label class="flabel">대리점명 <span class="req">*</span></label><input class="finput" id="dm-name" placeholder="담누리마켓 서울점"></div>
+        </div>
+        <div class="fg" style="margin-top:14px;">
+          <div><label class="flabel">대표자명</label><input class="finput" id="dm-owner" placeholder="홍길동"></div>
+          <div><label class="flabel">연락처</label><input class="finput" id="dm-phone" placeholder="010-0000-0000"></div>
+        </div>
+        <div style="margin-top:14px;">
+          <label class="flabel">이메일</label><input class="finput" id="dm-email" placeholder="dealer@example.com">
+        </div>
+        <div style="margin-top:14px;">
+          <label class="flabel">주소</label><input class="finput" id="dm-address" placeholder="서울시 강남구 ...">
         </div>
       </div>
+
+      <div class="fsec">
+        <div class="fsec-title">계약 정보</div>
+        <div class="fg">
+          <div><label class="flabel">도메인</label><input class="finput" id="dm-domain" placeholder="#dcb218"></div>
+          <div><label class="flabel">테마색상</label><input class="finput" id="dm-color" type="color" value="#FF5733" style="height:38px;padding:4px;cursor:pointer;"></div>
+        </div>
+        <div class="fg" style="margin-top:14px;">
+          <div><label class="flabel">계약일</label><input class="finput" id="dm-start" type="date"></div>
+          <div><label class="flabel">계약종료일</label><input class="finput" id="dm-end" type="date"></div>
+        </div>
+        <div class="fg" style="margin-top:14px;">
+          <div><label class="flabel">PG요율 (%)</label><input class="finput" id="dm-commission" type="number" value="2.5" step="0.1"></div>
+          <div><label class="flabel">상태</label><select class="fselect" id="dm-status"><option value="운영중">🟢 운영중</option><option value="모집중">📋 모집중</option><option value="일시중지">⏸️ 일시중지</option><option value="해지">🔴 해지</option></select></div>
+        </div>
+        <div style="margin-top:14px;">
+          <label class="flabel">정산계좌</label><input class="finput" id="dm-bank" placeholder="은행명 계좌번호 예금주">
+        </div>
+      </div>
+
+      <div class="fsec">
+        <div class="fsec-title">🔐 관리자 로그인 계정</div>
+        <div class="fg">
+          <div><label class="flabel">관리자 아이디</label><input class="finput" id="dm-admin-id" placeholder="예: seoul_01"></div>
+          <div>
+            <label class="flabel">관리자 비밀번호</label>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <input class="finput" id="dm-admin-pw" placeholder="예: pass1234" type="text" style="flex:1;">
+              <button onclick="genDealerPw()" class="btn btn-outline" style="padding:8px 12px;font-size:12px;white-space:nowrap;">🎲 생성</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
     <div class="modal-ft"><button class="btn btn-outline" onclick="closeDealerModal()">취소</button><button class="btn btn-primary" onclick="saveDealer()">💾 저장</button></div>
   </div>
