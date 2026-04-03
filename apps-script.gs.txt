@@ -137,6 +137,9 @@ function doPost(e) {
     else if (action === 'saveBulkProducts')           result = saveBulkProducts(data);
     else if (action === 'saveBulkDealerProducts')     result = saveBulkDealerProducts(data);
 
+    // ✅ 딜러 CRUD
+    else if (action === 'saveDlr')                    result = saveDlrRow(data);
+
     else result = { status: 'error', message: '알 수 없는 action: ' + action };
 
   } catch(err) {
@@ -942,6 +945,33 @@ function deleteRow(sheetName, no) {
     }
   }
   return { status: 'error', message: '해당 번호 없음: ' + no };
+}
+
+// ============================================================
+// ✅ 딜러 저장/수정
+// ============================================================
+function saveDlrRow(data) {
+  var headers = ['딜러ID','딜러명','연락처','이메일','추천코드','상태','과세유형','입점비납부','월사용비','아이디','비밀번호','등록일','이번달매출','수수료구간','포인트잔액'];
+  var sheet   = getOrCreateSheet('딜러', headers);
+  var fid     = data['딜러ID'] ? String(data['딜러ID']).trim() : '';
+  var idCol   = headers.indexOf('딜러ID');
+
+  if (fid) {
+    var rows = sheet.getDataRange().getValues();
+    for (var i = 1; i < rows.length; i++) {
+      if (String(rows[i][idCol]).trim() === fid) {
+        var updRow = headers.map(function(h, idx) {
+          return data[h] !== undefined ? data[h] : rows[i][idx] || '';
+        });
+        sheet.getRange(i + 1, 1, 1, headers.length).setValues([updRow]);
+        return { status: 'ok', action: 'updated', id: fid };
+      }
+    }
+  }
+
+  var newRow = headers.map(function(h) { return data[h] || ''; });
+  sheet.appendRow(newRow);
+  return { status: 'ok', action: 'created', id: fid };
 }
 
 function saveDealerRow(data) {
