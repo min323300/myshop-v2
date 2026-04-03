@@ -13,10 +13,79 @@ function dealerUrl(url) {
 // ============================================================
 var BC = {
   n: 0, c: 0, t: null,
+  // CSV 파싱 헬퍼
+  _parseCSV: function(csv) {
+    var lines = csv.trim().split('\n');
+    if (lines.length < 2) return [];
+    var headers = [];
+    var hLine = lines[0], cur = '', inQ = false;
+    for (var i = 0; i < hLine.length; i++) {
+      var ch = hLine[i];
+      if (ch === '"') { inQ = !inQ; }
+      else if (ch === ',' && !inQ) { headers.push(cur.trim().replace(/^"|"$/g,'')); cur = ''; }
+      else { cur += ch; }
+    }
+    headers.push(cur.trim().replace(/^"|"$/g,''));
+    var rows = [];
+    for (var r = 1; r < lines.length; r++) {
+      var cols = [], cur2 = '', inQ2 = false;
+      for (var j = 0; j < lines[r].length; j++) {
+        var ch2 = lines[r][j];
+        if (ch2 === '"') { inQ2 = !inQ2; }
+        else if (ch2 === ',' && !inQ2) { cols.push(cur2.trim()); cur2 = ''; }
+        else { cur2 += ch2; }
+      }
+      cols.push(cur2.trim());
+      var obj = {};
+      for (var k = 0; k < headers.length; k++) obj[headers[k]] = cols[k] || '';
+      rows.push(obj);
+    }
+    return rows;
+  },
+  // 라이브방송 시트에서 예정/진행중 방송을 배너로 변환
+  _loadLiveBanners: function() {
+    var liveUrl = CONFIG.SHEETS['라이브방송'];
+    if (!liveUrl) return Promise.resolve([]);
+    return fetch(liveUrl + '&t=' + Date.now()).then(function(r) { return r.text(); }).then(function(csv) {
+      var rows = BC._parseCSV(csv);
+      var liveBanners = [];
+      rows.forEach(function(row) {
+        var status = (row['상태'] || '').trim();
+        if (status !== '예정' && status !== '진행중') return;
+        var title = row['방송제목'] || '라이브 방송';
+        var startDt = row['시작일시'] || '';
+        var thumb = row['썸네일'] || '';
+        var isLive = status === '진행중';
+        var sub = isLive
+          ? '지금 라이브 방송 중! 특별한 혜택을 놓치지 마세요'
+          : (startDt ? startDt + ' 방송 예정' : '곧 시작됩니다');
+        var badge = isLive ? '🔴 LIVE' : '⏳ 예정';
+        liveBanners.push({
+          title: badge + ' ' + title,
+          sub: sub,
+          img: thumb,
+          bg: isLive ? '#e8342b' : '#1a237e',
+          color: '#ffffff',
+          link: dealerUrl('live.html'),
+          btn: isLive ? '🔴 지금 시청하기' : '📺 방송 알림 신청',
+          isLive: isLive
+        });
+      });
+      // 진행중이 먼저, 그 다음 예정
+      liveBanners.sort(function(a, b) { return (b.isLive ? 1 : 0) - (a.isLive ? 1 : 0); });
+      return liveBanners;
+    }).catch(function() { return []; });
+  },
   load: function() {
     var SHEET_ID = CONFIG.SHEET_ID;
     var url = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/gviz/tq?tqx=out:csv&sheet=' + encodeURIComponent('배너');
-    fetch(url).then(function(r){ return r.text(); }).then(function(csv) {
+    // 배너 시트 + 라이브방송 시트 동시 로드
+    Promise.all([
+      fetch(url).then(function(r){ return r.text(); }),
+      BC._loadLiveBanners()
+    ]).then(function(results) {
+      var csv = results[0];
+      var liveBanners = results[1];
       var lines = csv.trim().split('\n').slice(1);
       var banners = [];
       lines.forEach(function(line) {
@@ -34,7 +103,9 @@ var BC = {
           banners.push({ title:cols[1]||'', sub:cols[2]||'', img:cols[3]||'', bg:cols[4]||'#FF5733', color:cols[5]||'#ffffff', link:cols[6]||'#', btn:cols[7]||'보기' });
         }
       });
-      BC.build(banners.length ? banners : BC.defaults());
+      // 라이브 배너를 맨 앞에 삽입
+      var allBanners = liveBanners.concat(banners.length ? banners : BC.defaults());
+      BC.build(allBanners);
     }).catch(function(){ BC.build(BC.defaults()); });
   },
   defaults: function() {
@@ -50,15 +121,39 @@ var BC = {
     if (!slider || !dotsEl) return;
     slider.innerHTML = ''; dotsEl.innerHTML = '';
     BC.n = banners.length;
+    // 라이브 펄스 애니메이션 CSS 주입 (한 번만)
+    if (!document.getElementById('live-banner-css')) {
+      var sty = document.createElement('style');
+      sty.id = 'live-banner-css';
+      sty.textContent = '@keyframes livePulse{0%,100%{opacity:1}50%{opacity:.5}}'
+        + '@keyframes liveGlow{0%,100%{box-shadow:0 0 8px rgba(232,52,43,.4)}50%{box-shadow:0 0 20px rgba(232,52,43,.8)}}';
+      document.head.appendChild(sty);
+    }
     banners.forEach(function(b, i) {
       var slide = document.createElement('div');
-      slide.style.cssText = 'min-width:100%;height:200px;flex-shrink:0;background:'+b.bg+';display:flex;align-items:center;justify-content:center;';
-      if (b.img) slide.style.background = 'url('+b.img+') center/cover no-repeat';
-      slide.innerHTML = '<div style="text-align:center;color:'+b.color+';">'
-        +'<h2 style="font-size:22px;font-weight:900;margin-bottom:8px;text-shadow:0 1px 3px rgba(0,0,0,0.3)">'+b.title+'</h2>'
-        +'<p style="font-size:13px;margin-bottom:14px;opacity:0.9;">'+b.sub+'</p>'
-        +'<a href="'+b.link+'" style="background:rgba(255,255,255,0.95);color:'+b.bg+';padding:8px 22px;border-radius:25px;font-weight:700;font-size:13px;text-decoration:none;">'+b.btn+'</a>'
-        +'</div>';
+      slide.style.cssText = 'min-width:100%;height:200px;flex-shrink:0;background:'+b.bg+';display:flex;align-items:center;justify-content:center;position:relative;';
+      if (b.img) {
+        slide.style.background = 'url('+b.img+') center/cover no-repeat';
+        // 이미지 위에 오버레이
+        slide.innerHTML = '<div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(0,0,0,0.55),rgba(0,0,0,0.25));"></div>';
+      }
+      var content = '<div style="text-align:center;color:'+b.color+';position:relative;z-index:2;">';
+      if (b.isLive) {
+        // 🔴 LIVE 뱃지
+        content += '<div style="display:inline-flex;align-items:center;gap:6px;background:rgba(232,52,43,0.9);padding:4px 14px;border-radius:20px;margin-bottom:10px;animation:liveGlow 2s infinite;">'
+          + '<span style="width:8px;height:8px;background:#fff;border-radius:50%;animation:livePulse 1.2s infinite;"></span>'
+          + '<span style="font-size:12px;font-weight:800;letter-spacing:1px;">LIVE NOW</span>'
+          + '</div><br>';
+      } else if (b.isLive === false) {
+        // 예정 뱃지
+        content += '<div style="display:inline-block;background:rgba(255,255,255,0.2);padding:4px 14px;border-radius:20px;margin-bottom:10px;font-size:12px;font-weight:700;backdrop-filter:blur(4px);">📺 방송 예고</div><br>';
+      }
+      content += '<h2 style="font-size:22px;font-weight:900;margin-bottom:8px;text-shadow:0 2px 6px rgba(0,0,0,0.4)">'+b.title+'</h2>'
+        + '<p style="font-size:13px;margin-bottom:14px;opacity:0.9;text-shadow:0 1px 3px rgba(0,0,0,0.3);">'+b.sub+'</p>'
+        + '<a href="'+b.link+'" style="display:inline-block;background:rgba(255,255,255,0.95);color:'+(b.isLive?'#e8342b':b.bg)+';padding:8px 22px;border-radius:25px;font-weight:700;font-size:13px;text-decoration:none;'
+        + (b.isLive ? 'animation:liveGlow 2s infinite;' : '') + '">'+b.btn+'</a>'
+        + '</div>';
+      slide.innerHTML += content;
       slider.appendChild(slide);
       var dot = document.createElement('button');
       dot.style.cssText = 'width:8px;height:8px;border-radius:50%;border:none;cursor:pointer;padding:0;background:'+(i===0?'#fff':'rgba(255,255,255,0.5)');
@@ -233,6 +328,7 @@ function buildNav(products) {
 
       categories.forEach(function(c) {
         var cn = c.name.trim();
+        if (cn === '라이브') return; // 라이브는 맨 끝에 별도 추가
         var icon = c.icon || '';
         var subs = subMap[cn] || [];
         var wrap=document.createElement('div'); wrap.className='nav-item-wrap';

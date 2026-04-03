@@ -136,7 +136,7 @@
   <nav class="header-nav">
     <div class="nav-inner" id="main-nav">
       <button class="nav-item active" onclick="filterByNav('all', this)">🏠 전체</button>
-      <a href="live.html" class="nav-item" style="text-decoration:none;color:inherit;">📺 라이브</a>
+      <!-- 라이브 메뉴는 buildNav()에서 동적으로 추가됨 -->
     </div>
   </nav>
 </header>
@@ -496,6 +496,7 @@ async function initPage() {
 
     categories.forEach(c => {
       const catName = c.name.trim();
+      if (catName === '라이브') return; // 라이브는 맨 끝에 별도 추가
       catContainer.innerHTML += `
         <label class="filter-item">
           <input type="radio" name="cat" value="${catName}"
@@ -510,6 +511,14 @@ async function initPage() {
       btn.onclick = function() { filterByNav(catName, this); };
       nav.appendChild(btn);
     });
+
+    // 🔴 라이브 메뉴 맨 끝에 추가
+    const liveBtn = document.createElement('button');
+    liveBtn.className = 'nav-item';
+    liveBtn.textContent = '🔴 라이브';
+    liveBtn.style.cssText = 'color:#e85a2b;font-weight:700;';
+    liveBtn.onclick = function() { location.href = 'live.html'; };
+    nav.appendChild(liveBtn);
 
     if (categoryParam) {
       document.querySelectorAll('.nav-item').forEach(b => {
