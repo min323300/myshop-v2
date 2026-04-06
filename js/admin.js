@@ -4,7 +4,7 @@
 // ✅ 보안 개선: 비밀번호를 SHA-256 해시로 비교 (평문 제거)
 var ADMIN_ID = 'admin';
 // 'damnuri2026'의 SHA-256 해시값
-var ADMIN_PW_HASH = 'bda221a3cd5c517da0f7542e0c38b4756b0f670cbf4d43b492a4bb524a464412';
+var ADMIN_PW_HASH = '5db3f15eaf4bdddb8ddaed6092fe0ca02795bfd028318f394a1ab66f02e5c850';
 
 async function sha256(message) {
   var msgBuffer = new TextEncoder().encode(message);
