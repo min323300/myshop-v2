@@ -1048,7 +1048,13 @@
         <div class="prod-sec-hd"><div class="prod-sec-hd-title">상품 정보 제공</div><span class="prod-sec-toggle">∧</span></div>
         <div class="prod-sec-body">
           <div style="display:flex;flex-direction:column;gap:12px;">
-            <div><label class="flabel">상품 설명</label><textarea class="ftarea" id="f-desc" rows="4" placeholder="상품 설명 (HTML 태그 사용 가능)"></textarea></div>
+            <div>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                <label class="flabel" style="margin:0;">상품 설명</label>
+                <button type="button" onclick="openAiPageGen()" style="padding:6px 14px;background:#FF5733;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">✨ AI 상세페이지 생성</button>
+              </div>
+              <textarea class="ftarea" id="f-desc" rows="4" placeholder="상품 설명 (HTML 태그 사용 가능)"></textarea>
+            </div>
             <div><label class="flabel">상세 스펙</label><input type="text" class="finput" id="f-specs" placeholder="원산지:국내산|용량:500g"></div>
             <div><label class="flabel">⚠️ 주의사항</label><input type="text" class="finput" id="f-caution" placeholder="예: 냉장보관 필수"></div>
             <div><label class="flabel">🎬 유튜브 URL</label><input type="text" class="finput" id="f-yt" placeholder="https://youtube.com/shorts/..."></div>
