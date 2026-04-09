@@ -380,7 +380,7 @@ const CategoryAPI = {
       icon: this._icons[row['카테고리명']] || '📦',
       parentId: row['상위카테고리'] || '',
       order: parseInt(row['순서']) || 0,
-    })).sort((a, b) => a.order - b.order);
+     })).filter(c => c.name).sort((a, b) => a.order - b.order);
   },
   async getMain() {
     const all = await this.getAll();
