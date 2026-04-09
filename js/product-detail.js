@@ -255,7 +255,7 @@ function renderProduct(p) {
   descEl.classList.add('text-mode');
   descEl.textContent = desc || '';
 }
-
+}
   // 유튜브 영상
   renderYoutube(p.youtube);
 
