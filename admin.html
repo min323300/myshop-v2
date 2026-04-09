@@ -1074,7 +1074,57 @@
     <div class="m-ft"><button class="btn btn-outline" onclick="closeProdModal()">취소</button><button class="btn btn-primary" onclick="saveProd()">💾 저장하기</button></div>
   </div>
 </div>
-
+<!-- ── AI 상세페이지 생성 모달 ── -->
+<div class="modal-ov" id="ai-page-modal" style="display:none;">
+  <div class="modal" style="max-width:720px;max-height:90vh;display:flex;flex-direction:column;">
+    <div class="modal-hd">
+      <span>✨ AI 상품 상세페이지 생성</span>
+      <button onclick="closeAiPageModal()">✕</button>
+    </div>
+    <div class="modal-body" style="flex:1;overflow-y:auto;">
+      <div id="ai-input-area" style="display:flex;flex-direction:column;gap:12px;">
+        <div style="background:#fff8f0;border:1px solid #ffd0a8;border-radius:10px;padding:14px 16px;font-size:13px;color:#c2410c;">
+          ✨ 상품명·가격·카테고리는 등록 폼에서 자동으로 불러옵니다. 키워드와 추가 요청만 입력하세요!
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div><label class="flabel">상품명</label><input class="finput" id="ai-name" placeholder="자동입력" readonly style="background:#f5f5f5;"></div>
+          <div><label class="flabel">카테고리</label><input class="finput" id="ai-cat" placeholder="자동입력" readonly style="background:#f5f5f5;"></div>
+          <div><label class="flabel">정가</label><input class="finput" id="ai-price" placeholder="자동입력" readonly style="background:#f5f5f5;"></div>
+          <div><label class="flabel">할인가</label><input class="finput" id="ai-sale" placeholder="자동입력" readonly style="background:#f5f5f5;"></div>
+        </div>
+        <div><label class="flabel">키워드 / 특징 (쉼표로 구분)</label><input class="finput" id="ai-keywords" placeholder="예: 울 혼방, 슬림핏, 가을겨울, 데일리룩" style="width:100%;box-sizing:border-box;"></div>
+        <div><label class="flabel">추가 요청사항 (선택)</label><textarea class="ftarea" id="ai-extra" rows="2" placeholder="예: 30~40대 여성 타겟, 고급스러운 톤, 세탁 주의사항 포함" style="width:100%;box-sizing:border-box;"></textarea></div>
+        <div style="text-align:center;">
+          <button onclick="runAiPageGen()" id="ai-gen-btn" style="padding:12px 32px;background:#FF5733;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;">✨ AI 상세페이지 생성하기</button>
+        </div>
+      </div>
+      <div id="ai-loading" style="display:none;text-align:center;padding:40px;">
+        <div style="font-size:32px;margin-bottom:12px;">⏳</div>
+        <div style="font-size:14px;color:#666;">AI가 상세페이지를 생성하고 있습니다...<br>약 20~30초 소요됩니다.</div>
+      </div>
+      <div id="ai-result-area" style="display:none;margin-top:16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div style="font-size:14px;font-weight:700;color:#333;">생성 결과</div>
+          <div style="display:flex;gap:8px;">
+            <button onclick="switchAiTab('preview')" id="ai-tab-preview" style="padding:6px 14px;border:1px solid #FF5733;background:#FF5733;color:#fff;border-radius:6px;font-size:12px;cursor:pointer;">미리보기</button>
+            <button onclick="switchAiTab('code')" id="ai-tab-code" style="padding:6px 14px;border:1px solid #ddd;background:#fff;color:#333;border-radius:6px;font-size:12px;cursor:pointer;">HTML 코드</button>
+            <button onclick="applyAiResult()" style="padding:6px 14px;background:#1a7f4b;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">📋 상품설명에 적용</button>
+          </div>
+        </div>
+        <div id="ai-preview-box" style="border:1px solid #ddd;border-radius:10px;overflow:hidden;">
+          <iframe id="ai-preview-frame" style="width:100%;height:500px;border:none;display:block;"></iframe>
+        </div>
+        <div id="ai-code-box" style="display:none;position:relative;">
+          <textarea id="ai-code-out" style="width:100%;height:400px;font-family:monospace;font-size:11px;border:1px solid #ddd;border-radius:8px;padding:12px;box-sizing:border-box;resize:vertical;color:#333;background:#f8f8f8;" readonly></textarea>
+          <button onclick="copyAiCode()" style="position:absolute;top:10px;right:10px;padding:4px 12px;background:#fff;border:1px solid #ddd;border-radius:6px;font-size:12px;cursor:pointer;">복사</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-outline" onclick="closeAiPageModal()">닫기</button>
+    </div>
+  </div>
+</div>
 <div class="toast" id="toast"></div>
 
 <!-- ── JS 로드 순서 중요 ── -->
