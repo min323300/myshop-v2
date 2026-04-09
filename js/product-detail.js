@@ -236,13 +236,25 @@ function renderProduct(p) {
     var desc = p.description || '';
     var isHtml = /<[a-z][\s\S]*>/i.test(desc);
     if (isHtml) {
-      descEl.classList.add('html-mode');
-      descEl.innerHTML = desc || '';
-    } else {
-      descEl.classList.add('text-mode');
-      descEl.textContent = desc || '';
-    }
+  descEl.classList.add('html-mode');
+  if (desc.indexOf('<!DOCTYPE') !== -1 || desc.indexOf('<html') !== -1) {
+    var iframe = document.createElement('iframe');
+    iframe.style.cssText = 'width:100%;border:none;min-height:600px;';
+    iframe.srcdoc = desc;
+    descEl.innerHTML = '';
+    descEl.appendChild(iframe);
+    iframe.onload = function() {
+      try {
+        iframe.style.height = iframe.contentDocument.body.scrollHeight + 'px';
+      } catch(e) {}
+    };
+  } else {
+    descEl.innerHTML = desc || '';
   }
+} else {
+  descEl.classList.add('text-mode');
+  descEl.textContent = desc || '';
+}
 
   // 유튜브 영상
   renderYoutube(p.youtube);
