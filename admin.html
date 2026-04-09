@@ -1255,8 +1255,7 @@ function runAiPageGen() {
   document.getElementById('ai-result-area').style.display = 'none';
   document.getElementById('ai-loading').style.display     = 'block';
 
-  var scriptUrl = (typeof SCRIPT_URL !== 'undefined') ? SCRIPT_URL
-    : (typeof CONFIG !== 'undefined' && CONFIG.SCRIPT_URL) ? CONFIG.SCRIPT_URL : '';
+  var scriptUrl = CONFIG.APPS_SCRIPT_URL;
 
   var payload = {
     action: 'generateProductDetail',
