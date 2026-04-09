@@ -509,7 +509,13 @@
             </div>
             <div class="fg"><label class="fl">재고</label><input class="fi" id="mpm-stock" type="number" placeholder="100"></div>
           </div>
-          <div class="fg"><label class="fl">상품 설명</label><textarea class="fi" id="mpm-desc" rows="4" style="resize:vertical;" placeholder="상품 특징, 소재, 사이즈 안내 등"></textarea></div>
+          <div class="fg">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+              <label class="fl" style="margin:0;">상품 설명</label>
+              <button type="button" onclick="openDealerAiPageGen()" style="padding:6px 14px;background:#FF5733;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">✨ AI 상세페이지 생성</button>
+            </div>
+            <textarea class="fi" id="mpm-desc" rows="4" style="resize:vertical;" placeholder="상품 특징, 소재, 사이즈 안내 등"></textarea>
+          </div>
         </div>
       </div>
       <div class="prod-section">
