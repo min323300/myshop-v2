@@ -1201,6 +1201,101 @@ function showAdminToast(msg) {
   t.textContent = msg; t.style.opacity = '1';
   setTimeout(function(){ t.style.opacity = '0'; }, 3000);
 }
+// ── AI 상세페이지 생성 ──────────────────────────────────────
+var _aiGeneratedHtml = '';
+
+function openAiPageGen() {
+  document.getElementById('ai-name').value  = document.getElementById('f-name').value  || '';
+  document.getElementById('ai-cat').value   = document.getElementById('f-cat').value   || '';
+  document.getElementById('ai-price').value = document.getElementById('f-price').value || '';
+  document.getElementById('ai-sale').value  = document.getElementById('f-sale').value  || '';
+  document.getElementById('ai-keywords').value = '';
+  document.getElementById('ai-extra').value    = '';
+  document.getElementById('ai-result-area').style.display = 'none';
+  document.getElementById('ai-loading').style.display     = 'none';
+  document.getElementById('ai-input-area').style.display  = 'flex';
+  document.getElementById('ai-page-modal').style.display  = 'flex';
+}
+
+function closeAiPageModal() {
+  document.getElementById('ai-page-modal').style.display = 'none';
+}
+
+function switchAiTab(tab) {
+  var isPreview = tab === 'preview';
+  document.getElementById('ai-preview-box').style.display = isPreview ? '' : 'none';
+  document.getElementById('ai-code-box').style.display    = isPreview ? 'none' : '';
+  document.getElementById('ai-tab-preview').style.background  = isPreview ? '#FF5733' : '#fff';
+  document.getElementById('ai-tab-preview').style.color       = isPreview ? '#fff' : '#333';
+  document.getElementById('ai-tab-preview').style.borderColor = isPreview ? '#FF5733' : '#ddd';
+  document.getElementById('ai-tab-code').style.background     = isPreview ? '#fff' : '#FF5733';
+  document.getElementById('ai-tab-code').style.color          = isPreview ? '#333' : '#fff';
+  document.getElementById('ai-tab-code').style.borderColor    = isPreview ? '#ddd' : '#FF5733';
+}
+
+function copyAiCode() {
+  var ta = document.getElementById('ai-code-out');
+  ta.select();
+  document.execCommand('copy');
+  showAdminToast('HTML 코드가 복사되었습니다!');
+}
+
+function applyAiResult() {
+  if (!_aiGeneratedHtml) return;
+  document.getElementById('f-desc').value = _aiGeneratedHtml;
+  closeAiPageModal();
+  showAdminToast('✅ 상품 설명에 적용되었습니다!');
+}
+
+function runAiPageGen() {
+  var name = document.getElementById('ai-name').value.trim();
+  if (!name) { showAdminToast('상품명을 먼저 입력해주세요!'); return; }
+
+  document.getElementById('ai-input-area').style.display  = 'none';
+  document.getElementById('ai-result-area').style.display = 'none';
+  document.getElementById('ai-loading').style.display     = 'block';
+
+  var scriptUrl = (typeof SCRIPT_URL !== 'undefined') ? SCRIPT_URL
+    : (typeof CONFIG !== 'undefined' && CONFIG.SCRIPT_URL) ? CONFIG.SCRIPT_URL : '';
+
+  var payload = {
+    action: 'generateProductDetail',
+    data: {
+      상품명:   document.getElementById('ai-name').value,
+      카테고리: document.getElementById('ai-cat').value,
+      가격:     document.getElementById('ai-price').value,
+      할인가:   document.getElementById('ai-sale').value,
+      키워드:   document.getElementById('ai-keywords').value,
+      추가요청: document.getElementById('ai-extra').value
+    }
+  };
+
+  fetch(scriptUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify(payload)
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(res) {
+    document.getElementById('ai-loading').style.display = 'none';
+    if (res.status === 'ok' && res.html) {
+      _aiGeneratedHtml = res.html;
+      document.getElementById('ai-code-out').value = res.html;
+      var frame = document.getElementById('ai-preview-frame');
+      frame.srcdoc = res.html;
+      document.getElementById('ai-result-area').style.display = 'block';
+      switchAiTab('preview');
+    } else {
+      document.getElementById('ai-input-area').style.display = 'flex';
+      showAdminToast('오류: ' + (res.message || '알 수 없는 오류'));
+    }
+  })
+  .catch(function(err) {
+    document.getElementById('ai-loading').style.display = 'none';
+    document.getElementById('ai-input-area').style.display = 'flex';
+    showAdminToast('통신 오류: ' + err.toString());
+  });
+}  
 </script>
 
 </body>
