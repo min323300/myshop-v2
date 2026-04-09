@@ -189,7 +189,7 @@ const Popup = {
                 : `<span class="price-sale">${product.price.toLocaleString()}원</span>`
               }
             </div>
-            <p class="popup-desc">${escHtml(product.description)}</p>
+            <p class="popup-desc">${product.description || ''}</p>
             <div class="popup-qty">
               <label>수량</label>
               <div class="qty-control">
