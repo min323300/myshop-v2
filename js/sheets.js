@@ -1,3 +1,4 @@
+
 // ============================================================
 // 📊 Google Sheets 연동 모듈 - sheets.js (한글 헤더 버전)
 // ============================================================
@@ -13,6 +14,15 @@ function escHtml(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+// ✅ v4.9 fix: 구글시트 CSV에서 이스케이프된 HTML 복원 (상품설명용)
+function unescHtml(str) {
+  if (!str) return '';
+  if (str.indexOf('&lt;') === -1 && str.indexOf('&gt;') === -1) return str;
+  var tmp = document.createElement('textarea');
+  tmp.innerHTML = str;
+  return tmp.value;
 }
 
 const SheetAPI = {
@@ -233,7 +243,7 @@ const DealerProductAPI = {
       image3: resolveImageUrl(row['이미지3']) || '',
       image4: resolveImageUrl(row['이미지4']) || '',
       detailImages: row['상세이미지'] || '',
-      description: row['상품설명'] || '',
+      description: unescHtml(row['상품설명'] || ''),
       options: row['옵션'] || '',
       deliveryFee: row['배송비'] || '무료',
       deliveryDays: row['배송일'] || '1~3일',
@@ -282,7 +292,7 @@ const ProductAPI = {
       category: row['카테고리'] || '',
       subCategory: row['세부카테고리'] || '',
       image: resolveImageUrl(row['이미지']) || 'https://via.placeholder.com/400x400?text=상품이미지',
-      description: row['상품설명'] || '',
+      description: unescHtml(row['상품설명'] || ''),
       stock: parseInt(row['재고']) || 0,
       badge: row['뱃지'] || '',
       isFeatured: row['추천여부'] === 'TRUE',
