@@ -234,28 +234,38 @@ function renderProduct(p) {
   var descEl = document.getElementById('detail-description');
   if (descEl) {
     var desc = p.description || '';
+
+    // ✅ v4.9 fix: 구글시트 CSV에서 이스케이프된 HTML 복원
+    if (desc.indexOf('&lt;') !== -1 || desc.indexOf('&gt;') !== -1) {
+      var tmp = document.createElement('textarea');
+      tmp.innerHTML = desc;
+      desc = tmp.value;
+    }
+
     var isHtml = /<[a-z][\s\S]*>/i.test(desc);
     if (isHtml) {
-  descEl.classList.add('html-mode');
-  if (desc.indexOf('<!DOCTYPE') !== -1 || desc.indexOf('<html') !== -1) {
-    var iframe = document.createElement('iframe');
-    iframe.style.cssText = 'width:100%;border:none;min-height:600px;';
-    iframe.srcdoc = desc;
-    descEl.innerHTML = '';
-    descEl.appendChild(iframe);
-    iframe.onload = function() {
-      try {
-        iframe.style.height = iframe.contentDocument.body.scrollHeight + 'px';
-      } catch(e) {}
-    };
-  } else {
-    descEl.innerHTML = desc || '';
+      descEl.classList.add('html-mode');
+      if (desc.indexOf('<!DOCTYPE') !== -1 || desc.indexOf('<html') !== -1) {
+        // 전체 HTML 문서 → iframe으로 렌더링
+        var iframe = document.createElement('iframe');
+        iframe.style.cssText = 'width:100%;border:none;min-height:600px;';
+        iframe.srcdoc = desc;
+        descEl.innerHTML = '';
+        descEl.appendChild(iframe);
+        iframe.onload = function() {
+          try {
+            iframe.style.height = iframe.contentDocument.body.scrollHeight + 'px';
+          } catch(e) {}
+        };
+      } else {
+        // HTML 조각 → innerHTML로 렌더링
+        descEl.innerHTML = desc || '';
+      }
+    } else {
+      descEl.classList.add('text-mode');
+      descEl.textContent = desc || '';
+    }
   }
-} else {
-  descEl.classList.add('text-mode');
-  descEl.textContent = desc || '';
-}
-}
   // 유튜브 영상
   renderYoutube(p.youtube);
 
