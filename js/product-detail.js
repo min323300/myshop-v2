@@ -246,28 +246,17 @@ function renderProduct(p) {
     if (isHtml) {
       descEl.classList.add('html-mode');
       if (desc.indexOf('<!DOCTYPE') !== -1 || desc.indexOf('<html') !== -1) {
-        // ✅ v4.9 fix: 전체 HTML 문서 → body+style 추출하여 직접 렌더링
-        var styleHtml = '';
-        var styleMatch = desc.match(/<style[^>]*>([\s\S]*?)<\/style>/gi);
-        if (styleMatch) {
-          // style 태그 내용을 scoped 방식으로 변환
-          styleHtml = styleMatch.map(function(s) {
-            return s.replace(/<style/i, '<style data-product-detail');
-          }).join('\n');
-        }
-        var bodyHtml = '';
-        var bodyMatch = desc.match(/<body[^>]*>([\s\S]*)<\/body>/i);
-        if (bodyMatch) {
-          bodyHtml = bodyMatch[1];
-        } else {
-          // body 태그가 없으면 head/html 등 제거 후 사용
-          bodyHtml = desc
-            .replace(/<!DOCTYPE[^>]*>/gi, '')
-            .replace(/<\/?html[^>]*>/gi, '')
-            .replace(/<head[\s\S]*?<\/head>/gi, '')
-            .replace(/<\/?body[^>]*>/gi, '');
-        }
-        descEl.innerHTML = '<div class="ai-product-detail">' + styleHtml + bodyHtml + '</div>';
+        // 전체 HTML 문서 → iframe으로 렌더링
+        var iframe = document.createElement('iframe');
+        iframe.style.cssText = 'width:100%;border:none;min-height:600px;';
+        iframe.srcdoc = desc;
+        descEl.innerHTML = '';
+        descEl.appendChild(iframe);
+        iframe.onload = function() {
+          try {
+            iframe.style.height = iframe.contentDocument.body.scrollHeight + 'px';
+          } catch(e) {}
+        };
       } else {
         // HTML 조각 → innerHTML로 렌더링
         descEl.innerHTML = desc || '';

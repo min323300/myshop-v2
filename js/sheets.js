@@ -674,13 +674,4 @@ document.addEventListener('DOMContentLoaded', async function() {
     fixBrandName();
     window.addEventListener('load', fixBrandName);
 
-    // MutationObserver로 app.js 덮어쓰기 방지
-    const storeName = document.getElementById('store-name');
-    if (storeName) {
-      const obs = new MutationObserver(() => {
-        if (storeName.textContent !== BRAND) storeName.textContent = BRAND;
-      });
-      obs.observe(storeName, { childList: true, subtree: true, characterData: true });
-    }
-  }
-});
+    // MutationObserver로 app.js 덮어�
