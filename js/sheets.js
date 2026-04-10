@@ -27,21 +27,58 @@ function unescHtml(str) {
 
 const SheetAPI = {
   parseCSV(csv) {
-    const lines = csv.trim().split('\n');
-    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-    return lines.slice(1).map(line => {
-      const values = [];
-      let cur = '', inQ = false;
-      for (let ch of line) {
-        if (ch === '"') inQ = !inQ;
-        else if (ch === ',' && !inQ) { values.push(cur.trim()); cur = ''; }
-        else cur += ch;
+    // ✅ v4.9 fix: 다중줄 HTML 콘텐츠를 안전하게 파싱하는 CSV 파서
+    var rows = [];
+    var row = [];
+    var cur = '';
+    var inQ = false;
+    var text = csv.trim();
+
+    for (var i = 0; i < text.length; i++) {
+      var ch = text[i];
+      if (inQ) {
+        if (ch === '"') {
+          // "" → 리터럴 따옴표 (HTML 속성 보존)
+          if (i + 1 < text.length && text[i + 1] === '"') {
+            cur += '"';
+            i++;
+          } else {
+            inQ = false;
+          }
+        } else {
+          cur += ch; // 줄바꿈 포함 모든 문자 보존
+        }
+      } else {
+        if (ch === '"') {
+          inQ = true;
+        } else if (ch === ',') {
+          row.push(cur.trim());
+          cur = '';
+        } else if (ch === '\n' || ch === '\r') {
+          if (ch === '\r' && i + 1 < text.length && text[i + 1] === '\n') i++;
+          row.push(cur.trim());
+          if (row.length > 0) rows.push(row);
+          row = [];
+          cur = '';
+        } else {
+          cur += ch;
+        }
       }
-      values.push(cur.trim());
-      const obj = {};
-      headers.forEach((h, i) => obj[h] = (values[i] || '').replace(/"/g, '').trim());
+    }
+    if (cur || row.length > 0) {
+      row.push(cur.trim());
+      rows.push(row);
+    }
+
+    if (rows.length < 2) return [];
+    var headers = rows[0];
+    return rows.slice(1).map(function(values) {
+      var obj = {};
+      headers.forEach(function(h, i) { obj[h] = (values[i] || '').trim(); });
       return obj;
-    }).filter(row => Object.values(row).some(v => v));
+    }).filter(function(row) {
+      return Object.values(row).some(function(v) { return v; });
+    });
   },
 
   async fetch(url) {
@@ -647,36 +684,38 @@ document.addEventListener('DOMContentLoaded', async function() {
   if (dealerId) {
     // ── 대리점 모드: 대리점 브랜딩 적용 ──
     await DealerContext.applyBranding();
-    // 1회만 보정 (MutationObserver가 이후 덮어쓰기 방지)
-    setTimeout(() => DealerContext.applyBranding(), 1500);
+    setTimeout(() => DealerContext.applyBranding(), 1000);
+    setTimeout(() => DealerContext.applyBranding(), 2500);
   } else {
     // ── 본사 모드: 브랜드명 항상 "담누리마켓" 고정 ──
     const BRAND = '담누리마켓';
 
     function fixBrandName() {
+      // 헤더 로고
       const storeName = document.getElementById('store-name');
       if (storeName && storeName.textContent !== BRAND) storeName.textContent = BRAND;
 
+      // 푸터 브랜드명
       const footerName = document.getElementById('footer-store-name');
       if (footerName && !footerName.textContent.includes(BRAND)) footerName.textContent = '🏪 ' + BRAND;
 
+      // 푸터 저작권
       const footerCopy = document.getElementById('footer-copy');
       if (footerCopy && !footerCopy.textContent.includes(BRAND)) {
         footerCopy.textContent = '© 2026 ' + BRAND + '. All rights reserved.';
       }
 
+      // 페이지 타이틀
       if (document.title.includes('비에스컴퍼니')) {
         document.title = document.title.replace(/\(주\)비에스컴퍼니|비에스컴퍼니/g, BRAND);
       }
     }
 
-    // 즉시 1회 + window.onload 후 1회 보정 (setTimeout 남발 제거)
+    // 즉시 + app.js 로드 후 반복 보정
     fixBrandName();
-    window.addEventListener('load', fixBrandName);
-
-    // MutationObserver로 app.js 덮어�
-        fixBrandName();
-    window.addEventListener('load', fixBrandName);
+    setTimeout(fixBrandName, 500);
+    setTimeout(fixBrandName, 1500);
+    setTimeout(fixBrandName, 3000);
 
     // MutationObserver로 app.js 덮어쓰기 방지
     const storeName = document.getElementById('store-name');
