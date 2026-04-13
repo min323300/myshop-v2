@@ -3,10 +3,10 @@
 // ============================================================
 const CONFIG = {
   // ✅ Google Sheets ID (운영 시트)
-  SHEET_ID: '1t804fRO8HfQtmOzpDAz2IZfzRDQ7t8LYllFGZr3ftUI',
+  SHEET_ID: '1gjnczt_Db959Nc6aAF6CIPIj1SBY4XvoIXuEAAIJOZE',
 
   // ✅ Apps Script URL (v4.6)
-  APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbw_rbhRHPQhNYHttEbAyKiLDB32r1TQlhPBO6V3kIQq0AW1mNoz0yb3gjlaiQtB1uyn/exec',
+  APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbzQ-Ce8Zbj5mO-iMF6IJQhNtbsHl7DGo9ER4bsBoJRoz1JnvIdkp3M3qb1efEcSlwoB/exec',
 
   // ✅ YouTube API 키
   YOUTUBE_API_KEY: 'AIzaSyCbIR9GlemCUaHvcbGOy8AdrXEsd5EZlhE',
