@@ -852,6 +852,7 @@ function clearDealerForm(){
   // 로고이미지 필드 초기화
   var logoEl = document.getElementById('dm-logo'); if(logoEl) logoEl.value='';
   var logoPv = document.getElementById('dm-logo-pv'); if(logoPv){ logoPv.style.display='none'; logoPv.src=''; }
+  var descEl = document.getElementById('dm-desc'); if(descEl) descEl.value='';
 }
 
 function editDealer(btn){
