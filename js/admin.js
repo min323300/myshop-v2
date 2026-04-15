@@ -885,6 +885,8 @@ function editDealer(btn){
       logoPv.style.display = 'block';
     }
   }
+  var descEl2 = document.getElementById('dm-desc');
+  if(descEl2) descEl2.value = d['설명'] || '';
   document.getElementById('dealer-modal').classList.add('open');
 }
 
