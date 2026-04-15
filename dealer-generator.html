@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>대리점 페이지 생성기 | 담누리마켓 관리자</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&display=swap');
+
+  :root {
+    --primary: #FF6B35;
+    --primary-dark: #e55a25;
+    --bg: #f5f6fa;
+    --card: #ffffff;
+    --text: #1a1a2e;
+    --text-sub: #6b7280;
+    --border: #e5e7eb;
+    --success: #10b981;
+    --info: #3b82f6;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Pretendard', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 24px 16px;
+  }
+
+  .container { max-width: 900px; margin: 0 auto; }
+
+  .header {
+    background: linear-gradient(135deg, var(--primary), #ff9f43);
+    color: white;
+    border-radius: 16px;
+    padding: 28px 32px;
+    margin-bottom: 24px;
+    box-shadow: 0 8px 24px rgba(255,107,53,0.25);
+  }
+  .header h1 { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+  .header p { font-size: 14px; opacity: 0.85; }
+
+  .config-card {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 20px;
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+  .config-card h2 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-sub);
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .config-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .config-input {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .config-input label { font-size: 12px; color: var(--text-sub); font-weight: 500; }
+  .config-input input {
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: monospace;
+    background: #f9fafb;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .config-input input:focus { border-color: var(--primary); background: white; }
+
+  .btn-load {
+    margin-top: 14px;
+    padding: 10px 24px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .btn-load:hover { background: var(--primary-dark); }
+
+  .info-box {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 20px;
+    font-size: 13px;
+    color: #1e40af;
+    line-height: 1.6;
+  }
+  .info-box strong { display: block; margin-bottom: 4px; font-size: 14px; }
+
+  .dealer-grid {
+    display: grid;
+    gap: 14px;
+  }
+
+  .dealer-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    transition: box-shadow 0.2s;
+  }
+  .dealer-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+
+  .dealer-color {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    flex-shrink: 0;
+    border: 2px solid rgba(0,0,0,0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+  }
+
+  .dealer-info { flex: 1; min-width: 0; }
+  .dealer-name { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+  .dealer-id { font-size: 12px; color: var(--text-sub); font-family: monospace; margin-bottom: 2px; }
+  .dealer-url { font-size: 12px; color: var(--info); word-break: break-all; }
+
+  .dealer-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+  .btn-preview {
+    padding: 8px 14px;
+    border: 1px solid var(--border);
+    background: white;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    color: var(--text);
+    transition: all 0.2s;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .btn-preview:hover { border-color: var(--info); color: var(--info); }
+
+  .btn-download {
+    padding: 8px 16px;
+    background: var(--success);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-download:hover { background: #059669; }
+
+  .btn-download-all {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, var(--primary), #ff9f43);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 20px;
+    transition: opacity 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .btn-download-all:hover { opacity: 0.9; }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .status-운영중 { background: #d1fae5; color: #065f46; }
+  .status-모집중 { background: #dbeafe; color: #1e40af; }
+  .status-해지 { background: #fee2e2; color: #991b1b; }
+
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-sub);
+  }
+  .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+  .empty-state p { font-size: 15px; }
+
+  .loading {
+    text-align: center;
+    padding: 40px;
+    color: var(--text-sub);
+    font-size: 14px;
+  }
+
+  .guide-steps {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-top: 20px;
+    border: 1px solid var(--border);
+  }
+  .guide-steps h3 { font-size: 14px; font-weight: 700; margin-bottom: 14px; color: var(--text-sub); text-transform: uppercase; letter-spacing: 0.05em; }
+  .step {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+    align-items: flex-start;
+  }
+  .step:last-child { margin-bottom: 0; }
+  .step-num {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: white;
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .step-text { font-size: 13px; line-height: 1.6; color: var(--text); }
+  .step-text code {
+    background: #f3f4f6;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 12px;
+    color: var(--primary-dark);
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <h1>🏪 대리점 페이지 생성기</h1>
+    <p>각 대리점의 카카오톡/SNS 공유 전용 HTML 파일을 자동으로 생성합니다</p>
+  </div>
+
+  <div class="info-box">
+    <strong>📌 이 도구가 필요한 이유</strong>
+    카카오톡 링크 미리보기는 JavaScript 실행 전 HTML의 OG 태그를 읽습니다.
+    <code>?dealer=subi</code> 파라미터만으로는 대리점별 다른 미리보기가 불가능하여,
+    대리점마다 OG 태그가 포함된 전용 HTML 파일이 필요합니다.
+  </div>
+
+  <div class="config-card">
+    <h2>⚙️ 연결 설정</h2>
+    <div class="config-row">
+      <div class="config-input">
+        <label>Apps Script URL</label>
+        <input type="text" id="scriptUrl" placeholder="https://script.google.com/macros/s/.../exec">
+      </div>
+      <div class="config-input">
+        <label>쇼핑몰 기본 URL</label>
+        <input type="text" id="shopUrl" value="https://gasway.shop" placeholder="https://gasway.shop">
+      </div>
+    </div>
+    <button class="btn-load" onclick="loadDealers()">📋 대리점 목록 불러오기</button>
+  </div>
+
+  <div id="dealerSection">
+    <div class="empty-state">
+      <div class="icon">🏬</div>
+      <p>위에서 설정을 입력하고<br>대리점 목록을 불러오세요</p>
+    </div>
+  </div>
+
+  <div class="guide-steps">
+    <h3>📖 사용 방법</h3>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-text">위에서 Apps Script URL과 쇼핑몰 URL을 입력하고 <strong>목록 불러오기</strong> 클릭</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-text">각 대리점의 <strong>HTML 다운로드</strong> 버튼으로 파일 저장 (예: <code>subi.html</code>)</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-text">다운로드한 파일을 <strong>GitHub myshop-v2</strong> 저장소 루트에 업로드</div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-text">카카오톡 OG 캐시 초기화: <code>developers.kakao.com/tool/clear/og</code></div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-text">대리점에게 <code>gasway.shop/subi.html</code> 형태의 URL 공유</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// config.js에서 불러오려면 아래 주석 해제
+// const scriptUrlFromConfig = typeof CONFIG !== 'undefined' ? CONFIG.APPS_SCRIPT_URL : '';
+// document.getElementById('scriptUrl').value = scriptUrlFromConfig;
+
+let dealers = [];
+
+async function loadDealers() {
+  const scriptUrl = document.getElementById('scriptUrl').value.trim();
+  if (!scriptUrl) {
+    alert('Apps Script URL을 입력해주세요');
+    return;
+  }
+
+  const section = document.getElementById('dealerSection');
+  section.innerHTML = '<div class="loading">⏳ 대리점 목록 불러오는 중...</div>';
+
+  try {
+    const res = await fetch(`${scriptUrl}?action=getDealers`, { mode: 'no-cors' });
+    // no-cors로는 응답을 읽을 수 없으므로 JSONP 방식으로 처리
+    // Apps Script에서 callback 파라미터 지원 시:
+    loadViaScript(scriptUrl);
+  } catch(e) {
+    loadViaScript(scriptUrl);
+  }
+}
+
+function loadViaScript(scriptUrl) {
+  // JSONP 방식으로 데이터 로드
+  window._dealerCallback = function(data) {
+    if (data && data.dealers) {
+      dealers = data.dealers;
+    } else if (Array.isArray(data)) {
+      dealers = data;
+    } else {
+      // 샘플 데이터로 테스트
+      useSampleData();
+      return;
+    }
+    renderDealers();
+  };
+
+  const script = document.createElement('script');
+  script.src = `${scriptUrl}?action=getDealers&callback=_dealerCallback`;
+  script.onerror = () => useSampleData();
+  document.head.appendChild(script);
+
+  setTimeout(() => {
+    if (dealers.length === 0) useSampleData();
+  }, 3000);
+}
+
+function useSampleData() {
+  // Google Sheets에서 직접 불러오기 실패 시 수동 입력 UI 표시
+  const section = document.getElementById('dealerSection');
+  section.innerHTML = `
+    <div class="config-card" style="border-color:#fbbf24;background:#fffbeb;">
+      <h2 style="color:#92400e;">⚠️ 자동 로드 실패 — 수동 입력</h2>
+      <p style="font-size:13px;color:#92400e;margin-bottom:16px;">
+        Apps Script에서 대리점 데이터를 가져올 수 없습니다.<br>
+        아래에 대리점 정보를 직접 입력하세요.
+      </p>
+      <div id="manualList"></div>
+      <button class="btn-load" onclick="addManualDealer()" style="margin-top:0;">+ 대리점 추가</button>
+      <button class="btn-load" onclick="renderManualDealers()" style="background:#10b981;margin-left:8px;">✅ 생성하기</button>
+    </div>
+  `;
+  addManualDealer();
+}
+
+function addManualDealer() {
+  const list = document.getElementById('manualList');
+  const idx = list.children.length;
+  const row = document.createElement('div');
+  row.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 1fr 80px;gap:8px;margin-bottom:8px;';
+  row.innerHTML = `
+    <input class="m-id" placeholder="대리점ID (예: subi)" style="padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;">
+    <input class="m-name" placeholder="대리점명 (예: 뚜뚜마켓)" style="padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;">
+    <input class="m-desc" placeholder="소개 (선택)" style="padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;">
+    <input class="m-color" type="color" value="#FF6B35" style="padding:4px;border:1px solid #e5e7eb;border-radius:8px;width:100%;height:36px;cursor:pointer;">
+  `;
+  list.appendChild(row);
+}
+
+function renderManualDealers() {
+  const rows = document.querySelectorAll('#manualList > div');
+  dealers = [];
+  rows.forEach(row => {
+    const id = row.querySelector('.m-id').value.trim();
+    const name = row.querySelector('.m-name').value.trim();
+    const desc = row.querySelector('.m-desc').value.trim();
+    const color = row.querySelector('.m-color').value;
+    if (id && name) dealers.push({ id, name, desc, color, status: '운영중' });
+  });
+  if (dealers.length === 0) { alert('대리점 정보를 입력해주세요'); return; }
+  renderDealers();
+}
+
+function renderDealers() {
+  const shopUrl = document.getElementById('shopUrl').value.trim() || 'https://gasway.shop';
+  const section = document.getElementById('dealerSection');
+
+  if (!dealers.length) {
+    section.innerHTML = '<div class="empty-state"><div class="icon">🏬</div><p>등록된 대리점이 없습니다</p></div>';
+    return;
+  }
+
+  let html = '<div class="dealer-grid">';
+  dealers.forEach(d => {
+    const dealerUrl = `${shopUrl}/${d.id}.html`;
+    const statusClass = `status-${d.status || '운영중'}`;
+    html += `
+      <div class="dealer-card">
+        <div class="dealer-color" style="background:${d.color || d.theme || '#FF6B35'}">🏪</div>
+        <div class="dealer-info">
+          <div class="dealer-name">${d.name} <span class="status-badge ${statusClass}">${d.status || '운영중'}</span></div>
+          <div class="dealer-id">ID: ${d.id}</div>
+          <div class="dealer-url">📎 ${dealerUrl}</div>
+        </div>
+        <div class="dealer-actions">
+          <a href="${shopUrl}/?dealer=${d.id}" target="_blank" class="btn-preview">👁 미리보기</a>
+          <button class="btn-download" onclick="downloadHtml('${d.id}', '${d.name}', '${d.color || d.theme || '#FF6B35'}', '${d.desc || ''}')">
+            ⬇ HTML 다운로드
+          </button>
+        </div>
+      </div>
+    `;
+  });
+  html += '</div>';
+  html += `<button class="btn-download-all" onclick="downloadAll()">⬇ 전체 다운로드 (${dealers.length}개)</button>`;
+  section.innerHTML = html;
+}
+
+function generateHtml(id, name, color, desc, shopUrl) {
+  shopUrl = shopUrl || document.getElementById('shopUrl').value.trim() || 'https://gasway.shop';
+  const description = desc || `${name}에서 다양한 상품을 만나보세요!`;
+  const ogImage = `https://res.cloudinary.com/dmefdyags/image/upload/c_pad,b_${color.replace('#','')},w_1200,h_630,l_text:NanumGothic_72_bold:${encodeURIComponent(name)},co_white/v1/damnuri_upload/logo`;
+
+  return `<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${name}</title>
+
+<!-- Open Graph (카카오톡/SNS 미리보기) -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="${name} - 담아서 누리는 쇼핑">
+<meta property="og:description" content="${description}">
+<meta property="og:image" content="${ogImage}">
+<meta property="og:url" content="${shopUrl}/${id}.html">
+<meta property="og:site_name" content="${name}">
+
+<!-- 트위터 카드 -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="${name}">
+<meta name="twitter:description" content="${description}">
+<meta name="twitter:image" content="${ogImage}">
+
+<!-- 즉시 리다이렉트 -->
+<meta http-equiv="refresh" content="0;url=${shopUrl}/?dealer=${id}">
+<script>
+  window.location.replace('${shopUrl}/?dealer=${id}');
+<\/script>
+<style>
+  body { font-family: -apple-system, sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; background:${color}; color:white; }
+  .wrap { text-align:center; }
+  .spinner { width:40px; height:40px; border:4px solid rgba(255,255,255,0.3); border-top-color:white; border-radius:50%; animation:spin 0.8s linear infinite; margin:0 auto 16px; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  h2 { font-size:20px; margin:0 0 8px; }
+  p { font-size:14px; opacity:0.8; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="spinner"></div>
+  <h2>${name}</h2>
+  <p>잠시 후 이동합니다...</p>
+</div>
+</body>
+</html>`;
+}
+
+function downloadHtml(id, name, color, desc) {
+  const content = generateHtml(id, name, color, desc);
+  const blob = new Blob([content], { type: 'text/html;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${id}.html`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+async function downloadAll() {
+  if (!dealers.length) return;
+  for (let i = 0; i < dealers.length; i++) {
+    const d = dealers[i];
+    await new Promise(r => setTimeout(r, 300));
+    downloadHtml(d.id, d.name, d.color || d.theme || '#FF6B35', d.desc || '');
+  }
+}
+</script>
+</body>
+</html>
