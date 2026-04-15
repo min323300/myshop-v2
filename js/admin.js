@@ -908,6 +908,7 @@ function saveDealer(){
     상태:       document.getElementById('dm-status').value,
     정산계좌:   document.getElementById('dm-bank').value,
     로고이미지: logoEl ? logoEl.value.trim() : '',
+    설명:      (document.getElementById('dm-desc') ? document.getElementById('dm-desc').value.trim() : ''),
     아이디:     (document.getElementById('dm-admin-id') ? document.getElementById('dm-admin-id').value.trim() : ''),
     비밀번호:   (document.getElementById('dm-admin-pw') ? document.getElementById('dm-admin-pw').value.trim() : '')
   };
