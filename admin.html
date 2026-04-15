@@ -903,7 +903,14 @@
           <label class="flabel">정산계좌</label><input class="finput" id="dm-bank" placeholder="은행명 계좌번호 예금주">
           <div style="margin-top:14px;">
           <label class="flabel">로고이미지 URL</label>
-          <input class="finput" id="dm-logo" placeholder="https://... (카카오톡 OG 썸네일용)">
+          <div style="display:flex;gap:6px;align-items:center;">
+            <input class="finput" id="dm-logo" placeholder="URL 자동입력" style="flex:1;">
+            <label class="upload-btn" title="Cloudinary 업로드">
+              <span>📁</span>
+              <input type="file" accept="image/*" style="display:none" onchange="uploadImg(this,'dm-logo','dm-logo-pv')">
+            </label>
+          </div>
+          <img id="dm-logo-pv" style="display:none;max-width:100%;max-height:80px;margin-top:6px;border-radius:6px;border:1px solid #eee;">
         </div>
         <div style="margin-top:14px;">
           <label class="flabel">설명</label>
