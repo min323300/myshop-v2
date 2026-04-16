@@ -575,7 +575,7 @@ function buildOrderData(orderNo) {
 
 function savePointDeduction(orderNo) {
   if (usedPoints <= 0) return;
-  var SCRIPT_URL = (typeof CONFIG !== 'undefined') ? CONFIG.PG.API_PROXY_URL : '';
+  var SCRIPT_URL = (typeof CONFIG !== 'undefined') ? CONFIG.APPS_SCRIPT_URL : '';
   if (!SCRIPT_URL) return;
   var user = null;
   try { user = JSON.parse(sessionStorage.getItem('user') || 'null'); } catch(e) {}
