@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- 기본 OG 태그 (JS로 덮어씌워짐) -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="담누리마켓 - 담아서 누리는 쇼핑">
+<meta property="og:description" content="신선한 먹거리부터 생활용품까지!">
+<meta property="og:image" content="https://gasway.shop/images/og-image.jpg">
+<meta property="og:site_name" content="담누리마켓">
+<meta name="twitter:card" content="summary_large_image">
+
+<title>담누리마켓</title>
+<script src="js/config.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Noto Sans KR', sans-serif;
+  display: flex; align-items: center; justify-content: center;
+  min-height: 100vh; background: #3355ff; color: white; text-align: center;
+}
+.wrap { padding: 40px 20px; }
+.logo { max-width: 200px; max-height: 120px; border-radius: 12px; margin-bottom: 20px; display: block; margin-left: auto; margin-right: auto; }
+.spinner { width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+h2 { font-size: 24px; margin-bottom: 8px; }
+p { font-size: 14px; opacity: 0.75; margin-bottom: 20px; }
+.btn { display: inline-block; padding: 12px 28px; background: white; color: #3355ff; border-radius: 10px; text-decoration: none; font-weight: 700; font-size: 15px; }
+</style>
+</head>
+<body>
+<div class="wrap" id="wrap">
+  <div class="spinner" id="spinner"></div>
+  <h2 id="store-name">담누리마켓</h2>
+  <p id="store-desc">잠시 후 자동으로 이동합니다...</p>
+  <a href="/" class="btn" id="store-link">쇼핑몰 바로가기</a>
+</div>
+
+<script>
+(function() {
+  // URL에서 대리점 ID 추출
+  // 예: gasway.shop/subi.html → subi
+  var path = window.location.pathname;
+  var match = path.match(/\/([^\/]+)\.html$/);
+  var dealerId = match ? match[1] : '';
+
+  if (!dealerId || dealerId === 'index') {
+    window.location.replace('/');
+    return;
+  }
+
+  var SHEET_ID = (typeof CONFIG !== 'undefined') ? CONFIG.SHEET_ID : '1gjnczt_Db959Nc6aAF6CIPIj1SBY4XvoIXuEAAIJOZE';
+  var shopUrl = 'https://gasway.shop/?dealer=' + dealerId;
+
+  // 구글시트에서 대리점 정보 읽기
+  var url = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID
+    + '/gviz/tq?tqx=out:csv&sheet=' + encodeURIComponent('대리점')
+    + '&t=' + Date.now();
+
+  fetch(url)
+    .then(function(r) { return r.text(); })
+    .then(function(csv) {
+      var lines = csv.trim().split('\n');
+      var headers = lines[0].split(',').map(function(h) { return h.trim().replace(/"/g, ''); });
+      var idCol    = headers.indexOf('대리점ID');
+      var nameCol  = headers.indexOf('대리점명');
+      var logoCol  = headers.indexOf('로고이미지');
+      var descCol  = headers.indexOf('설명');
+      var colorCol = headers.indexOf('테마색상');
+
+      var storeName  = '담누리마켓';
+      var storeDesc  = '담아서 누리는 쇼핑';
+      var logoUrl    = '';
+      var themeColor = '#3355ff';
+
+      for (var i = 1; i < lines.length; i++) {
+        var vals = [], cur = '', inQ = false;
+        for (var j = 0; j < lines[i].length; j++) {
+          var ch = lines[i][j];
+          if (ch === '"') { inQ = !inQ; }
+          else if (ch === ',' && !inQ) { vals.push(cur.trim()); cur = ''; }
+          else { cur += ch; }
+        }
+        vals.push(cur.trim());
+
+        var rowId = (vals[idCol] || '').replace(/"/g, '').trim();
+        if (rowId === dealerId) {
+          storeName  = (vals[nameCol]  || '').replace(/"/g, '').trim() || storeName;
+          logoUrl    = (vals[logoCol]  || '').replace(/"/g, '').trim();
+          storeDesc  = (vals[descCol]  || '').replace(/"/g, '').trim() || (storeName + ' - 담아서 누리는 쇼핑');
+          themeColor = (vals[colorCol] || '').replace(/"/g, '').trim() || themeColor;
+          break;
+        }
+      }
+
+      // 페이지 업데이트
+      document.title = storeName + ' - 담아서 누리는 쇼핑';
+      document.getElementById('store-name').textContent = storeName;
+      document.getElementById('store-desc').textContent = storeDesc;
+      document.getElementById('store-link').textContent = storeName + ' 바로가기';
+      document.getElementById('store-link').href = shopUrl;
+      document.getElementById('spinner').style.display = 'none';
+      document.body.style.background = themeColor;
+
+      if (logoUrl) {
+        var img = document.createElement('img');
+        img.src = logoUrl;
+        img.className = 'logo';
+        document.getElementById('wrap').insertBefore(img, document.getElementById('store-name'));
+      }
+
+      // OG 태그 동적 업데이트 (카카오톡은 못 읽지만 다른 SNS용)
+      updateMeta('og:title',       storeName + ' - 담아서 누리는 쇼핑');
+      updateMeta('og:description', storeDesc);
+      updateMeta('og:image',       logoUrl || 'https://gasway.shop/images/og-image.jpg');
+      updateMeta('og:url',         'https://gasway.shop/' + dealerId + '.html');
+      updateMeta('og:site_name',   storeName);
+
+      // 3초 후 자동 리다이렉트
+      setTimeout(function() {
+        window.location.replace(shopUrl);
+      }, 2500);
+    })
+    .catch(function() {
+      // 시트 읽기 실패 시 바로 이동
+      window.location.replace(shopUrl);
+    });
+
+  function updateMeta(property, content) {
+    var el = document.querySelector('meta[property="' + property + '"]');
+    if (el) el.setAttribute('content', content);
+  }
+})();
+</script>
+</body>
+</html>
