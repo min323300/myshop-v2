@@ -603,7 +603,7 @@ function savePointDeduction(orderNo) {
 }
 
 function saveOrderToSheets(orderData) {
-  var SCRIPT_URL = (typeof CONFIG !== 'undefined') ? CONFIG.PG.API_PROXY_URL : '';
+  var SCRIPT_URL = (typeof CONFIG !== 'undefined') ? CONFIG.APPS_SCRIPT_URL : '';
   if (!SCRIPT_URL) { console.log('주문 데이터:', orderData); return; }
   fetch(SCRIPT_URL, {
     method: 'POST', mode: 'no-cors',
