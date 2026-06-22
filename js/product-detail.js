@@ -287,7 +287,7 @@ function updateDeliveryDate(productId) {
   var dateEl = document.getElementById('delivery-date');
   if (!dateEl) return;
 
-  var SHEET_ID = (typeof CONFIG !== 'undefined' && CONFIG.SHEET_ID) ? CONFIG.SHEET_ID : '1gjnczt_Db959Nc6aAF6CIPIj1SBY4XvoIXuEAAIJOZE';
+  var SHEET_ID = (typeof CONFIG !== 'undefined' && CONFIG.SHEET_ID) ? CONFIG.SHEET_ID : '1gjnczt_Db959Nc6aAF6CIPIz1SBY4XvoIXuEAAIJOZE';
   var url = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID
     + '/gviz/tq?tqx=out:csv&sheet=' + encodeURIComponent('공동구매');
 
@@ -916,7 +916,7 @@ function updateShippingContact(phone, email) {
 // 배송정책 로드
 // ============================================================
 function loadShippingPolicy() {
-  var SHEET_ID = (typeof CONFIG !== 'undefined' && CONFIG.SHEET_ID) ? CONFIG.SHEET_ID : '1gjnczt_Db959Nc6aAF6CIPIj1SBY4XvoIXuEAAIJOZE';
+  var SHEET_ID = (typeof CONFIG !== 'undefined' && CONFIG.SHEET_ID) ? CONFIG.SHEET_ID : '1gjnczt_Db959Nc6aAF6CIPIz1SBY4XvoIXuEAAIJOZE';
   var url = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID
     + '/gviz/tq?tqx=out:csv&sheet=' + encodeURIComponent('배송정책');
 
@@ -965,23 +965,26 @@ function applyShippingPolicy(p) {
   var methodEl = document.getElementById('ship-method');
   if (methodEl && p['택배사']) methodEl.textContent = p['택배사'];
 
+  // ✅ [수정] 상품별 배송비 우선 — 배송정책 시트 값으로 덮어쓰지 않음
   var feeEl = document.getElementById('ship-fee');
-  if (feeEl && p['배송비'] !== undefined) {
-    var fee = parseInt(p['배송비']);
-    feeEl.textContent = fee === 0 ? '무료배송 🎉' : fee.toLocaleString() + '원 (50,000원 이상 무료)';
+  if (feeEl) {
+    var price = currentProduct ? (currentProduct.salePrice || currentProduct.price) : 0;
+    // 상품에 개별 배송비가 있으면 그 값을 사용, 없을 때만 배송정책 시트 값 사용
+    var hasProductFee = currentProduct &&
+        currentProduct.shippingFee !== undefined &&
+        currentProduct.shippingFee !== '' &&
+        !isNaN(parseInt(currentProduct.shippingFee));
+    var fee = hasProductFee
+        ? parseInt(currentProduct.shippingFee)
+        : (p['배송비'] !== undefined ? parseInt(p['배송비']) : 3000);
+    if (isNaN(fee)) fee = 3000;
 
+    var isFree = (currentProduct && currentProduct.shippingMethod === '무료배송') || fee === 0 || price >= 50000;
+    var feeText = isFree ? '무료배송 🎉' : fee.toLocaleString() + '원 (50,000원 이상 무료)';
+
+    feeEl.textContent = feeText;
     var delivFee = document.getElementById('delivery-fee');
-    if (delivFee) {
-      var price = currentProduct ? (currentProduct.salePrice || currentProduct.price) : 0;
-      var isProductFree = currentProduct && (
-        currentProduct.shippingMethod === '무료배송' ||
-        currentProduct.shippingFee === 0 ||
-        price >= 50000
-      );
-      if (!isProductFree) {
-        delivFee.textContent = fee === 0 ? '무료배송 🎉' : fee.toLocaleString() + '원 (50,000원 이상 무료)';
-      }
-    }
+    if (delivFee) delivFee.textContent = feeText;
   }
 
   var periodEl = document.getElementById('ship-period');
