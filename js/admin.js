@@ -1136,7 +1136,9 @@ function pvImg(){
 // ============================================================
 // 상품 저장
 // ============================================================
+var _savingProd = false;  // ✅ 중복 제출 방지 플래그
 function saveProd(){
+  if(_savingProd) return;  // ✅ 저장 진행 중이면 무시 (더블탭 중복 등록 차단)
   var id=document.getElementById('f-id').value.trim(), name=document.getElementById('f-name').value.trim(), cat=document.getElementById('f-cat').value, price=document.getElementById('f-price').value;
   if(!id||!name||!cat||!price){ showToast('필수 항목 미입력 (번호/상품명/카테고리/가격)','err'); return; }
   var dTypeEl = document.getElementById('f-delivery-type');
@@ -1167,9 +1169,19 @@ function saveProd(){
     배송방법: deliveryType, 배송비: deliveryFee, 무료배송조건: deliveryFree
   };
   if(!SCRIPT_URL){ showToast('Apps Script URL 미설정 - 구글시트에 직접 입력해주세요','warn'); closeProdModal(); return; }
+
+  // ✅ 전송 시작: 잠금 + 버튼 비활성화
+  _savingProd = true;
+  var _saveBtn = document.querySelector('.m-ft .btn-primary');
+  if(_saveBtn){ _saveBtn.disabled = true; _saveBtn.textContent = '저장 중...'; }
+
   fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',body:JSON.stringify({action:editingId?'updateProduct':'saveProduct',data:data})}).then(function(){
     showToast((editingId?'상품 수정':'상품 등록')+'됐습니다! 구글시트 확인 후 새로고침하세요.','ok'); closeProdModal(); setTimeout(loadProds,2000);
-  }).catch(function(e){ showToast('저장 오류: '+e.message,'err'); });
+  }).catch(function(e){ showToast('저장 오류: '+e.message,'err'); }).then(function(){
+    // ✅ 완료(성공/실패 무관): 잠금 해제 + 버튼 복구
+    _savingProd = false;
+    if(_saveBtn){ _saveBtn.disabled = false; _saveBtn.textContent = '💾 저장하기'; }
+  });
 }
 
 function editProd(id){
