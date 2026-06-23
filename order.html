@@ -190,6 +190,17 @@
               <span class="pay-icon">💳</span><span>신용 / 체크카드</span>
               <span class="pay-sub">국내외 모든 카드</span>
             </div>
+            <div class="pay-method" onclick="selectPay(this,'무통장입금')">
+              <span class="pay-icon">🏦</span><span>무통장입금</span>
+              <span class="pay-sub">계좌이체 · 카드 없이 간편</span>
+            </div>
+          </div>
+          <!-- ✅ 무통장 선택 시 표시되는 입금 계좌 안내 -->
+          <div id="bank-info" style="display:none;margin-top:12px;padding:16px;background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;">
+            <div style="font-weight:800;color:#166534;margin-bottom:8px;">🏦 입금 계좌 안내</div>
+            <div style="font-size:16px;font-weight:800;color:#166534;">농협 351-1252-9726-03</div>
+            <div style="font-size:13px;color:#166534;margin-top:3px;">예금주 : (주)비에스컴퍼니</div>
+            <div style="font-size:12px;color:#15803d;margin-top:10px;line-height:1.7;">주문 후 위 계좌로 입금해주시면 입금 확인 후 배송해드립니다.<br>입금자명은 <strong>주문자 성함</strong>으로 부탁드리며, 주문 후 24시간 내 미입금 시 자동 취소될 수 있습니다.</div>
           </div>
           <div id="point-only-notice" style="display:none;margin-top:10px;padding:10px 14px;background:#f0f4ff;border-radius:8px;font-size:13px;color:#4338ca;font-weight:700;">
             ✅ 포인트 전액 결제 · 추가 결제 수단 불필요
@@ -371,6 +382,15 @@ function selectPay(el, type) {
   selectedPay = type;
   document.querySelectorAll('.pay-method').forEach(function(m) { m.classList.remove('active'); });
   el.classList.add('active');
+  var bank = document.getElementById('bank-info');
+  if (bank) bank.style.display = (type === '무통장입금') ? 'block' : 'none';
+  var btn = document.getElementById('btn-order');
+  if (btn) {
+    var amt = Math.max(0, orderRawAmount - usedPoints);
+    btn.textContent = (type === '무통장입금')
+      ? amt.toLocaleString() + '원 주문하기 (입금예약)'
+      : amt.toLocaleString() + '원 결제하기';
+  }
 }
 
 function toggleAll(el) {
@@ -622,6 +642,18 @@ function requestPG(orderData) {
     saveDealerPoint(orderData['주문번호'], orderRawAmount); // ✅ 딜러 포인트 적립
     Cart.clear();
     location.href = 'order-complete.html?no=' + orderData['주문번호'] + '&method=포인트전액';
+    return;
+  }
+
+  // ✅ 무통장입금: 카드창 없이 '입금대기'로 저장 후 완료 페이지(계좌 안내)로 이동
+  if (selectedPay === '무통장입금') {
+    orderData['결제방법'] = '무통장입금';
+    orderData['주문상태'] = '입금대기';
+    saveOrderToSheets(orderData);
+    savePointDeduction(orderData['주문번호']);
+    Cart.clear();
+    location.href = 'order-complete.html?no=' + orderData['주문번호']
+      + '&method=' + encodeURIComponent('무통장입금') + '&amt=' + orderData['결제금액'];
     return;
   }
 
