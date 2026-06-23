@@ -489,7 +489,7 @@
 <script>
 (function() {
   try {
-    var userData = sessionStorage.getItem('user');
+    var userData = localStorage.getItem('user');
     if (!userData) return;
     var user = JSON.parse(userData);
     if (!user || !user.name) return;
