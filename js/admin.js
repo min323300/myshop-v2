@@ -114,11 +114,20 @@ function loginSuccess(name) {
     });
   }
 
+  // ✅ 로그인 유지: 세션을 localStorage에 저장 (직접 로그아웃 전까지 유지)
+  try {
+    localStorage.setItem('admin_session', JSON.stringify({
+      type: currentUser.type, dealerId: currentUser.dealerId,
+      dealerName: currentUser.dealerName, name: name
+    }));
+  } catch(e) {}
+
   loadDash();
 }
 
 function doLogout() {
   if (!confirm('로그아웃 하시겠습니까?')) return;
+  try { localStorage.removeItem('admin_session'); } catch(e) {}
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('app').style.display = 'none';
   document.getElementById('lid').value = '';
@@ -1432,3 +1441,18 @@ function submitBulkProducts() {
     showToast('일괄 등록 오류: ' + e.message, 'err');
   });
 }
+
+// ============================================================
+// ✅ 로그인 유지: 페이지 로드 시 저장된 세션이 있으면 자동 복원
+// ============================================================
+document.addEventListener('DOMContentLoaded', function() {
+  try {
+    var saved = localStorage.getItem('admin_session');
+    if (!saved) return;
+    var sObj = JSON.parse(saved);
+    if (sObj && sObj.type) {
+      currentUser = { type: sObj.type, dealerId: sObj.dealerId || '', dealerName: sObj.dealerName || '', raw: {} };
+      loginSuccess(sObj.name || sObj.dealerName || '관리자');
+    }
+  } catch(e) {}
+});
