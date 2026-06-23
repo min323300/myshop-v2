@@ -416,8 +416,8 @@ function searchAddress() {
 
 function initPointSection() {
   var user = null;
-  try { user = JSON.parse(sessionStorage.getItem('user') || 'null'); } catch(e) {}
-  myPoints = parseInt(sessionStorage.getItem('myPoints') || '0');
+  try { user = JSON.parse(localStorage.getItem('user') || 'null'); } catch(e) {}
+  myPoints = parseInt(localStorage.getItem('myPoints') || '0');
 
   var wrap = document.getElementById('point-login-check');
   if (!user) {
@@ -598,7 +598,7 @@ function savePointDeduction(orderNo) {
   var SCRIPT_URL = (typeof CONFIG !== 'undefined') ? CONFIG.APPS_SCRIPT_URL : '';
   if (!SCRIPT_URL) return;
   var user = null;
-  try { user = JSON.parse(sessionStorage.getItem('user') || 'null'); } catch(e) {}
+  try { user = JSON.parse(localStorage.getItem('user') || 'null'); } catch(e) {}
   fetch(SCRIPT_URL, {
     method: 'POST', mode: 'no-cors',
     headers: { 'Content-Type': 'text/plain' },
@@ -614,11 +614,11 @@ function savePointDeduction(orderNo) {
   }).catch(function(e) { console.log('포인트 차감 기록 실패:', e); });
 
   var remaining = Math.max(0, myPoints - usedPoints);
-  sessionStorage.setItem('myPoints', String(remaining));
+  localStorage.setItem('myPoints', String(remaining));
   try {
-    var hist = JSON.parse(sessionStorage.getItem('pointHistory') || '[]');
+    var hist = JSON.parse(localStorage.getItem('pointHistory') || '[]');
     hist.push({ type:'minus', desc:'결제 포인트 사용 (' + orderNo + ')', amount: usedPoints, date: new Date().toLocaleDateString('ko-KR') });
-    sessionStorage.setItem('pointHistory', JSON.stringify(hist));
+    localStorage.setItem('pointHistory', JSON.stringify(hist));
   } catch(e) {}
 }
 
