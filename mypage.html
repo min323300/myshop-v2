@@ -394,7 +394,7 @@ function doLogin() {
   const storedCode = localStorage.getItem('refCode_' + email);
   user.refCode = storedCode || generateRefCode(user.name);
   if (!storedCode) localStorage.setItem('refCode_' + email, user.refCode);
-  sessionStorage.setItem('user', JSON.stringify(user));
+  localStorage.setItem('user', JSON.stringify(user));
   showMypage(user);
 }
 
@@ -425,14 +425,14 @@ function doSignup() {
   }
 
   const user = { name, email, phone, date: new Date().toLocaleDateString('ko-KR'), refCode: myRefCode, usedRef };
-  sessionStorage.setItem('user', JSON.stringify(user));
-  sessionStorage.setItem('myPoints', String(points));
+  localStorage.setItem('user', JSON.stringify(user));
+  localStorage.setItem('myPoints', String(points));
 
   const history = [{ type: 'plus', desc: '가입 축하 적립금', amount: 3000, date: new Date().toLocaleDateString('ko-KR') }];
   if (usedRef && usedRef.startsWith('REF')) {
     history.push({ type: 'plus', desc: '추천인 코드 적용', amount: 1000, date: new Date().toLocaleDateString('ko-KR') });
   }
-  try { sessionStorage.setItem('pointHistory', JSON.stringify(history)); } catch(e) {}
+  try { localStorage.setItem('pointHistory', JSON.stringify(history)); } catch(e) {}
 
   const SCRIPT_URL = (typeof CONFIG !== 'undefined') ? CONFIG.PG.API_PROXY_URL : '';
   if (SCRIPT_URL) {
@@ -457,7 +457,7 @@ function sendReferralReward(refCode, newName, newEmail) {
 }
 
 function doLogout() {
-  sessionStorage.removeItem('user');
+  localStorage.removeItem('user');
   document.getElementById('auth-section').style.display = 'block';
   document.getElementById('mypage-section').style.display = 'none';
 }
@@ -474,7 +474,7 @@ function showMypage(user) {
 
 function initRefCode(user) {
   let code = user.refCode || localStorage.getItem('refCode_' + user.email);
-  if (!code) { code = generateRefCode(user.name); localStorage.setItem('refCode_' + user.email, code); user.refCode = code; sessionStorage.setItem('user', JSON.stringify(user)); }
+  if (!code) { code = generateRefCode(user.name); localStorage.setItem('refCode_' + user.email, code); user.refCode = code; localStorage.setItem('user', JSON.stringify(user)); }
   document.getElementById('my-ref-code').textContent = code;
   const base = location.origin + location.pathname.replace('mypage.html', '');
   const dealerId = (typeof DealerContext !== 'undefined') ? DealerContext.getDealerId() : null;
@@ -499,7 +499,7 @@ function copyRefCode() {
   navigator.clipboard.writeText(code).then(() => alert('추천 코드가 복사됐습니다!\n' + code)).catch(() => { prompt('아래 코드를 복사하세요:', code); });
 }
 function shareRefLink() {
-  const user = JSON.parse(sessionStorage.getItem('user') || '{}');
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
   const code = user.refCode || document.getElementById('my-ref-code').textContent;
   const base = location.origin + location.pathname.replace('mypage.html', '');
   const dealerId = (typeof DealerContext !== 'undefined') ? DealerContext.getDealerId() : null;
@@ -513,7 +513,7 @@ function shareRefLink() {
 async function loadStats(user) {
   const wish = getWishList();
   document.getElementById('stat-wish').textContent = wish.length;
-  const pts = parseInt(sessionStorage.getItem('myPoints') || '3000');
+  const pts = parseInt(localStorage.getItem('myPoints') || '3000');
   document.getElementById('stat-points').textContent = pts.toLocaleString();
   try {
     const orders = await fetchMyOrders(user);
@@ -545,7 +545,7 @@ function removeWish(id) {
 
 function openModal(type) {
   document.getElementById('modal-'+type).classList.add('open');
-  const user = JSON.parse(sessionStorage.getItem('user')||'{}');
+  const user = JSON.parse(localStorage.getItem('user')||'{}');
   if (type==='orders')   renderOrders(user);
   if (type==='delivery') renderDelivery(user);
   if (type==='wishlist') renderWishlist();
@@ -603,9 +603,9 @@ async function renderReviews(user) {
 }
 
 function renderPoints() {
-  const pts = parseInt(sessionStorage.getItem('myPoints')||'3000');
+  const pts = parseInt(localStorage.getItem('myPoints')||'3000');
   let history = [];
-  try { history = JSON.parse(sessionStorage.getItem('pointHistory')||'[]'); } catch(e) {}
+  try { history = JSON.parse(localStorage.getItem('pointHistory')||'[]'); } catch(e) {}
   if (!history.length) history = [{ type:'plus', desc:'가입 축하 적립금', amount:3000, date: new Date().toLocaleDateString('ko-KR') }];
   document.getElementById('body-points').innerHTML = `<div class="point-box"><div class="point-num">${pts.toLocaleString()}P</div><div class="point-label">보유 적립금</div></div><div class="point-history">${history.map(h=>`<div class="point-row"><span>${h.desc}</span><span class="${h.type==='plus'?'pt-plus':'pt-minus'}">${h.type==='plus'?'+':'−'}${h.amount.toLocaleString()}P</span></div>`).join('')}<div class="point-row" style="color:var(--gray);font-size:12px;justify-content:center;">적립금은 1,000P 이상 결제 시 사용 가능합니다</div></div><div style="margin-top:16px;padding:14px;background:#fff8f0;border-radius:10px;font-size:13px;color:#b85000;">🎫 보유 쿠폰: 없음 · 이벤트 참여 시 쿠폰이 지급됩니다</div>`;
 }
@@ -618,14 +618,14 @@ function renderProfile(user) {
   document.getElementById('edit-pw2').value = '';
 }
 function saveProfile() {
-  const user = JSON.parse(sessionStorage.getItem('user')||'{}');
+  const user = JSON.parse(localStorage.getItem('user')||'{}');
   const pw  = document.getElementById('edit-pw').value;
   const pw2 = document.getElementById('edit-pw2').value;
   if (pw && pw!==pw2)    { alert('비밀번호가 일치하지 않습니다'); return; }
   if (pw && pw.length<8) { alert('비밀번호는 8자 이상이어야 합니다'); return; }
   user.name  = document.getElementById('edit-name').value.trim()  || user.name;
   user.phone = document.getElementById('edit-phone').value.trim();
-  sessionStorage.setItem('user', JSON.stringify(user));
+  localStorage.setItem('user', JSON.stringify(user));
   document.getElementById('mp-name').textContent = user.name + '님';
   alert('저장됐습니다 ✅');
   closeModal('profile');
@@ -719,7 +719,7 @@ function prefillLogin(email, pw) {
   document.getElementById('login-pw').focus();
 }
 
-const savedUser = sessionStorage.getItem('user');
+const savedUser = localStorage.getItem('user');
 if (savedUser) showMypage(JSON.parse(savedUser));
 Cart.init();
 
@@ -776,8 +776,8 @@ function doKakaoLogin() {
     var storedCode = localStorage.getItem('refCode_' + email);
     user.refCode = storedCode || generateRefCode(name);
     if (!storedCode) localStorage.setItem('refCode_' + email, user.refCode);
-    if (!sessionStorage.getItem('myPoints')) sessionStorage.setItem('myPoints', '3000');
-    sessionStorage.setItem('user', JSON.stringify(user));
+    if (!localStorage.getItem('myPoints')) localStorage.setItem('myPoints', '3000');
+    localStorage.setItem('user', JSON.stringify(user));
     showMypage(user);
   }).catch(function(e){ alert('카카오 로그인 오류: ' + e.message); });
 })();
