@@ -834,18 +834,12 @@ function loadRelated() {
 }
 
 function copyLink() {
-  // ✅ 카카오톡 등에서 대표이미지가 보이도록 Apps Script OG 프록시 링크를 복사
+  // ✅ 카카오톡 대표이미지가 보이는 정적 OG 파일 주소를 복사 (gasway.shop/p/[번호].html)
   var id = (currentProduct && currentProduct.id) ||
            new URLSearchParams(location.search).get('id') || '';
-  var base   = (typeof CONFIG !== 'undefined' && CONFIG.APPS_SCRIPT_URL) ? CONFIG.APPS_SCRIPT_URL : '';
-  var dealer = (typeof CONFIG !== 'undefined' && CONFIG.DEALER_ID)       ? CONFIG.DEALER_ID       : '';
-  var link;
-  if (base && id) {
-    link = base + '?product=' + encodeURIComponent(id);
-    if (dealer) link += '&dealer=' + encodeURIComponent(dealer);
-  } else {
-    link = location.href;
-  }
+  var link = id
+    ? 'https://gasway.shop/p/' + encodeURIComponent(id) + '.html'
+    : location.href;
   navigator.clipboard.writeText(link)
     .then(function(){ alert('링크가 복사됐습니다!'); })
     .catch(function(){ prompt('아래 링크를 복사하세요:', link); });
