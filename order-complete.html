@@ -104,7 +104,7 @@
   if (noParam) {
     renderSuccess({
       orderNo:   noParam,
-      amt:       '0',
+      amt:       p.get('amt') || '0',
       goodsName: '',
       ordNm:     '',
       method:    decodeURIComponent(p.get('method') || '신용카드'),
@@ -300,11 +300,19 @@
   function renderSuccess(o) {
     var amtNum  = Number(o.amt) || 0;
     var amtText = amtNum > 0 ? '₩' + amtNum.toLocaleString() : '-';
+    var isBank  = (o.method === '무통장입금');
     area.innerHTML =
-      (o.isTest ? '<div class="test-badge">🔧 테스트 모드 (PG 미연동)</div>' : '')
-      + '<div class="icon">🎉</div>'
-      + '<h1 class="title">주문이 완료되었습니다!</h1>'
-      + '<p class="sub">주문해주셔서 감사합니다. 빠르게 배송해드릴게요.</p>'
+      ((o.isTest && !isBank) ? '<div class="test-badge">🔧 테스트 모드 (PG 미연동)</div>' : '')
+      + '<div class="icon">' + (isBank ? '🏦' : '🎉') + '</div>'
+      + '<h1 class="title">' + (isBank ? '주문이 접수되었습니다!' : '주문이 완료되었습니다!') + '</h1>'
+      + '<p class="sub">' + (isBank ? '아래 계좌로 입금해주시면 확인 후 빠르게 배송해드릴게요.' : '주문해주셔서 감사합니다. 빠르게 배송해드릴게요.') + '</p>'
+      + (isBank ?
+          '<div class="box" style="background:#f0fdf4;border:1.5px solid #bbf7d0;"><h3>🏦 입금 계좌 안내</h3>'
+          + '<div class="row"><span class="label">입금 계좌</span><span class="value">농협 351-1252-9726-03</span></div>'
+          + '<div class="row"><span class="label">예금주</span><span class="value">(주)비에스컴퍼니</span></div>'
+          + '<div class="row"><span class="label">입금 금액</span><span class="value price">' + amtText + '</span></div>'
+          + '<p style="font-size:12px;color:#15803d;margin-top:10px;line-height:1.7;">입금자명은 주문자 성함으로 부탁드립니다. 입금 확인 후 배송되며, 주문 후 24시간 내 미입금 시 자동 취소될 수 있습니다.</p>'
+          + '</div>' : '')
       + '<div class="box"><h3>📦 주문 정보</h3>'
       + '<div class="row"><span class="label">주문번호</span><span class="value">' + o.orderNo + '</span></div>'
       + (o.goodsName ? '<div class="row"><span class="label">상품명</span><span class="value">' + o.goodsName + '</span></div>' : '')
