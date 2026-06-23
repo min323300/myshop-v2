@@ -633,6 +633,15 @@ function requestPG(orderData) {
       buyerName:  orderData['주문자명'],
       buyerTel:   orderData['연락처'],
       buyerEmail: orderData['이메일'],
+      // ✅ 배송 정보 전달 (이게 없어서 주소/받는분/우편번호가 빈칸으로 저장됐음)
+      receiverName:  orderData['받는분'],
+      receiverPhone: orderData['받는분연락처'],
+      address:       orderData['배송주소'],
+      zipCode:       orderData['우편번호'],
+      dealerId:      orderData['대리점ID'],
+      referralCode:  orderData['추천인코드'],
+      memo:          orderData['메모'],
+      qty:           orderData['수량'],
       onSuccess: function(tid) {
         orderData['주문상태']    = '결제완료';
         orderData['PG거래번호']  = tid;
