@@ -384,7 +384,7 @@ function runApp() {
   // 일반 상품 섹션
   ProductAPI.getAll().then(function(products) {
     buildNav(products);
-    var best = products.filter(function(p){ return p.badge==='BEST'||p.isFeatured; }).slice(0,4);
+    var best = products.filter(function(p){ return p.badge==='BEST'; }).slice(0,4);
     showP('best-products', best.length ? best : products.slice(0,4));
     var nw = products.filter(function(p){ return p.badge==='NEW'; }).slice(0,4);
     showP('new-products', nw.length ? nw : products.slice(2,6));
