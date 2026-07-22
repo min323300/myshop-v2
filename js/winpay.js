@@ -17,8 +17,8 @@ const WinPay = {
   SERVER_URL:   'https://jh.winglobalpay.com',
   COMPLETE_URL: 'https://gasway.shop/order-complete.html',
 
-  tmnId:    'WGA001211',
-  payKey:   'pk_9544-426725-42e-55410',
+  tmnId:    'WGA003558',
+  payKey:   'pk_4e38-e74b53-d9c-97904',
   jwtToken: '',
 
   // ─────────────────────────────────────────────────
