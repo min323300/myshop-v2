@@ -119,7 +119,7 @@ const WinPay = {
     const email     = orderInfo.email            || orderInfo.buyerEmail || 'order@gasway.shop';
     const userId    = orderInfo.userId           || orderInfo.buyerTel   || 'guest';
     const goodsName = orderInfo.goodsName        || orderInfo.goodsname  || '';
-    const prodCode  = 'P001';
+    const prodCode  = orderInfo.prodCode || orderInfo.productCode || 'P001';
 
     if (!amt || amt <= 0) throw new Error('결제 금액이 올바르지 않습니다 (amt: ' + amt + ')');
 
