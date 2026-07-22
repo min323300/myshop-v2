@@ -674,6 +674,7 @@ function requestPG(orderData) {
       referralCode:  orderData['추천인코드'],
       memo:          orderData['메모'],
       qty:           orderData['수량'],
+      prodCode:      orderData['상품번호'],
       onSuccess: function(tid) {
         orderData['주문상태']    = '결제완료';
         orderData['PG거래번호']  = tid;
