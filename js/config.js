@@ -73,8 +73,8 @@ const CONFIG = {
   // ✅ PG 설정 (윈글로벌페이)
 PG: {
     PROVIDER:      'winglobalpay',
-    MERCHANT_ID:   'WGA001211',
-    API_KEY:       'pk_9544-426725-42e-55410',
+    MERCHANT_ID:   'WGA003558',
+    API_KEY:       'pk_4e38-e74b53-d9c-97904',
     API_PROXY_URL: 'https://script.google.com/macros/s/AKfycbzWpT2On47R7_LTRiznH7qcPBYTPUV3i4UiywI8lkHUYt6KGzDevap7RfQHACwD7oxDzg/exec',
   },
 
