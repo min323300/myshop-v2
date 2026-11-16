@@ -17,8 +17,8 @@ const WinPay = {
   SERVER_URL:   'https://jh.winglobalpay.com',
   COMPLETE_URL: 'https://gasway.shop/order-complete.html',
 
-  tmnId:    'WGA003558',
-  payKey:   'pk_4e38-e74b53-d9c-97904',
+  tmnId:    '',  // 2026-11-17 삭제 (운영 중단)
+  payKey:   '',  // 2026-11-17 삭제 — 공개 저장소에 키를 두지 않음
   jwtToken: '',
 
   // ─────────────────────────────────────────────────
@@ -103,6 +103,7 @@ const WinPay = {
   // 3. 결제 요청 (PC/모바일 자동 분기)
   // ─────────────────────────────────────────────────
   async requestPayment(orderInfo) {
+    if (typeof CONFIG !== 'undefined' && CONFIG.SHOP_PAUSED) throw new Error('담누리마켓은 현재 주문·결제를 받지 않습니다.');
     const now  = new Date();
     const pad  = n => String(n).padStart(2, '0');
     const ts   = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;

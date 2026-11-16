@@ -73,10 +73,13 @@ const CONFIG = {
   // ✅ PG 설정 (윈글로벌페이)
 PG: {
     PROVIDER:      'winglobalpay',
-    MERCHANT_ID:   'WGA003558',
-    API_KEY:       'pk_4e38-e74b53-d9c-97904',
+    MERCHANT_ID:   '', // 2026-11-17 운영 중단으로 삭제 (재개 시 앱스스크립트에서 관리)
+    API_KEY:       '', // 2026-11-17 삭제 — 공개 저장소에 키를 두지 않음
     API_PROXY_URL: 'https://script.google.com/macros/s/AKfycbzWpT2On47R7_LTRiznH7qcPBYTPUV3i4UiywI8lkHUYt6KGzDevap7RfQHACwD7oxDzg/exec',
   },
+
+  // ✅ 운영 일시중단 (true = 주문·결제 차단, 안내 표시)
+  SHOP_PAUSED: true,
 
   // ✅ 기타 설정
   PRODUCTS_PER_PAGE:   12,
@@ -240,4 +243,58 @@ PG: {
       applyStoreInfo();
     })
     .catch(function(e){ console.log('사업자정보 로드 실패:', e); });
+})();
+
+
+// ============================================================
+// ⏸️ 운영 일시중단 처리 (CONFIG.SHOP_PAUSED = true 일 때)
+//   - 주문서(order.html)·장바구니(cart.html) 화면 차단
+//   - 바로구매·장바구니 담기·결제 버튼 차단
+//   - 모든 손님 화면 맨 위에 안내 띠 표시
+//   - 관리자·대리점 관리 화면은 그대로 사용 가능
+//   재개하려면 위 SHOP_PAUSED 를 false 로 바꾸면 됩니다.
+// ============================================================
+(function shopPauseGuard() {
+  if (!CONFIG.SHOP_PAUSED) return;
+  var page = (location.pathname.split('/').pop() || 'index.html').toLowerCase();
+  var adminPages = ['admin.html', 'dealer-admin.html', 'dealer-panel.html', 'dealer-generator.html', 'og-generator.html'];
+  if (adminPages.indexOf(page) >= 0) return;
+
+  var MSG = '담누리마켓은 현재 운영을 잠시 쉬고 있습니다. 지금은 주문·결제를 받지 않습니다.';
+
+  function run() {
+    if (page === 'order.html' || page === 'cart.html') {
+      try { sessionStorage.removeItem('cart'); } catch (e) {}
+      document.body.innerHTML =
+        '<div style="max-width:480px;margin:80px auto;padding:32px 24px;text-align:center;font-family:sans-serif;'
+        + 'border:1.5px solid #e5e7eb;border-radius:16px;background:#fff;">'
+        + '<div style="font-size:40px;margin-bottom:12px;">⏸️</div>'
+        + '<div style="font-size:20px;font-weight:800;margin-bottom:12px;">잠시 운영을 쉬고 있습니다</div>'
+        + '<div style="font-size:15px;color:#4b5563;line-height:1.7;">' + MSG + '<br>이용해 주셔서 감사합니다.</div>'
+        + '<a href="index.html" style="display:inline-block;margin-top:20px;padding:10px 20px;border-radius:10px;'
+        + 'background:#111827;color:#fff;text-decoration:none;">홈으로</a></div>';
+      return;
+    }
+
+    var bar = document.createElement('div');
+    bar.textContent = '⏸️ ' + MSG;
+    bar.style.cssText = 'position:relative;z-index:99999;background:#fff7ed;color:#9a3412;border-bottom:1.5px solid #fed7aa;'
+      + 'padding:10px 14px;text-align:center;font-size:14px;font-weight:700;line-height:1.5;';
+    document.body.insertBefore(bar, document.body.firstChild);
+
+    document.addEventListener('click', function (e) {
+      var el = e.target && e.target.closest ? e.target.closest('a,button,[onclick]') : null;
+      if (!el) return;
+      var href = (el.getAttribute('href') || '') + ' ' + (el.getAttribute('onclick') || '');
+      var text = (el.textContent || '').replace(/\s+/g, ' ');
+      if (/order\.html|cart\.html|buyNow|mobileBuy|addToCart|Cart\.add/.test(href)
+          || /바로\s*구매|구매하기|장바구니\s*담기|담기|주문하기|결제하기/.test(text)) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        alert(MSG);
+      }
+    }, true);
+  }
+
+  if (document.body) run(); else document.addEventListener('DOMContentLoaded', run);
 })();
